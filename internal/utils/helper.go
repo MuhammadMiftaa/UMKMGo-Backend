@@ -2,6 +2,9 @@ package utils
 
 import (
 	"errors"
+	"fmt"
+	"math/rand"
+	"regexp"
 	"time"
 	"unicode"
 
@@ -46,13 +49,13 @@ func ComparePass(hashPassword, reqPassword string) bool {
 	return err == nil
 }
 
-func GenerateToken(ID string, username string, email string) (string, error) {
+func GenerateToken(ID int, name string, email string) (string, error) {
 	expirationTime := time.Now().Add(3 * 24 * time.Hour)
 	claims := jwt.MapClaims{
-		"id":       ID,
-		"username": username,
-		"email":    email,
-		"exp":      expirationTime.Unix(),
+		"id":    ID,
+		"name":  name,
+		"email": email,
+		"exp":   expirationTime.Unix(),
 	}
 
 	parseToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -83,4 +86,13 @@ func VerifyToken(jwtToken string) (dto.UserData, error) {
 		Username: claims["username"].(string),
 		Email:    claims["email"].(string),
 	}, nil
+}
+
+func GenerateOTP() string {
+	return fmt.Sprintf("%06d", rand.Intn(1000000))
+}
+
+func EmailValidator(str string) bool {
+	email_validator := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	return email_validator.MatchString(str)
 }

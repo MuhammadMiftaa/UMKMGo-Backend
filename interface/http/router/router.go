@@ -1,23 +1,28 @@
 package router
 
 import (
+	"sapaUMKM-backend/config/db"
+	"sapaUMKM-backend/config/redis"
 	"sapaUMKM-backend/interface/http/middleware"
+	"sapaUMKM-backend/interface/http/routes"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func SetupRouter() *gin.Engine {
-	router := gin.Default()
-
-	router.Use(middleware.CORSMiddleware(), middleware.GinMiddleware())
-
-	router.GET("test", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Hello World",
-		})
+func SetupRouter() *fiber.App {
+	router := fiber.New(fiber.Config{
+		Prefork: true,
 	})
 
-	// v1 := router.Group("/v1")
+	router.Use(middleware.CORS(), middleware.Logger())
+
+	router.Get("test", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"message": "Hello World!"})
+	})
+
+	version := router.Group("/v1")
+
+	routes.UserRoutes(version, db.DB, redis.RDB)
 
 	return router
 }

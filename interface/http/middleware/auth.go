@@ -1,56 +1,47 @@
 package middleware
 
 import (
-	"net/http"
-	"sapaUMKM-backend/internal/utils"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"sapaUMKM-backend/internal/utils"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
-	return gin.HandlerFunc(func(ctx *gin.Context) {
-		jwt := ctx.GetHeader("Authorization")
+func AuthMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		jwt := c.Get("Authorization")
 		if jwt == "" {
-			if ctx.Request.URL.Path != "/" {
-				ctx.JSON(http.StatusUnauthorized, gin.H{
+			if c.Path() != "/" {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 					"statusCode": 401,
 					"status":     false,
 					"error":      "Unauthorized",
 				})
-				ctx.Abort()
-				return
-			} else {
-				ctx.Redirect(http.StatusSeeOther, "/login")
-				ctx.Abort()
-				return
 			}
+			return c.Redirect("/login", fiber.StatusSeeOther)
 		}
 
 		tokenParts := strings.Split(jwt, " ")
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			ctx.JSON(http.StatusUnauthorized, gin.H{
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"statusCode": 401,
 				"status":     false,
 				"error":      "Invalid Authorization format",
 			})
-			ctx.Abort()
-			return
 		}
 
 		token := tokenParts[1]
 		userData, err := utils.VerifyToken(token)
 		if err != nil {
-			ctx.JSON(http.StatusUnauthorized, gin.H{
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"statusCode": 401,
 				"status":     false,
 				"error":      "Unauthorized",
 			})
-			ctx.Abort()
-			return
 		}
 
-		ctx.Set("user_data", userData)
-		ctx.Next()
-	})
+		c.Locals("user_data", userData)
+		return c.Next()
+	}
 }

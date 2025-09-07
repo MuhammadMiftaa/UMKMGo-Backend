@@ -21,9 +21,25 @@ type (
 		DBName     string `env:"DB_NAME"`
 	}
 
+	Redis struct {
+		RHost string `env:"REDIS_HOST"`
+		RPort string `env:"REDIS_PORT"`
+	}
+
+	ZSMTP struct {
+		ZSHost     string `env:"ZOHO_SMTP_HOST"`
+		ZSPort     string `env:"ZOHO_SMTP_PORT"`
+		ZSUser     string `env:"ZOHO_SMTP_USER"`
+		ZSPassword string `env:"ZOHO_SMTP_PASSWORD"`
+		ZSSecure   string `env:"ZOHO_SMTP_SECURE"`
+		ZSAuth     bool   `env:"ZOHO_SMTP_AUTH"`
+	}
+
 	Config struct {
 		Server   Server
 		Database Database
+		Redis    Redis
+		ZSMTP    ZSMTP
 	}
 )
 
@@ -66,6 +82,38 @@ func LoadNative() ([]string, error) {
 	}
 	if Cfg.Database.DBPassword, ok = os.LookupEnv("DB_PASSWORD"); !ok {
 		missing = append(missing, "DB_PASSWORD env is not set")
+	}
+	// ! ______________________________________________________
+
+	// ! Load Redis configuration _____________________________
+	if Cfg.Redis.RHost, ok = os.LookupEnv("REDIS_HOST"); !ok {
+		missing = append(missing, "REDIS_HOST env is not set")
+	}
+	if Cfg.Redis.RPort, ok = os.LookupEnv("REDIS_PORT"); !ok {
+		missing = append(missing, "REDIS_PORT env is not set")
+	}
+	// ! ______________________________________________________, 
+
+	// ! Load Zoho SMTP configuration __________________________
+	if Cfg.ZSMTP.ZSHost, ok = os.LookupEnv("ZOHO_SMTP_HOST"); !ok {
+		missing = append(missing, "ZOHO_SMTP_HOST env is not set")
+	}
+	if Cfg.ZSMTP.ZSPort, ok = os.LookupEnv("ZOHO_SMTP_PORT"); !ok {
+		missing = append(missing, "ZOHO_SMTP_PORT env is not set")
+	}
+	if Cfg.ZSMTP.ZSUser, ok = os.LookupEnv("ZOHO_SMTP_USER"); !ok {
+		missing = append(missing, "ZOHO_SMTP_USER env is not set")
+	}
+	if Cfg.ZSMTP.ZSPassword, ok = os.LookupEnv("ZOHO_SMTP_PASSWORD"); !ok {
+		missing = append(missing, "ZOHO_SMTP_PASSWORD env is not set")
+	}
+	if Cfg.ZSMTP.ZSSecure, ok = os.LookupEnv("ZOHO_SMTP_SECURE"); !ok {
+		missing = append(missing, "ZOHO_SMTP_SECURE env is not set")
+	}
+	if zohoAuth, ok := os.LookupEnv("ZOHO_SMTP_AUTH"); !ok {
+		missing = append(missing, "ZOHO_SMTP_AUTH env is not set")
+	} else {
+		Cfg.ZSMTP.ZSAuth = zohoAuth == "true"
 	}
 	// ! ______________________________________________________
 

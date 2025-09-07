@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/internal/utils"
+	"sapaUMKM-backend/internal/utils/constant"
 	"strings"
 	"time"
 
@@ -109,7 +109,7 @@ func SetupLogger() {
 	Log = logrus.New()
 
 	switch env.Cfg.Server.Mode {
-	case utils.PRODUCTION_MODE:
+	case constant.PRODUCTION_MODE:
 		Log.SetLevel(logrus.InfoLevel)
 
 		// Gunakan JSON formatter untuk production
@@ -130,7 +130,7 @@ func SetupLogger() {
 		Log.SetOutput(file)
 		Log.Debug("Production Log")
 
-	case utils.STAGING_MODE:
+	case constant.STAGING_MODE:
 		Log.SetLevel(logrus.TraceLevel)
 
 		// Gunakan Apache style formatter tanpa colors untuk staging (file output)

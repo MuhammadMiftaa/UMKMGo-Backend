@@ -1,4 +1,4 @@
-package utils
+package constant
 
 var (
 	DEVELOPMENT_MODE = "development"

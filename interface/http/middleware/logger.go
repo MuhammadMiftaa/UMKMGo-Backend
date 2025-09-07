@@ -2,10 +2,12 @@ package middleware
 
 import (
 	"fmt"
-	"sapaUMKM-backend/config/log"
+	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"sapaUMKM-backend/config/log"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type middlewareConfig struct {
@@ -19,38 +21,41 @@ type middlewareConfig struct {
 	LogResponseBody bool
 }
 
-func httpRequest(c *gin.Context, latency time.Duration, statusCode int) {
-	// Get client IP dengan handling proxy
-	clientIP := c.ClientIP()
+func httpRequest(c *fiber.Ctx, latency time.Duration, statusCode int) {
+	// Client IP
+	clientIP := c.IP()
 
 	// Get user agent
-	userAgent := c.Request.UserAgent()
+	userAgent := c.Get("User-Agent")
 	if userAgent == "" {
 		userAgent = "-"
 	}
 
 	// Get referer
-	referer := c.Request.Referer()
+	referer := c.Get("Referer")
 	if referer == "" {
 		referer = "-"
 	}
 
 	// Format request size
-	requestSize := c.Request.ContentLength
-	if requestSize < 0 {
-		requestSize = 0
+	// Request size (approx) - gunakan Content-Length header jika ada, fallback ke body length
+	var requestSize int64
+	if cl := c.Get("Content-Length"); cl != "" {
+		if v, err := strconv.Atoi(cl); err == nil {
+			requestSize = int64(v)
+		}
+	}
+	if requestSize == 0 {
+		requestSize = int64(len(c.Body()))
 	}
 
 	// Response size (approximate, karena gin tidak menyediakan exact response size)
-	responseSize := c.Writer.Size()
-	if responseSize < 0 {
-		responseSize = 0
-	}
+	responseSize := len(c.Response().Body())
 
 	// Fields untuk structured logging
 	fields := map[string]interface{}{
-		"method":        c.Request.Method,
-		"uri":           c.Request.RequestURI,
+		"method":        c.Method(),
+		"uri":           c.OriginalURL(),
 		"status":        statusCode,
 		"latency":       fmt.Sprintf("%.3fms", float64(latency.Nanoseconds())/1000000.0),
 		"client_ip":     clientIP,
@@ -58,16 +63,12 @@ func httpRequest(c *gin.Context, latency time.Duration, statusCode int) {
 		"referer":       referer,
 		"request_size":  requestSize,
 		"response_size": responseSize,
-		"protocol":      c.Request.Proto,
+		"protocol":      c.Protocol(),
 	}
 
 	// Format message dalam style Apache Combined Log Format
 	// Format: "METHOD URI PROTOCOL" status response_size "referer" "user_agent"
-	message := fmt.Sprintf(`%s %s %s`,
-		c.Request.Method,
-		c.Request.RequestURI,
-		c.Request.Proto,
-	)
+	message := fmt.Sprintf(`%s %s %s`, c.Method(), c.OriginalURL(), c.Protocol())
 
 	// Tentukan log level berdasarkan status code
 	switch {
@@ -84,26 +85,18 @@ func httpRequest(c *gin.Context, latency time.Duration, statusCode int) {
 	}
 }
 
-func GinMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Start timer
+func Logger() fiber.Handler { // mempertahankan nama untuk kompatibilitas
+	return func(c *fiber.Ctx) error {
 		start := time.Now()
-
-		// Process request
-		c.Next()
-
-		// Calculate latency
+		err := c.Next()
 		latency := time.Since(start)
-
-		// Get status code
-		statusCode := c.Writer.Status()
-
-		// Log the request
+		statusCode := c.Response().StatusCode()
 		httpRequest(c, latency, statusCode)
+		return err
 	}
 }
 
-func GinMiddlewareWithConfig(config middlewareConfig) gin.HandlerFunc {
+func LoggerWithConfig(config middlewareConfig) fiber.Handler { // mempertahankan nama
 	// Convert skip paths to map untuk O(1) lookup
 	skipPaths := make(map[string]bool)
 	for _, path := range config.SkipPaths {
@@ -116,32 +109,23 @@ func GinMiddlewareWithConfig(config middlewareConfig) gin.HandlerFunc {
 		skipUserAgents[ua] = true
 	}
 
-	return func(c *gin.Context) {
+	return func(c *fiber.Ctx) error {
 		// Skip jika path ada di skip list
-		if skipPaths[c.Request.URL.Path] {
-			c.Next()
-			return
+		if skipPaths[c.Path()] {
+			return c.Next()
 		}
 
 		// Skip jika user agent ada di skip list
-		if skipUserAgents[c.Request.UserAgent()] {
-			c.Next()
-			return
+		if skipUserAgents[c.Get("User-Agent")] {
+			return c.Next()
 		}
 
 		// Start timer
 		start := time.Now()
-
-		// Process request
-		c.Next()
-
-		// Calculate latency
+		err := c.Next()
 		latency := time.Since(start)
-
-		// Get status code
-		statusCode := c.Writer.Status()
-
-		// Log the request
+		statusCode := c.Response().StatusCode()
 		httpRequest(c, latency, statusCode)
+		return err
 	}
 }

@@ -31,6 +31,7 @@ func main() {
 	defer log.Info("sapaUMKM API stopped")
 
 	r := router.SetupRouter() // Set up the HTTP router
-	r.Run(":" + env.Cfg.Server.Port)
+	
+	r.Listen(":" + env.Cfg.Server.Port)
 	log.Info("Starting HTTP server on port " + env.Cfg.Server.Port)
 }

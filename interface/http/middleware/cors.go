@@ -10,9 +10,6 @@ import (
 func CORSMiddleware() gin.HandlerFunc {
 	return cors.New(cors.Config{
 		AllowOrigins: []string{
-			"https://refina.miftech.web.id",
-			"https://refina-staging.miftech.web.id",
-			"http://localhost:3000",
 			"http://localhost:5173",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
@@ -22,3 +19,4 @@ func CORSMiddleware() gin.HandlerFunc {
 		MaxAge:           12 * time.Hour,
 	})
 }
+	

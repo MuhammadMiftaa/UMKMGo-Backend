@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"time"
 
 	"sapaUMKM-backend/internal/repository"
 	"sapaUMKM-backend/internal/types/dto"
@@ -14,10 +15,14 @@ type UsersService interface {
 	Login(user dto.Users) (*string, error)
 	VerifyUser(email string) (dto.Users, error)
 	GetAllUsers() ([]dto.Users, error)
-	GetUserByID(id string) (dto.Users, error)
+	GetUserByID(id int) (dto.Users, error)
 	GetUserByEmail(email string) (dto.Users, error)
-	UpdateUser(id string, userNew dto.Users) (dto.Users, error)
-	DeleteUser(id string) (dto.Users, error)
+	UpdateUser(id int, userNew dto.Users) (dto.Users, error)
+	DeleteUser(id int) (dto.Users, error)
+
+	GetListPermissions() ([]dto.Permissions, error)
+	GetListRolePermissions() ([]model.RolePermissionsResponse, error)
+	UpdateRolePermissions(rolePermissions dto.RolePermissions) error
 }
 
 type usersService struct {
@@ -30,7 +35,7 @@ func NewUsersService(usersRepository repository.UsersRepository) UsersService {
 
 func (user_serv *usersService) Register(user dto.Users) (dto.Users, error) {
 	// VALIDASI APAKAH NAME, EMAIL, PASSWORD KOSONG
-	if user.Name == "" || user.Email == "" || user.Password == "" {
+	if user.Name == "" || user.Email == "" || user.Password == "" || user.ConfirmPassword == "" || user.RoleID == nil {
 		return dto.Users{}, errors.New("name, email, and password cannot be blank")
 	}
 
@@ -57,6 +62,16 @@ func (user_serv *usersService) Register(user dto.Users) (dto.Users, error) {
 		return dto.Users{}, errors.New("password must contain at least one number")
 	}
 
+	// VALIDASI PASSWORD DAN CONFIRM PASSWORD SUDAH SESUAI
+	if user.Password != user.ConfirmPassword {
+		return dto.Users{}, errors.New("password and confirm password do not match")
+	}
+
+	// VALIDASI APAKAH ROLE ID ADA
+	if !user_serv.userRepository.IsRoleExist(*user.RoleID) {
+		return dto.Users{}, errors.New("role id not found")
+	}
+
 	// HASHING PASSWORD MENGGUNAKAN BCRYPT
 	hashedPassword, err := utils.PasswordHashing(user.Password)
 	if err != nil {
@@ -68,7 +83,7 @@ func (user_serv *usersService) Register(user dto.Users) (dto.Users, error) {
 		Name:     user.Name,
 		Email:    user.Email,
 		Password: user.Password,
-		RoleID:   user.RoleID,
+		RoleID:   *user.RoleID,
 		IsActive: true,
 	})
 	if err != nil {
@@ -99,7 +114,31 @@ func (user_serv *usersService) Login(user dto.Users) (*string, error) {
 		return nil, errors.New("password is incorrect")
 	}
 
-	token, err := utils.GenerateToken(userExist.ID, userExist.Name, userExist.Email)
+	// VALIDASI APAKAH USER SUDAH AKTIF
+	if !userExist.IsActive {
+		return nil, errors.New("user is not active")
+	}
+
+	// AMBIL ROLE NAME
+	role, err := user_serv.userRepository.GetRoleByID(userExist.RoleID)
+	if err != nil {
+		return nil, errors.New("role not found")
+	}
+
+	// UPDATE LAST LOGIN
+	userExist.LastLoginAt = time.Now()
+	userExist, err = user_serv.userRepository.UpdateUser(userExist)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := utils.GenerateToken(dto.Users{
+		ID:       userExist.ID,
+		Name:     userExist.Name,
+		Email:    userExist.Email,
+		RoleID:   &userExist.RoleID,
+		RoleName: role.Name,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -137,16 +176,21 @@ func (user_serv *usersService) GetAllUsers() ([]dto.Users, error) {
 	var usersDTO []dto.Users
 	for _, user := range users {
 		usersDTO = append(usersDTO, dto.Users{
-			ID:    user.ID,
-			Name:  user.Name,
-			Email: user.Email,
+			ID:          user.ID,
+			Name:        user.Name,
+			Email:       user.Email,
+			RoleName:    user.Roles.Name,
+			IsActive:    user.IsActive,
+			LastLoginAt: user.LastLoginAt.Format("2006-01-02 15:04:05"),
+			CreatedAt:   user.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:   user.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 
 	return usersDTO, nil
 }
 
-func (user_serv *usersService) GetUserByID(id string) (dto.Users, error) {
+func (user_serv *usersService) GetUserByID(id int) (dto.Users, error) {
 	user, err := user_serv.userRepository.GetUserByID(id)
 	if err != nil {
 		return dto.Users{}, err
@@ -172,36 +216,64 @@ func (user_serv *usersService) GetUserByEmail(email string) (dto.Users, error) {
 	}, nil
 }
 
-func (user_serv *usersService) UpdateUser(id string, userNew dto.Users) (dto.Users, error) {
+func (user_serv *usersService) UpdateUser(id int, userNew dto.Users) (dto.Users, error) {
 	// MENGAMBIL DATA YANG INGIN DI UPDATE
 	user, err := user_serv.userRepository.GetUserByID(id)
 	if err != nil {
 		return dto.Users{}, err
 	}
 
-	// VALIDASI APAKAH FULLNAME & EMAIL KOSONG
-	if userNew.Name == "" && userNew.Email == "" {
-		return dto.Users{}, errors.New("fullname and email cannot be blank")
+	// VALIDASI APAKAH NAME, EMAIL, PASSWORD KOSONG
+	if userNew.Name == "" || userNew.Email == "" || userNew.Password == "" || userNew.ConfirmPassword == "" || userNew.RoleID == nil {
+		return dto.Users{}, errors.New("name, email, and password cannot be blank")
 	}
 
-	// VALIDASI APAKAH FULLNAME / EMAIL SUDAH DI INPUT
-	if userNew.Name != "" {
-		user.Name = userNew.Name
+	// VALIDASI UNTUK FORMAT EMAIL SUDAH BENAR
+	if isValid := utils.EmailValidator(userNew.Email); !isValid {
+		return dto.Users{}, errors.New("please enter a valid email address")
 	}
 
-	if userNew.Email != "" {
-		// VALIDASI UNTUK FORMAT EMAIL SUDAH BENAR
-		if isValid := utils.EmailValidator(userNew.Email); !isValid {
-			return dto.Users{}, errors.New("please enter a valid email address")
-		}
-		// MENGECEK APAKAH EMAIL SUDAH DIGUNAKAN
-		existingUser, err := user_serv.userRepository.GetUserByEmail(userNew.Email)
-		if err == nil && existingUser.ID != user.ID {
-			return dto.Users{}, errors.New("email already in use by another user")
-		}
-		user.Email = userNew.Email
+	// MENGECEK APAKAH EMAIL SUDAH DIGUNAKAN
+	userExist, err := user_serv.userRepository.GetUserByEmail(userNew.Email)
+	if err == nil && (userExist.Email != "") {
+		return dto.Users{}, errors.New("email already exists")
 	}
 
+	// VALIDASI PASSWORD SUDAH SESUAI, MIN 8 KARAKTER, MENGANDUNG ALFABET DAN NUMERIK
+	hasMinLen, hasLetter, hasDigit := utils.PasswordValidator(userNew.Password)
+	if !hasMinLen {
+		return dto.Users{}, errors.New("password must be at least 8 characters long")
+	}
+	if !hasLetter {
+		return dto.Users{}, errors.New("password must contain at least one letter")
+	}
+	if !hasDigit {
+		return dto.Users{}, errors.New("password must contain at least one number")
+	}
+
+	// VALIDASI PASSWORD DAN CONFIRM PASSWORD SUDAH SESUAI
+	if userNew.Password != userNew.ConfirmPassword {
+		return dto.Users{}, errors.New("password and confirm password do not match")
+	}
+
+	// VALIDASI APAKAH ROLE ID ADA
+	if !user_serv.userRepository.IsRoleExist(*userNew.RoleID) {
+		return dto.Users{}, errors.New("role id not found")
+	}
+
+	// HASHING PASSWORD MENGGUNAKAN BCRYPT
+	hashedPassword, err := utils.PasswordHashing(userNew.Password)
+	if err != nil {
+		return dto.Users{}, err
+	}
+	userNew.Password = hashedPassword
+
+	user.Name = userNew.Name
+	user.Email = userNew.Email
+	user.Password = userNew.Password
+	user.RoleID = *userNew.RoleID
+
+	// UPDATE DATA USER
 	userUpdated, err := user_serv.userRepository.UpdateUser(user)
 	if err != nil {
 		return dto.Users{}, err
@@ -214,7 +286,7 @@ func (user_serv *usersService) UpdateUser(id string, userNew dto.Users) (dto.Use
 	}, nil
 }
 
-func (user_serv *usersService) DeleteUser(id string) (dto.Users, error) {
+func (user_serv *usersService) DeleteUser(id int) (dto.Users, error) {
 	// MENGAMBIL DATA YANG INGIN DI DELETE
 	user, err := user_serv.userRepository.GetUserByID(id)
 	if err != nil {
@@ -231,4 +303,58 @@ func (user_serv *usersService) DeleteUser(id string) (dto.Users, error) {
 		Name:  userDeleted.Name,
 		Email: userDeleted.Email,
 	}, nil
+}
+
+func (user_serv *usersService) GetListPermissions() ([]dto.Permissions, error) {
+	permissions, err := user_serv.userRepository.GetListPermissions()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]dto.Permissions, len(permissions))
+	for i, p := range permissions {
+		result[i] = dto.Permissions{
+			ID:          p.ID,
+			Name:        p.Name,
+			Code:        p.Code,
+			Description: p.Description,
+		}
+	}
+
+	return result, nil
+}
+
+func (user_serv *usersService) GetListRolePermissions() ([]model.RolePermissionsResponse, error) {
+	rolePermissions, err := user_serv.userRepository.GetListRolePermissions()
+	if err != nil {
+		return nil, err
+	}
+
+	return rolePermissions, nil
+}
+
+func (user_serv *usersService) UpdateRolePermissions(rolePermissions dto.RolePermissions) error {
+	// VALIDASI APAKAH ROLE ID ADA
+	if !user_serv.userRepository.IsRoleExist(rolePermissions.RoleID) {
+		return errors.New("role id not found")
+	}
+
+	// VALIDASI APAKAH PERMISSION VALID
+	if isAllExists := user_serv.userRepository.IsPermissionExist(rolePermissions.Permissions); !isAllExists {
+		return errors.New("one or more permissions are invalid")
+	}
+
+	// DELETE PERMISSION YANG ADA
+	err := user_serv.userRepository.DeletePermissionsByRoleID(rolePermissions.RoleID)
+	if err != nil {
+		return err
+	}
+
+	// ADD PERMISSION YANG BARU
+	err = user_serv.userRepository.AddRolePermissions(rolePermissions.RoleID, rolePermissions.Permissions)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

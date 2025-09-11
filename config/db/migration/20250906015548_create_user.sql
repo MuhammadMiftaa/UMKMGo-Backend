@@ -608,6 +608,7 @@ CREATE TABLE permissions (
     parent_id INT REFERENCES permissions(id) ON DELETE SET NULL,
     name VARCHAR(50) NOT NULL UNIQUE,
     code VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -615,24 +616,24 @@ CREATE TABLE permissions (
 -- +goose StatementEnd
 
 -- +goose StatementBegin
-INSERT INTO permissions (id, parent_id, name, code) VALUES
-(1, NULL, 'Training', 'TRAINING'),
-(2, 1, 'Screening Training', 'SCREENING_TRAINING'),
-(3, 1, 'Scoring Training', 'SCORING_TRAINING'),
-(4, 1, 'Final Training', 'FINAL_TRAINING'),
-(5, NULL, 'Sertification', 'SERTIFICATION'),
-(6, 5, 'Screening Sertification', 'SCREENING_SERTIFICATION'),
-(7, 5, 'Scoring Sertification', 'SCORING_SERTIFICATION'),
-(8, 5, 'Final Sertification', 'FINAL_SERTIFICATION'),
-(9, NULL, 'Funding', 'FUNDING'),
-(10, 9, 'Screening Funding', 'SCREENING_FUNDING'),
-(11, 9, 'Scoring Funding', 'SCORING_FUNDING'),
-(12, 9, 'Final Funding', 'FINAL_FUNDING'),
-(13, NULL, 'Setting', 'SETTING'),
-(14, 13, 'User Management', 'USER_MANAGEMENT'),
-(15, 13, 'Score Configuration', 'SCORE_CONFIGURATION'),
-(16, 13, 'Cutoff Configuration', 'CUTOFF_CONFIGURATION'),
-(17, 13, 'SLA Configuration', 'SLA_CONFIGURATION');
+INSERT INTO permissions (id, parent_id, name, code, description) VALUES
+(1, NULL, 'Training', 'TRAINING', NULL),
+(2, 1, 'Screening Training', 'SCREENING_TRAINING', 'Melakukan penyaringan awal data UMKM yang mendaftar'),
+(3, 1, 'Scoring Training', 'SCORING_TRAINING', 'Melakukan penilaian terhadap data UMKM yang telah disaring'),
+(4, 1, 'Final Training', 'FINAL_TRAINING', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos'),
+(5, NULL, 'Sertification', 'SERTIFICATION', NULL),
+(6, 5, 'Screening Sertification', 'SCREENING_SERTIFICATION', 'Melakukan penyaringan awal data UMKM untuk sertifikasi'),
+(7, 5, 'Scoring Sertification', 'SCORING_SERTIFICATION', 'Melakukan penilaian terhadap data UMKM yang telah disaring untuk sertifikasi'),
+(8, 5, 'Final Sertification', 'FINAL_SERTIFICATION', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk sertifikasi'),
+(9, NULL, 'Funding', 'FUNDING', NULL),
+(10, 9, 'Screening Funding', 'SCREENING_FUNDING', 'Melakukan penyaringan awal data UMKM untuk pendanaan'),
+(11, 9, 'Scoring Funding', 'SCORING_FUNDING', 'Melakukan penilaian terhadap data UMKM yang telah disaring untuk pendanaan'),
+(12, 9, 'Final Funding', 'FINAL_FUNDING', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk pendanaan'),
+(13, NULL, 'Setting', 'SETTING', NULL),
+(14, 13, 'User Management', 'USER_MANAGEMENT', 'Manajemen pengguna sistem'),
+(15, 13, 'Score Configuration', 'SCORE_CONFIGURATION', 'Konfigurasi skor'),
+(16, 13, 'Cutoff Configuration', 'CUTOFF_CONFIGURATION', 'Konfigurasi batas akhir'),
+(17, 13, 'SLA Configuration', 'SLA_CONFIGURATION', 'Konfigurasi SLA');
 -- +goose StatementEnd
 
 -- +goose StatementBegin
@@ -654,7 +655,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
     role_id INT NOT NULL REFERENCES roles(id),
     is_active BOOLEAN DEFAULT TRUE,
@@ -692,7 +693,7 @@ CREATE TABLE umkms (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     business_name VARCHAR(100) NOT NULL,
-    nik VARCHAR(20) NOT NULL UNIQUE,
+    nik VARCHAR(20) NOT NULL,
     gender gender NOT NULL DEFAULT 'other',
     birth_date DATE,
     phone VARCHAR(15),
@@ -702,10 +703,10 @@ CREATE TABLE umkms (
     district INT NOT NULL,
     subdistrict INT NOT NULL,
     postal_code VARCHAR(10),
-    nib VARCHAR(50) UNIQUE,
-    npwp VARCHAR(50) UNIQUE,
+    nib VARCHAR(50),
+    npwp VARCHAR(50),
     kartu_type card_type,
-    kartu_number VARCHAR(50) UNIQUE,
+    kartu_number VARCHAR(50),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ

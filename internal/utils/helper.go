@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"sapaUMKM-backend/config/env"
+	"sapaUMKM-backend/config/log"
 	"sapaUMKM-backend/internal/types/dto"
 
 	"github.com/dgrijalva/jwt-go"
@@ -49,13 +50,15 @@ func ComparePass(hashPassword, reqPassword string) bool {
 	return err == nil
 }
 
-func GenerateToken(ID int, name string, email string) (string, error) {
+func GenerateToken(user dto.Users) (string, error) {
 	expirationTime := time.Now().Add(3 * 24 * time.Hour)
 	claims := jwt.MapClaims{
-		"id":    ID,
-		"name":  name,
-		"email": email,
-		"exp":   expirationTime.Unix(),
+		"id":        user.ID,
+		"name":      user.Name,
+		"email":     user.Email,
+		"role":      user.RoleID,
+		"role_name": user.RoleName,
+		"exp":       expirationTime.Unix(),
 	}
 
 	parseToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -81,10 +84,18 @@ func VerifyToken(jwtToken string) (dto.UserData, error) {
 		return dto.UserData{}, errors.New("token is invalid")
 	}
 
+	log.Debug("ID type: " + fmt.Sprintf("%T", claims["id"]))
+	log.Debug("Role type: " + fmt.Sprintf("%T", claims["role"]))
+	log.Debug("Email type: " + fmt.Sprintf("%T", claims["email"]))
+	log.Debug("Name type: " + fmt.Sprintf("%T", claims["name"]))
+	log.Debug("RoleName type: " + fmt.Sprintf("%T", claims["role_name"]))
+
 	return dto.UserData{
-		ID:       claims["id"].(string),
-		Username: claims["username"].(string),
+		ID:       claims["id"].(float64),
+		Name:     claims["name"].(string),
 		Email:    claims["email"].(string),
+		Role:     claims["role"].(float64),
+		RoleName: claims["role_name"].(string),
 	}, nil
 }
 

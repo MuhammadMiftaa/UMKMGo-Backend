@@ -43,4 +43,8 @@ func UserRoutes(version fiber.Router, db *gorm.DB, redis *redis.Client) {
 		users.Put(":id", User_handler.UpdateUser)
 		users.Delete(":id", User_handler.DeleteUser)
 	}
+
+	version.Get("/permissions", User_handler.GetListPermissions)
+	version.Get("/role-permissions", User_handler.GetListRolePermissions)
+	version.Post("/role-permissions", User_handler.UpdateRolePermissions)
 }

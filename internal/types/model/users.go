@@ -12,4 +12,5 @@ type Users struct {
 	LastLoginAt time.Time `json:"last_login_at"`
 
 	Base
+	Roles Roles `json:"role" gorm:"foreignKey:RoleID;references:ID"`
 }

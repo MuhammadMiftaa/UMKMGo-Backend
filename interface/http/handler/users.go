@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"sapaUMKM-backend/config/env"
@@ -101,8 +102,16 @@ func (user_handler *usersHandler) GetAllUsers(c *fiber.Ctx) error {
 
 func (user_handler *usersHandler) GetUserByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+	intID, err := strconv.Atoi(id)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    "Invalid user ID",
+		})
+	}
 
-	user, err := user_handler.usersService.GetUserByID(id)
+	user, err := user_handler.usersService.GetUserByID(intID)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -131,8 +140,16 @@ func (user_handler *usersHandler) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	id := c.Params("id")
+	intID, err := strconv.Atoi(id)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    "Invalid user ID",
+		})
+	}
 
-	user, err := user_handler.usersService.UpdateUser(id, userRequest)
+	user, err := user_handler.usersService.UpdateUser(intID, userRequest)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -151,8 +168,16 @@ func (user_handler *usersHandler) UpdateUser(c *fiber.Ctx) error {
 
 func (user_handler *usersHandler) DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
+	intID, err := strconv.Atoi(id)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    "Invalid user ID",
+		})
+	}
 
-	user, err := user_handler.usersService.DeleteUser(id)
+	user, err := user_handler.usersService.DeleteUser(intID)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -240,5 +265,68 @@ func (user_handler *usersHandler) VerifyOTP(c *fiber.Ctx) error {
 		"statusCode": 200,
 		"message":    "OTP verified successfully",
 		"data":       user,
+	})
+}
+
+func (user_handler *usersHandler) GetListRolePermissions(c *fiber.Ctx) error {
+	rolePermissions, err := user_handler.usersService.GetListRolePermissions()
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Get all role permissions data",
+		"data":       rolePermissions,
+	})
+}
+
+func (user_handler *usersHandler) GetListPermissions(c *fiber.Ctx) error {
+	permissions, err := user_handler.usersService.GetListPermissions()
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Get all permissions data",
+		"data":       permissions,
+	})
+}
+
+func (user_handler *usersHandler) UpdateRolePermissions(c *fiber.Ctx) error {
+	var rolePermissionsRequest dto.RolePermissions
+	err := c.BodyParser(&rolePermissionsRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	err = user_handler.usersService.UpdateRolePermissions(rolePermissionsRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Update role permissions",
 	})
 }

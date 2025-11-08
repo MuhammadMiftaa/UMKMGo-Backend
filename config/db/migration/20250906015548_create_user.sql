@@ -704,23 +704,6 @@ CREATE TABLE users (
 -- +goose StatementEnd
 
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION users_update_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
--- +goose StatementEnd
-
--- +goose StatementBegin
-CREATE TRIGGER set_users_update_timestamp
-BEFORE UPDATE ON users
-FOR EACH ROW
-EXECUTE FUNCTION users_update_timestamp();
--- +goose StatementEnd
-
--- +goose StatementBegin
 INSERT INTO users (name, email, password, role_id) VALUES
 ('Super Admin', 'superadmin@example.com', '$2a$04$qTicwGjrvEBZ1Cd6QwYuS.ENR2PRzu01/TSwzIeFsJKLu5P8.q.SS', 1);
 -- +goose StatementEnd
@@ -750,42 +733,9 @@ CREATE TABLE umkms (
 );
 -- +goose StatementEnd
 
--- +goose StatementBegin
-CREATE OR REPLACE FUNCTION umkms_update_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
--- +goose StatementEnd
-
--- +goose StatementBegin
-CREATE TRIGGER set_umkms_update_timestamp
-BEFORE UPDATE ON umkms
-FOR EACH ROW
-EXECUTE FUNCTION umkms_update_timestamp();
--- +goose StatementEnd
-
 -- +goose Down
 -- +goose StatementBegin
-DROP TRIGGER IF EXISTS set_umkms_update_timestamp ON umkms;
--- +goose StatementEnd
-
--- +goose StatementBegin
-DROP FUNCTION IF EXISTS umkms_update_timestamp();
--- +goose StatementEnd
-
--- +goose StatementBegin
 DROP TABLE IF EXISTS umkms;
--- +goose StatementEnd
-
--- +goose StatementBegin
-DROP TRIGGER IF EXISTS set_users_update_timestamp ON users;
--- +goose StatementEnd
-
--- +goose StatementBegin
-DROP FUNCTION IF EXISTS users_update_timestamp();
 -- +goose StatementEnd
 
 -- +goose StatementBegin

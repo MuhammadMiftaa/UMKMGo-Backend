@@ -9,7 +9,6 @@ import (
 	"unicode"
 
 	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/config/log"
 	"sapaUMKM-backend/internal/types/dto"
 
 	"github.com/dgrijalva/jwt-go"
@@ -83,12 +82,6 @@ func VerifyToken(jwtToken string) (dto.UserData, error) {
 	if !ok && !token.Valid {
 		return dto.UserData{}, errors.New("token is invalid")
 	}
-
-	log.Debug("ID type: " + fmt.Sprintf("%T", claims["id"]))
-	log.Debug("Role type: " + fmt.Sprintf("%T", claims["role"]))
-	log.Debug("Email type: " + fmt.Sprintf("%T", claims["email"]))
-	log.Debug("Name type: " + fmt.Sprintf("%T", claims["name"]))
-	log.Debug("RoleName type: " + fmt.Sprintf("%T", claims["role_name"]))
 
 	return dto.UserData{
 		ID:       claims["id"].(float64),

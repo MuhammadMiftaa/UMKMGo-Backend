@@ -1,0 +1,381 @@
+### Variables
+@baseUrl = http://localhost:8080
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN1cGVyYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjI4MjE1MDIsImlkIjoxLCJuYW1lIjoiU3VwZXIgQWRtaW4iLCJyb2xlIjoxLCJyb2xlX25hbWUiOiJzdXBlcmFkbWluIn0.kJNU0xw1hcwDb1qifZUk52onTlEDwec3DSQj8bEC0tM
+
+### ============================================
+### AUTH - WEB DASHBOARD
+### ============================================
+
+### Login Web Dashboard
+POST {{baseUrl}}/v1/webauth/login
+Content-Type: application/json
+
+{
+    "email": "superadmin@example.com",
+    "password": "admin123"
+}
+
+### Register Web Dashboard
+POST {{baseUrl}}/v1/webauth/register
+Content-Type: application/json
+
+{
+    "name": "Admin Kementrian",
+    "email": "admin@example.com",
+    "password": "admin123",
+    "confirm_password": "admin123",
+    "role_id": 2
+}
+
+### ============================================
+### AUTH - MOBILE APP
+### ============================================
+
+### Login Mobile
+POST {{baseUrl}}/v1/mobileauth/login
+Content-Type: application/json
+
+{
+    "email": "pelakuusaha@example.com",
+    "password": "pelaku123"
+}
+
+### Register Mobile
+POST {{baseUrl}}/v1/mobileauth/register
+Content-Type: application/json
+
+{
+    "name": "Pelaku Usaha",
+    "email": "pelakuusaha@example.com",
+    "password": "pelaku123",
+    "confirm_password": "pelaku123",
+    "role_id": 4
+}
+
+### Send OTP
+POST {{baseUrl}}/v1/mobileauth/send/otp
+Content-Type: application/json
+
+{
+    "email": "pelakuusaha@example.com"
+}
+
+### Verify OTP
+POST {{baseUrl}}/v1/mobileauth/verify/otp
+Content-Type: application/json
+
+{
+    "email": "pelakuusaha@example.com",
+    "otp": "123456"
+}
+
+### ============================================
+### USERS MANAGEMENT
+### ============================================
+
+### Get All Users
+GET {{baseUrl}}/v1/users
+Authorization: Bearer {{token}}
+
+### Get User By ID
+GET {{baseUrl}}/v1/users/1
+Authorization: Bearer {{token}}
+
+### Update User
+PUT {{baseUrl}}/v1/users/3
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "Admin Screening Updated",
+    "email": "adminscreening@example.com",
+    "password": "admin123",
+    "confirm_password": "admin123",
+    "role_id": 2
+}
+
+### Delete User
+DELETE {{baseUrl}}/v1/users/3
+Authorization: Bearer {{token}}
+
+### ============================================
+### PERMISSIONS & ROLES
+### ============================================
+
+### Get List Permissions
+GET {{baseUrl}}/v1/permissions
+Authorization: Bearer {{token}}
+
+### Get List Role Permissions
+GET {{baseUrl}}/v1/role-permissions
+Authorization: Bearer {{token}}
+
+### Update Role Permissions
+POST {{baseUrl}}/v1/role-permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "role_id": 2,
+    "permissions": [2, 3, 7, 8, 12, 13]
+}
+
+### ============================================
+### PROGRAMS - TRAINING
+### ============================================
+
+### Get All Programs
+GET {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+
+### Get Program By ID
+GET {{baseUrl}}/v1/programs/1
+Authorization: Bearer {{token}}
+
+### Create Training Program
+POST {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Pelatihan Digital Marketing untuk UMKM",
+    "description": "Pelatihan komprehensif tentang digital marketing untuk meningkatkan penjualan UMKM melalui platform online",
+    "banner": "https://example.com/banner/digital-marketing.jpg",
+    "provider": "Kementerian Koperasi dan UKM",
+    "provider_logo": "https://example.com/logo/kemenkop.png",
+    "type": "training",
+    "training_type": "hybrid",
+    "batch": 1,
+    "batch_start_date": "2025-12-01",
+    "batch_end_date": "2025-12-15",
+    "location": "Jakarta Convention Center & Online",
+    "application_deadline": "2025-11-20",
+    "benefits": [
+        "Sertifikat resmi dari Kemenkop",
+        "Modul pembelajaran lengkap",
+        "Mentoring selama 3 bulan",
+        "Akses ke komunitas alumni",
+        "Konsultasi bisnis gratis"
+    ],
+    "requirements": [
+        "Memiliki usaha yang sudah berjalan minimal 1 tahun",
+        "Memiliki NIB dan NPWP",
+        "Berusia minimal 18 tahun",
+        "Bersedia mengikuti seluruh rangkaian pelatihan",
+        "Memiliki perangkat untuk mengikuti sesi online"
+    ]
+}
+
+### Create Certification Program
+POST {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Sertifikasi Halal untuk Produk UMKM",
+    "description": "Program sertifikasi halal untuk produk makanan dan minuman UMKM sesuai standar LPPOM MUI",
+    "banner": "https://example.com/banner/halal-cert.jpg",
+    "provider": "LPPOM MUI",
+    "provider_logo": "https://example.com/logo/mui.png",
+    "type": "certification",
+    "training_type": "offline",
+    "batch": 2,
+    "batch_start_date": "2025-11-15",
+    "batch_end_date": "2025-11-30",
+    "location": "Jakarta, Surabaya, Medan",
+    "application_deadline": "2025-11-01",
+    "benefits": [
+        "Sertifikat halal resmi MUI",
+        "Logo halal untuk kemasan produk",
+        "Pendampingan proses sertifikasi",
+        "Akses ke database produk halal nasional",
+        "Peningkatan kepercayaan konsumen"
+    ],
+    "requirements": [
+        "Memiliki NIB dan izin usaha",
+        "Produk sudah diproduksi secara konsisten",
+        "Bersedia mengikuti audit halal",
+        "Memiliki dokumentasi bahan baku",
+        "Komitmen menjaga standar halal"
+    ]
+}
+
+### Create Funding Program
+POST {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "KUR Mikro - Kredit Usaha Rakyat",
+    "description": "Program pinjaman modal usaha dengan bunga rendah untuk UMKM yang ingin mengembangkan bisnis",
+    "banner": "https://example.com/banner/kur-mikro.jpg",
+    "provider": "Bank Indonesia - KUR",
+    "provider_logo": "https://example.com/logo/bi.png",
+    "type": "funding",
+    "min_amount": 1000000,
+    "max_amount": 50000000,
+    "interest_rate": 6.0,
+    "max_tenure_months": 36,
+    "application_deadline": "2025-12-31",
+    "benefits": [
+        "Bunga rendah 6% per tahun",
+        "Proses pencairan cepat",
+        "Tanpa agunan untuk pinjaman < 10 juta",
+        "Masa tenggang 3 bulan",
+        "Pendampingan usaha gratis"
+    ],
+    "requirements": [
+        "Memiliki usaha produktif minimal 6 bulan",
+        "NIB dan NPWP aktif",
+        "Tidak sedang menerima kredit dari program pemerintah lain",
+        "Laporan keuangan 3 bulan terakhir",
+        "Rencana penggunaan dana yang jelas"
+    ]
+}
+
+### Update Program
+PUT {{baseUrl}}/v1/programs/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Pelatihan Digital Marketing untuk UMKM - Updated",
+    "description": "Pelatihan komprehensif tentang digital marketing untuk meningkatkan penjualan UMKM melalui platform online - Edisi Khusus 2025",
+    "banner": "https://example.com/banner/digital-marketing-v2.jpg",
+    "provider": "Kementerian Koperasi dan UKM",
+    "provider_logo": "https://example.com/logo/kemenkop.png",
+    "type": "training",
+    "training_type": "online",
+    "batch": 2,
+    "batch_start_date": "2026-01-15",
+    "batch_end_date": "2026-01-30",
+    "location": "Full Online",
+    "application_deadline": "2026-01-01",
+    "benefits": [
+        "Sertifikat resmi dari Kemenkop",
+        "Modul pembelajaran lengkap versi terbaru",
+        "Mentoring selama 6 bulan",
+        "Akses ke komunitas alumni",
+        "Konsultasi bisnis gratis",
+        "Voucher iklan Google Ads senilai 1 juta"
+    ],
+    "requirements": [
+        "Memiliki usaha yang sudah berjalan minimal 6 bulan",
+        "Memiliki NIB dan NPWP",
+        "Berusia minimal 18 tahun",
+        "Bersedia mengikuti seluruh rangkaian pelatihan",
+        "Memiliki laptop dan koneksi internet stabil"
+    ]
+}
+
+### Activate Program
+PUT {{baseUrl}}/v1/programs/activate/1
+Authorization: Bearer {{token}}
+
+### Deactivate Program
+PUT {{baseUrl}}/v1/programs/deactivate/1
+Authorization: Bearer {{token}}
+
+### Delete Program
+DELETE {{baseUrl}}/v1/programs/1
+Authorization: Bearer {{token}}
+
+### ============================================
+### TESTING - Error Cases
+### ============================================
+
+### Login - Wrong Password
+POST {{baseUrl}}/v1/webauth/login
+Content-Type: application/json
+
+{
+    "email": "superadmin@example.com",
+    "password": "wrongpassword"
+}
+
+### Login - User Not Found
+POST {{baseUrl}}/v1/webauth/login
+Content-Type: application/json
+
+{
+    "email": "notfound@example.com",
+    "password": "admin123"
+}
+
+### Register - Email Already Exists
+POST {{baseUrl}}/v1/webauth/register
+Content-Type: application/json
+
+{
+    "name": "Admin Duplicate",
+    "email": "superadmin@example.com",
+    "password": "admin123",
+    "confirm_password": "admin123",
+    "role_id": 2
+}
+
+### Register - Password Mismatch
+POST {{baseUrl}}/v1/webauth/register
+Content-Type: application/json
+
+{
+    "name": "Admin Test",
+    "email": "test@example.com",
+    "password": "admin123",
+    "confirm_password": "admin456",
+    "role_id": 2
+}
+
+### Register - Invalid Role
+POST {{baseUrl}}/v1/webauth/register
+Content-Type: application/json
+
+{
+    "name": "Admin Test",
+    "email": "test@example.com",
+    "password": "admin123",
+    "confirm_password": "admin123",
+    "role_id": 999
+}
+
+### Create Program - Missing Required Fields
+POST {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "description": "Program without title"
+}
+
+### Create Program - Invalid Type
+POST {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Test Program",
+    "type": "invalid_type",
+    "application_deadline": "2025-12-31"
+}
+
+### Get Program - Not Found
+GET {{baseUrl}}/v1/programs/9999
+Authorization: Bearer {{token}}
+
+### Update Program - Not Found
+PUT {{baseUrl}}/v1/programs/9999
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Updated Program",
+    "type": "training",
+    "application_deadline": "2025-12-31"
+}
+
+### Unauthorized Access (No Token)
+GET {{baseUrl}}/v1/users
+
+### Unauthorized Access (Invalid Token)
+GET {{baseUrl}}/v1/users
+Authorization: Bearer invalid_token_here

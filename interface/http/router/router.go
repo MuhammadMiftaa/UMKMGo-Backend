@@ -23,6 +23,7 @@ func SetupRouter() *fiber.App {
 	version := router.Group("/v1")
 
 	routes.UserRoutes(version, db.DB, redis.RDB)
+	routes.ProgramRoutes(version, db.DB, redis.RDB)
 
 	return router
 }

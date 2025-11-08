@@ -1,7 +1,4 @@
 -- +goose Up
--- +goose StatementBegin
-CREATE TYPE user_role AS ENUM ('superadmin', 'admin', 'pelaku_umkm');
--- +goose StatementEnd
 
 -- +goose StatementBegin
 CREATE TYPE gender AS ENUM ('female', 'male', 'other');
@@ -599,7 +596,9 @@ CREATE TABLE roles (
 -- +goose StatementBegin
 INSERT INTO roles (name, description) VALUES
 ('superadmin', 'Administrator with full access'),
-('admin', 'Ministry Administrator with limited access');
+('admin_screening', 'Administrator with access to screening processes'),
+('admin_vendor', 'Administrator with access to create programs and have final decisions'),
+('pelaku_usaha', 'User role for business actors with access to their own data and processes');
 -- +goose StatementEnd
 
 -- +goose StatementBegin
@@ -618,22 +617,25 @@ CREATE TABLE permissions (
 -- +goose StatementBegin
 INSERT INTO permissions (id, parent_id, name, code, description) VALUES
 (1, NULL, 'Training', 'TRAINING', NULL),
-(2, 1, 'Screening Training', 'SCREENING_TRAINING', 'Melakukan penyaringan awal data UMKM yang mendaftar'),
-(3, 1, 'Scoring Training', 'SCORING_TRAINING', 'Melakukan penilaian terhadap data UMKM yang telah disaring'),
-(4, 1, 'Final Training', 'FINAL_TRAINING', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos'),
-(5, NULL, 'Sertification', 'SERTIFICATION', NULL),
-(6, 5, 'Screening Sertification', 'SCREENING_SERTIFICATION', 'Melakukan penyaringan awal data UMKM untuk sertifikasi'),
-(7, 5, 'Scoring Sertification', 'SCORING_SERTIFICATION', 'Melakukan penilaian terhadap data UMKM yang telah disaring untuk sertifikasi'),
-(8, 5, 'Final Sertification', 'FINAL_SERTIFICATION', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk sertifikasi'),
-(9, NULL, 'Funding', 'FUNDING', NULL),
-(10, 9, 'Screening Funding', 'SCREENING_FUNDING', 'Melakukan penyaringan awal data UMKM untuk pendanaan'),
-(11, 9, 'Scoring Funding', 'SCORING_FUNDING', 'Melakukan penilaian terhadap data UMKM yang telah disaring untuk pendanaan'),
-(12, 9, 'Final Funding', 'FINAL_FUNDING', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk pendanaan'),
-(13, NULL, 'Setting', 'SETTING', NULL),
-(14, 13, 'User Management', 'USER_MANAGEMENT', 'Manajemen pengguna sistem'),
-(15, 13, 'Score Configuration', 'SCORE_CONFIGURATION', 'Konfigurasi skor'),
-(16, 13, 'Cutoff Configuration', 'CUTOFF_CONFIGURATION', 'Konfigurasi batas akhir'),
-(17, 13, 'SLA Configuration', 'SLA_CONFIGURATION', 'Konfigurasi SLA');
+(2, 1, 'Screening Training Application', 'SCREENING_TRAINING', 'Melakukan penyaringan awal data UMKM yang mendaftar pelatihan'),
+(3, 1, 'Manage Training Programs', 'MANAGE_TRAINING_PROGRAMS', 'Melakukan pengelolaan terhadap data program Training'),
+(4, 1, 'Final Training Application', 'FINAL_TRAINING', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk pelatihan'),
+(5, 1, 'View Training Application', 'VIEW_TRAINING', 'Melihat daftar pengajuan pelatihan yang tersedia'),
+(6, NULL, 'Sertification', 'SERTIFICATION', NULL),
+(7, 5, 'Screening Sertification Application', 'SCREENING_SERTIFICATION', 'Melakukan penyaringan awal data UMKM yang mendaftar sertifikasi'),
+(8, 5, 'Manage Sertification Programs', 'MANAGE_SERTIFICATION_PROGRAMS', 'Melakukan pengelolaan terhadap data program Sertification'),
+(9, 5, 'Final Sertification Application', 'FINAL_SERTIFICATION', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk sertifikasi'),
+(10, 5, 'View Sertification Application', 'VIEW_SERTIFICATION', 'Melihat daftar pengajuan sertifikasi yang tersedia'),
+(11, NULL, 'Funding', 'FUNDING', NULL),
+(12, 9, 'Screening Funding Application', 'SCREENING_FUNDING', 'Melakukan penyaringan awal data UMKM yang mendaftar pendanaan'),
+(13, 9, 'Manage Funding Programs', 'MANAGE_FUNDING_PROGRAMS', 'Melakukan pengelolaan terhadap program Funding'),
+(14, 9, 'Final Funding Application', 'FINAL_FUNDING', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk pendanaan'),
+(15, 9, 'View Funding Application', 'VIEW_FUNDING', 'Melihat daftar pengajuan pendanaan yang tersedia'),
+(16, NULL, 'Setting', 'SETTING', NULL),
+(17, 13, 'User Management', 'USER_MANAGEMENT', 'Manajemen pengguna sistem'),
+(18, 13, 'Role Permissions Management', 'ROLE_PERMISSIONS_MANAGEMENT', 'Manajemen perizinan peran'),
+(19, 13, 'Generate Report', 'GENERATE_REPORT', 'Cetak laporan'),
+(20, 13, 'SLA Configuration', 'SLA_CONFIGURATION', 'Konfigurasi SLA');
 -- +goose StatementEnd
 
 -- +goose StatementBegin
@@ -645,10 +647,45 @@ CREATE TABLE role_permissions (
 -- +goose StatementEnd
 
 -- +goose StatementBegin
+-- Super Admin role has all permissions
 INSERT INTO role_permissions (role_id, permission_id) VALUES
-(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8),
-(1, 9), (1, 10), (1, 11), (1, 12), (1, 13), (1, 14), (1, 15), (1, 16), (1, 17),
-(2, 1), (2, 2), (2, 3), (2, 5), (2, 6), (2, 7), (2, 9), (2, 10), (2, 11);
+(1, 2),  -- Super Admin can screen training applications
+(1, 3),  -- Super Admin can manage training programs
+(1, 4),  -- Super Admin can finalize training applications
+(1, 5),  -- Super Admin can view training applications
+(1, 7),  -- Super Admin can screen certification applications
+(1, 8),  -- Super Admin can manage certification programs
+(1, 9),  -- Super Admin can finalize certification applications
+(1, 10), -- Super Admin can view certification applications
+(1, 12), -- Super Admin can screen funding applications
+(1, 13), -- Super Admin can manage funding programs
+(1, 14), -- Super Admin can finalize funding applications
+(1, 15), -- Super Admin can view funding applications
+(1, 17), -- Super Admin can manage users
+(1, 18), -- Super Admin can manage role permissions
+(1, 19), -- Super Admin can generate reports
+(1, 20); -- Super Admin can configure SLA
+
+--  Admin Screening role has permissions related to screening processes
+INSERT INTO role_permissions (role_id, permission_id) VALUES
+(2, 2),  -- Admin Screening can screen training applications
+(2, 5),  -- Admin Screening can view training applications
+(2, 7),  -- Admin Screening can screen certification applications
+(2, 10), -- Admin Screening can view certification applications
+(2, 12), -- Admin Screening can screen funding applications
+(2, 15); -- Admin Screening can view funding applications
+
+-- Admin Vendor role has permissions related to creating programs and final decisions
+INSERT INTO role_permissions (role_id, permission_id) VALUES
+(3, 3),  -- Admin Vendor can manage training programs
+(3, 4),  -- Admin Vendor can finalize training applications
+(3, 5),  -- Admin Vendor can view training applications
+(3, 8),  -- Admin Vendor can manage certification programs
+(3, 9),  -- Admin Vendor can finalize certification applications
+(3, 10), -- Admin Vendor can view certification applications
+(3, 13), -- Admin Vendor can manage funding programs
+(3, 14), -- Admin Vendor can finalize funding applications  
+(3, 15); -- Admin Vendor can view funding applications
 -- +goose StatementEnd
 
 -- +goose StatementBegin
@@ -781,8 +818,4 @@ DROP TYPE IF EXISTS card_type;
 
 -- +goose StatementBegin
 DROP TYPE IF EXISTS gender;
--- +goose StatementEnd
-
--- +goose StatementBegin
-DROP TYPE IF EXISTS user_role;
 -- +goose StatementEnd

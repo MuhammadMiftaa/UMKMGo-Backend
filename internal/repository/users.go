@@ -141,7 +141,7 @@ func (user_repo *usersRepository) GetListRolePermissions() ([]model.RolePermissi
 	SELECT 
 		roles.id AS role_id,
 		roles.name AS role_name,
-		jsonb_agg(permissions.name) AS permissions
+		jsonb_agg(permissions.code) AS permissions
 	FROM role_permissions
 	JOIN roles ON role_permissions.role_id = roles.id
 	JOIN permissions ON role_permissions.permission_id = permissions.id
@@ -154,7 +154,7 @@ func (user_repo *usersRepository) GetListRolePermissions() ([]model.RolePermissi
 }
 
 func (user_repo *usersRepository) DeletePermissionsByRoleID(roleID int) error {
-	err := user_repo.db.Where("role_id = ?", roleID).Delete(&model.RolePermissions{}).Error
+	err := user_repo.db.Where("role_id = ?", roleID).Unscoped().Delete(&model.RolePermissions{}).Error
 	if err != nil {
 		return errors.New("failed to delete role permissions")
 	}
@@ -170,7 +170,7 @@ func (user_repo *usersRepository) AddRolePermissions(roleID int, permissions []i
 		})
 	}
 
-	err := user_repo.db.Create(&rolePermissions).Error
+	err := user_repo.db.Omit("CreatedAt", "UpdatedAt", "DeletedAt").Create(&rolePermissions).Error
 	if err != nil {
 		return errors.New("failed to add role permissions")
 	}

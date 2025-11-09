@@ -10,7 +10,11 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-var RDB *redis.Client
+var RDB RedisRepository
+
+type RedisRepository struct {
+	Client *redis.Client
+}
 
 func SetupRedisDatabase(cfg env.Redis) {
 	var db int
@@ -28,5 +32,5 @@ func SetupRedisDatabase(cfg env.Redis) {
 		log.Log.Fatalf("Gagal terhubung ke Redis: %v", err)
 	}
 
-	RDB = rdb
+	RDB.Client = rdb
 }

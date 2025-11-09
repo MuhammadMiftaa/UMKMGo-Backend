@@ -1,24 +1,21 @@
 package routes
 
 import (
+	"sapaUMKM-backend/config/redis"
 	"sapaUMKM-backend/interface/http/handler"
 	"sapaUMKM-backend/interface/http/middleware"
 	"sapaUMKM-backend/internal/repository"
 	"sapaUMKM-backend/internal/service"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
-func UserRoutes(version fiber.Router, db *gorm.DB, redis *redis.Client) {
+func UserRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository) {
 	User_repo := repository.NewUsersRepository(db)
-	User_serv := service.NewUsersService(User_repo)
+	User_serv := service.NewUsersService(User_repo, redis)
 
-	OTP_repo := repository.NewOTPRepository(redis)
-	OTP_serv := service.NewOTPService(OTP_repo)
-
-	User_handler := handler.NewUsersHandler(User_serv, OTP_serv)
+	User_handler := handler.NewUsersHandler(User_serv)
 
 	webAuth := version.Group("/webauth")
 	{
@@ -34,7 +31,7 @@ func UserRoutes(version fiber.Router, db *gorm.DB, redis *redis.Client) {
 		mobileAuth.Post("verify/otp", User_handler.VerifyOTP)
 	}
 
-	version.Use(middleware.AuthMiddleware())
+	version.Use(middleware.AuthMiddleware(), middleware.ContextMiddleware())
 
 	users := version.Group("/users")
 	{

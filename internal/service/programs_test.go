@@ -155,11 +155,15 @@ func (m *mockUserRepositoryForPrograms) IsRoleExist(id int) bool {
 	return false
 }
 
-func (m *mockUserRepositoryForPrograms) IsPermissionExist(ids []int) bool {
-	return false
+func (m *mockUserRepositoryForPrograms) IsPermissionExist(id []string) ([]int, bool) {
+	return nil, false
 }
 
 func (m *mockUserRepositoryForPrograms) GetListPermissions() ([]model.Permissions, error) {
+	return nil, nil
+}
+
+func (m *mockUserRepositoryForPrograms) GetListPermissionsByRoleID(roleID int) ([]string, error) {
 	return nil, nil
 }
 

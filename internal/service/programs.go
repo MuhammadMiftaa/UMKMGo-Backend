@@ -1,37 +1,47 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"strings"
 
+	"sapaUMKM-backend/config/redis"
+	"sapaUMKM-backend/config/storage"
 	"sapaUMKM-backend/internal/repository"
 	"sapaUMKM-backend/internal/types/dto"
 	"sapaUMKM-backend/internal/types/model"
+	"sapaUMKM-backend/internal/utils"
 )
 
 type ProgramsService interface {
-	GetAllPrograms() ([]dto.Programs, error)
-	GetProgramByID(id int) (dto.Programs, error)
-	CreateProgram(program dto.Programs) (dto.Programs, error)
-	UpdateProgram(id int, program dto.Programs) (dto.Programs, error)
-	DeleteProgram(id int) (dto.Programs, error)
-	ActivateProgram(id int) (dto.Programs, error)
-	DeactivateProgram(id int) (dto.Programs, error)
+	GetAllPrograms(ctx context.Context) ([]dto.Programs, error)
+	GetProgramByID(ctx context.Context, id int) (dto.Programs, error)
+	CreateProgram(ctx context.Context, program dto.Programs) (dto.Programs, error)
+	UpdateProgram(ctx context.Context, id int, program dto.Programs) (dto.Programs, error)
+	DeleteProgram(ctx context.Context, id int) (dto.Programs, error)
+	ActivateProgram(ctx context.Context, id int) (dto.Programs, error)
+	DeactivateProgram(ctx context.Context, id int) (dto.Programs, error)
 }
 
 type programsService struct {
 	programRepository repository.ProgramsRepository
 	userRepository    repository.UsersRepository
+	redisRepository   redis.RedisRepository
+	minio             *storage.MinIOManager
 }
 
-func NewProgramsService(programRepo repository.ProgramsRepository, userRepo repository.UsersRepository) ProgramsService {
+func NewProgramsService(programRepo repository.ProgramsRepository, userRepo repository.UsersRepository, redisRepo redis.RedisRepository, minio *storage.MinIOManager) ProgramsService {
 	return &programsService{
 		programRepository: programRepo,
 		userRepository:    userRepo,
+		redisRepository:   redisRepo,
+		minio:             minio,
 	}
 }
 
-func (s *programsService) GetAllPrograms() ([]dto.Programs, error) {
-	programs, err := s.programRepository.GetAllPrograms()
+func (s *programsService) GetAllPrograms(ctx context.Context) ([]dto.Programs, error) {
+	programs, err := s.programRepository.GetAllPrograms(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -39,14 +49,14 @@ func (s *programsService) GetAllPrograms() ([]dto.Programs, error) {
 	var programsDTO []dto.Programs
 	for _, program := range programs {
 		// Get benefits
-		benefits, _ := s.programRepository.GetProgramBenefits(program.ID)
+		benefits, _ := s.programRepository.GetProgramBenefits(ctx, program.ID)
 		var benefitNames []string
 		for _, b := range benefits {
 			benefitNames = append(benefitNames, b.Name)
 		}
 
 		// Get requirements
-		requirements, _ := s.programRepository.GetProgramRequirements(program.ID)
+		requirements, _ := s.programRepository.GetProgramRequirements(ctx, program.ID)
 		var requirementNames []string
 		for _, r := range requirements {
 			requirementNames = append(requirementNames, r.Name)
@@ -84,21 +94,21 @@ func (s *programsService) GetAllPrograms() ([]dto.Programs, error) {
 	return programsDTO, nil
 }
 
-func (s *programsService) GetProgramByID(id int) (dto.Programs, error) {
-	program, err := s.programRepository.GetProgramByID(id)
+func (s *programsService) GetProgramByID(ctx context.Context, id int) (dto.Programs, error) {
+	program, err := s.programRepository.GetProgramByID(ctx, id)
 	if err != nil {
 		return dto.Programs{}, err
 	}
 
 	// Get benefits
-	benefits, _ := s.programRepository.GetProgramBenefits(program.ID)
+	benefits, _ := s.programRepository.GetProgramBenefits(ctx, program.ID)
 	var benefitNames []string
 	for _, b := range benefits {
 		benefitNames = append(benefitNames, b.Name)
 	}
 
 	// Get requirements
-	requirements, _ := s.programRepository.GetProgramRequirements(program.ID)
+	requirements, _ := s.programRepository.GetProgramRequirements(ctx, program.ID)
 	var requirementNames []string
 	for _, r := range requirements {
 		requirementNames = append(requirementNames, r.Name)
@@ -132,7 +142,7 @@ func (s *programsService) GetProgramByID(id int) (dto.Programs, error) {
 	}, nil
 }
 
-func (s *programsService) CreateProgram(program dto.Programs) (dto.Programs, error) {
+func (s *programsService) CreateProgram(ctx context.Context, program dto.Programs) (dto.Programs, error) {
 	// Validation
 	if program.Title == "" || program.Type == "" || program.ApplicationDeadline == "" {
 		return dto.Programs{}, errors.New("title, type, and application deadline are required")
@@ -152,10 +162,36 @@ func (s *programsService) CreateProgram(program dto.Programs) (dto.Programs, err
 
 	// Check if user exists
 	if program.CreatedBy > 0 {
-		_, err := s.userRepository.GetUserByID(program.CreatedBy)
+		_, err := s.userRepository.GetUserByID(ctx, program.CreatedBy)
 		if err != nil {
 			return dto.Programs{}, errors.New("creator user not found")
 		}
+	}
+
+	// If banner is provided, upload to MinIO
+	if program.Banner != "" {
+		res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
+			Base64Data: program.Banner,
+			BucketName: storage.ProgramBucket,
+			Prefix:     utils.GenerateFileName(program.Title, "banner_"),
+		})
+		if err != nil {
+			return dto.Programs{}, err
+		}
+		program.Banner = res.URL
+	}
+
+	// If provider logo is provided, upload to MinIO
+	if program.ProviderLogo != "" {
+		res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
+			Base64Data: program.ProviderLogo,
+			BucketName: storage.ProgramBucket,
+			Prefix:     utils.GenerateFileName(program.Title, "provider_logos_"),
+		})
+		if err != nil {
+			return dto.Programs{}, err
+		}
+		program.ProviderLogo = res.URL
 	}
 
 	// Create program
@@ -180,7 +216,7 @@ func (s *programsService) CreateProgram(program dto.Programs) (dto.Programs, err
 		CreatedBy:           program.CreatedBy,
 	}
 
-	createdProgram, err := s.programRepository.CreateProgram(newProgram)
+	createdProgram, err := s.programRepository.CreateProgram(ctx, newProgram)
 	if err != nil {
 		return dto.Programs{}, err
 	}
@@ -194,7 +230,7 @@ func (s *programsService) CreateProgram(program dto.Programs) (dto.Programs, err
 				Name:      b,
 			})
 		}
-		if err := s.programRepository.CreateProgramBenefits(benefits); err != nil {
+		if err := s.programRepository.CreateProgramBenefits(ctx, benefits); err != nil {
 			return dto.Programs{}, err
 		}
 	}
@@ -208,7 +244,7 @@ func (s *programsService) CreateProgram(program dto.Programs) (dto.Programs, err
 				Name:      r,
 			})
 		}
-		if err := s.programRepository.CreateProgramRequirements(requirements); err != nil {
+		if err := s.programRepository.CreateProgramRequirements(ctx, requirements); err != nil {
 			return dto.Programs{}, err
 		}
 	}
@@ -225,9 +261,9 @@ func (s *programsService) CreateProgram(program dto.Programs) (dto.Programs, err
 	}, nil
 }
 
-func (s *programsService) UpdateProgram(id int, program dto.Programs) (dto.Programs, error) {
+func (s *programsService) UpdateProgram(ctx context.Context, id int, program dto.Programs) (dto.Programs, error) {
 	// Get existing program
-	existingProgram, err := s.programRepository.GetProgramByID(id)
+	existingProgram, err := s.programRepository.GetProgramByID(ctx, id)
 	if err != nil {
 		return dto.Programs{}, err
 	}
@@ -240,6 +276,52 @@ func (s *programsService) UpdateProgram(id int, program dto.Programs) (dto.Progr
 	// Validate type
 	if program.Type != "training" && program.Type != "certification" && program.Type != "funding" {
 		return dto.Programs{}, errors.New("type must be training, certification, or funding")
+	}
+
+	// If banner is provided, upload to MinIO
+	if !(strings.HasPrefix(program.Banner, "http") || strings.HasPrefix(program.Banner, "https")) {
+		res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
+			Base64Data: program.Banner,
+			BucketName: storage.ProgramBucket,
+			Prefix:     utils.GenerateFileName(program.Title, "banner_"),
+		})
+		if err != nil {
+			return dto.Programs{}, err
+		}
+
+		if existingProgram.Banner != "" {
+			objectName := storage.ExtractObjectNameFromURL(existingProgram.Banner)
+			if objectName != "" {
+				if deleteErr := s.minio.DeleteFile(ctx, storage.ProgramBucket, objectName); deleteErr != nil {
+					return dto.Programs{}, fmt.Errorf("failed to delete old banner: %w", deleteErr)
+				}
+			}
+		}
+
+		program.Banner = res.URL
+	}
+
+	// If provider logo is provided, upload to MinIO
+	if !(strings.HasPrefix(program.ProviderLogo, "http") || strings.HasPrefix(program.ProviderLogo, "https")) {
+		res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
+			Base64Data: program.ProviderLogo,
+			BucketName: storage.ProgramBucket,
+			Prefix:     utils.GenerateFileName(program.Title, "provider_logos_"),
+		})
+		if err != nil {
+			return dto.Programs{}, err
+		}
+
+		if existingProgram.ProviderLogo != "" {
+			objectName := storage.ExtractObjectNameFromURL(existingProgram.ProviderLogo)
+			if objectName != "" {
+				if deleteErr := s.minio.DeleteFile(ctx, storage.ProgramBucket, objectName); deleteErr != nil {
+					return dto.Programs{}, fmt.Errorf("failed to delete old provider logo: %w", deleteErr)
+				}
+			}
+		}
+
+		program.ProviderLogo = res.URL
 	}
 
 	// Update fields
@@ -260,7 +342,7 @@ func (s *programsService) UpdateProgram(id int, program dto.Programs) (dto.Progr
 	existingProgram.MaxTenureMonths = program.MaxTenureMonths
 	existingProgram.ApplicationDeadline = program.ApplicationDeadline
 
-	updatedProgram, err := s.programRepository.UpdateProgram(existingProgram)
+	updatedProgram, err := s.programRepository.UpdateProgram(ctx, existingProgram)
 	if err != nil {
 		return dto.Programs{}, err
 	}
@@ -268,7 +350,7 @@ func (s *programsService) UpdateProgram(id int, program dto.Programs) (dto.Progr
 	// Update benefits
 	if len(program.Benefits) > 0 {
 		// Delete old benefits
-		_ = s.programRepository.DeleteProgramBenefits(id)
+		_ = s.programRepository.DeleteProgramBenefits(ctx, id)
 
 		// Create new benefits
 		var benefits []model.ProgramBenefits
@@ -278,7 +360,7 @@ func (s *programsService) UpdateProgram(id int, program dto.Programs) (dto.Progr
 				Name:      b,
 			})
 		}
-		if err := s.programRepository.CreateProgramBenefits(benefits); err != nil {
+		if err := s.programRepository.CreateProgramBenefits(ctx, benefits); err != nil {
 			return dto.Programs{}, err
 		}
 	}
@@ -286,7 +368,7 @@ func (s *programsService) UpdateProgram(id int, program dto.Programs) (dto.Progr
 	// Update requirements
 	if len(program.Requirements) > 0 {
 		// Delete old requirements
-		_ = s.programRepository.DeleteProgramRequirements(id)
+		_ = s.programRepository.DeleteProgramRequirements(ctx, id)
 
 		// Create new requirements
 		var requirements []model.ProgramRequirements
@@ -296,7 +378,7 @@ func (s *programsService) UpdateProgram(id int, program dto.Programs) (dto.Progr
 				Name:      r,
 			})
 		}
-		if err := s.programRepository.CreateProgramRequirements(requirements); err != nil {
+		if err := s.programRepository.CreateProgramRequirements(ctx, requirements); err != nil {
 			return dto.Programs{}, err
 		}
 	}
@@ -313,13 +395,13 @@ func (s *programsService) UpdateProgram(id int, program dto.Programs) (dto.Progr
 	}, nil
 }
 
-func (s *programsService) DeleteProgram(id int) (dto.Programs, error) {
-	program, err := s.programRepository.GetProgramByID(id)
+func (s *programsService) DeleteProgram(ctx context.Context, id int) (dto.Programs, error) {
+	program, err := s.programRepository.GetProgramByID(ctx, id)
 	if err != nil {
 		return dto.Programs{}, err
 	}
 
-	deletedProgram, err := s.programRepository.DeleteProgram(program)
+	deletedProgram, err := s.programRepository.DeleteProgram(ctx, program)
 	if err != nil {
 		return dto.Programs{}, err
 	}
@@ -331,14 +413,14 @@ func (s *programsService) DeleteProgram(id int) (dto.Programs, error) {
 	}, nil
 }
 
-func (s *programsService) ActivateProgram(id int) (dto.Programs, error) {
-	program, err := s.programRepository.GetProgramByID(id)
+func (s *programsService) ActivateProgram(ctx context.Context, id int) (dto.Programs, error) {
+	program, err := s.programRepository.GetProgramByID(ctx, id)
 	if err != nil {
 		return dto.Programs{}, err
 	}
 
 	program.IsActive = true
-	updatedProgram, err := s.programRepository.UpdateProgram(program)
+	updatedProgram, err := s.programRepository.UpdateProgram(ctx, program)
 	if err != nil {
 		return dto.Programs{}, err
 	}
@@ -351,14 +433,14 @@ func (s *programsService) ActivateProgram(id int) (dto.Programs, error) {
 	}, nil
 }
 
-func (s *programsService) DeactivateProgram(id int) (dto.Programs, error) {
-	program, err := s.programRepository.GetProgramByID(id)
+func (s *programsService) DeactivateProgram(ctx context.Context, id int) (dto.Programs, error) {
+	program, err := s.programRepository.GetProgramByID(ctx, id)
 	if err != nil {
 		return dto.Programs{}, err
 	}
 
 	program.IsActive = false
-	updatedProgram, err := s.programRepository.UpdateProgram(program)
+	updatedProgram, err := s.programRepository.UpdateProgram(ctx, program)
 	if err != nil {
 		return dto.Programs{}, err
 	}

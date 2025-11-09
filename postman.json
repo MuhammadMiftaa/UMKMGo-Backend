@@ -1,0 +1,923 @@
+{
+	"info": {
+		"name": "Auth",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Web Dashboard",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"pm.environment.set('token', res.data);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"superadmin@mail.com\",\n    \"password\": \"admin123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/v1/webauth/login",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"v1",
+								"webauth",
+								"login"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"superadmin@mail.com\",\n    \"password\": \"admin123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/webauth/login",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"webauth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 02:03:35 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "253"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN1cGVyYWRtaW5AbWFpbC5jb20iLCJleHAiOjE3NTc3MjkwMTUsImlkIjoxLCJuYW1lIjoiU3VwZXIgQWRtaW4ifQ.cpmYhKq3JYRZIu-G8LPMmNvMCrc-TbW-q6Kyno55KBA\",\n    \"message\": \"Login user data\",\n    \"status\": true,\n    \"statusCode\": 200\n}"
+						},
+						{
+							"name": "400 | User not found",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"salah@mail.com\",\n    \"password\": \"admin123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/webauth/login",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"webauth",
+										"login"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 02:08:43 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "60"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"message\": \"user not found\",\n    \"status\": false,\n    \"statusCode\": 400\n}"
+						},
+						{
+							"name": "400 | Password is incorrect",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"superadmin@mail.com\",\n    \"password\": \"admin1234\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/webauth/login",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"webauth",
+										"login"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 02:09:05 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "67"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"message\": \"password is incorrect\",\n    \"status\": false,\n    \"statusCode\": 400\n}"
+						}
+					]
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@mail.com\",\n    \"name\": \"Admin Kementrian\",\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin123\",\n    \"role_id\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/v1/webauth/register",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"v1",
+								"webauth",
+								"register"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"admin@mail.com\",\n    \"name\": \"Admin Kementrian\",\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin123\",\n    \"role_id\": 2\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/webauth/register",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"webauth",
+										"register"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 02:20:23 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "130"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Admin Kementrian\",\n        \"email\": \"admin@mail.com\"\n    },\n    \"message\": \"Register user data\",\n    \"status\": true,\n    \"statusCode\": 201\n}"
+						},
+						{
+							"name": "200 | Role id not found",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"adminscreening@mail.com\",\n    \"name\": \"Admin Kementrian\",\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin123\",\n    \"role_id\": 3\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/webauth/register",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"webauth",
+										"register"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 02:28:54 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "63"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"message\": \"role id not found\",\n    \"status\": false,\n    \"statusCode\": 400\n}"
+						},
+						{
+							"name": "200 | Email already exist",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"admin@mail.com\",\n    \"name\": \"Admin Kementrian\",\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin123\",\n    \"role_id\": 2\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/webauth/register",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"webauth",
+										"register"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 02:29:24 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "66"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"message\": \"email already exists\",\n    \"status\": false,\n    \"statusCode\": 400\n}"
+						},
+						{
+							"name": "400 | Password and confirm password do not match",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"admin2@mail.com\",\n    \"name\": \"Admin Kementrian\",\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin1234\",\n    \"role_id\": 2\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/webauth/register",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"webauth",
+										"register"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 02:29:57 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "88"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"message\": \"password and confirm password do not match\",\n    \"status\": false,\n    \"statusCode\": 400\n}"
+						},
+						{
+							"name": "400 | Password must be at least 8 characters long",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"admina@mail.com\",\n    \"name\": \"Admin Kementrian\",\n    \"password\": \"admin\",\n    \"confirm_password\": \"admin\",\n    \"role_id\": 2\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/webauth/register",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"webauth",
+										"register"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 02:30:36 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "89"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"message\": \"password must be at least 8 characters long\",\n    \"status\": false,\n    \"statusCode\": 400\n}"
+						}
+					]
+				},
+				{
+					"name": "List Admin Users",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"superadmin@mail.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{url}}/v1/users",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"v1",
+								"users"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"superadmin@mail.com\",\n    \"password\": \"admin123\"\n}"
+								},
+								"url": {
+									"raw": "{{url}}/v1/users",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 14:33:39 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "487"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": [\n        {\n            \"id\": 3,\n            \"name\": \"Admin Kementrian\",\n            \"email\": \"admin@mail.com\",\n            \"role_name\": \"admin\",\n            \"last_login_at\": \"0001-01-01 07:07:12\",\n            \"created_at\": \"2025-09-10 09:20:23\",\n            \"updated_at\": \"2025-09-10 09:20:23\",\n            \"is_active\": true\n        },\n        {\n            \"id\": 1,\n            \"name\": \"Super Admin\",\n            \"email\": \"superadmin@mail.com\",\n            \"role_name\": \"superadmin\",\n            \"last_login_at\": \"2025-09-10 09:53:54\",\n            \"created_at\": \"0001-01-01 07:07:12\",\n            \"updated_at\": \"2025-09-10 09:53:54\",\n            \"is_active\": true\n        }\n    ],\n    \"message\": \"Get all users data\",\n    \"status\": true,\n    \"statusCode\": 200\n}"
+						}
+					]
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Admin Screening\",\n    \"email\": \"adminscreening@mail.com\",\n    \"role_id\": 2,\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/v1/users/:id",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"v1",
+								"users",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "3"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Admin Screening\",\n    \"email\": \"adminscreening@mail.com\",\n    \"role_id\": 2,\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/v1/users/:id",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"users",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "3"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 14:44:21 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "136"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Admin Screening\",\n        \"email\": \"adminscreening@mail.com\"\n    },\n    \"message\": \"Update user data\",\n    \"status\": true,\n    \"statusCode\": 200\n}"
+						}
+					]
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Admin Screening\",\n    \"email\": \"adminscreening@mail.com\",\n    \"role_id\": 2,\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{url}}/v1/users/:id",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"v1",
+								"users",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "3"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Admin Screening\",\n    \"email\": \"adminscreening@mail.com\",\n    \"role_id\": 2,\n    \"password\": \"admin123\",\n    \"confirm_password\": \"admin123\"\n}"
+								},
+								"url": {
+									"raw": "{{url}}/v1/users/:id",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"users",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "3"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 14:49:14 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "Content-Length",
+									"value": "136"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Admin Screening\",\n        \"email\": \"adminscreening@mail.com\"\n    },\n    \"message\": \"Delete user data\",\n    \"status\": true,\n    \"statusCode\": 200\n}"
+						}
+					]
+				},
+				{
+					"name": "Get List Permissions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/v1/permissions",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"v1",
+								"permissions"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{url}}/v1/permissions",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"permissions"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 15:36:51 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1807"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": [\n        {\n            \"id\": 2,\n            \"name\": \"Screening Training\",\n            \"code\": \"SCREENING_TRAINING\",\n            \"description\": \"Melakukan penyaringan awal data UMKM yang mendaftar\"\n        },\n        {\n            \"id\": 3,\n            \"name\": \"Scoring Training\",\n            \"code\": \"SCORING_TRAINING\",\n            \"description\": \"Melakukan penilaian terhadap data UMKM yang telah disaring\"\n        },\n        {\n            \"id\": 4,\n            \"name\": \"Final Training\",\n            \"code\": \"FINAL_TRAINING\",\n            \"description\": \"Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos\"\n        },\n        {\n            \"id\": 6,\n            \"name\": \"Screening Sertification\",\n            \"code\": \"SCREENING_SERTIFICATION\",\n            \"description\": \"Melakukan penyaringan awal data UMKM untuk sertifikasi\"\n        },\n        {\n            \"id\": 7,\n            \"name\": \"Scoring Sertification\",\n            \"code\": \"SCORING_SERTIFICATION\",\n            \"description\": \"Melakukan penilaian terhadap data UMKM yang telah disaring untuk sertifikasi\"\n        },\n        {\n            \"id\": 8,\n            \"name\": \"Final Sertification\",\n            \"code\": \"FINAL_SERTIFICATION\",\n            \"description\": \"Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk sertifikasi\"\n        },\n        {\n            \"id\": 10,\n            \"name\": \"Screening Funding\",\n            \"code\": \"SCREENING_FUNDING\",\n            \"description\": \"Melakukan penyaringan awal data UMKM untuk pendanaan\"\n        },\n        {\n            \"id\": 11,\n            \"name\": \"Scoring Funding\",\n            \"code\": \"SCORING_FUNDING\",\n            \"description\": \"Melakukan penilaian terhadap data UMKM yang telah disaring untuk pendanaan\"\n        },\n        {\n            \"id\": 12,\n            \"name\": \"Final Funding\",\n            \"code\": \"FINAL_FUNDING\",\n            \"description\": \"Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk pendanaan\"\n        },\n        {\n            \"id\": 14,\n            \"name\": \"User Management\",\n            \"code\": \"USER_MANAGEMENT\",\n            \"description\": \"Manajemen pengguna sistem\"\n        },\n        {\n            \"id\": 15,\n            \"name\": \"Score Configuration\",\n            \"code\": \"SCORE_CONFIGURATION\",\n            \"description\": \"Konfigurasi skor\"\n        },\n        {\n            \"id\": 16,\n            \"name\": \"Cutoff Configuration\",\n            \"code\": \"CUTOFF_CONFIGURATION\",\n            \"description\": \"Konfigurasi batas akhir\"\n        },\n        {\n            \"id\": 17,\n            \"name\": \"SLA Configuration\",\n            \"code\": \"SLA_CONFIGURATION\",\n            \"description\": \"Konfigurasi SLA\"\n        }\n    ],\n    \"message\": \"Get all permissions data\",\n    \"status\": true,\n    \"statusCode\": 200\n}"
+						}
+					]
+				},
+				{
+					"name": "Get List Role Permissions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/v1/role-permissions",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"v1",
+								"role-permissions"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{url}}/v1/role-permissions",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"v1",
+										"role-permissions"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Date",
+									"value": "Thu, 11 Sep 2025 01:20:30 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "666"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": [\n        {\n            \"role_id\": 2,\n            \"role_name\": \"admin\",\n            \"permissions\": [\n                \"Training\",\n                \"Screening Training\",\n                \"Scoring Training\",\n                \"Sertification\",\n                \"Screening Sertification\",\n                \"Scoring Sertification\",\n                \"Funding\",\n                \"Screening Funding\",\n                \"Scoring Funding\"\n            ]\n        },\n        {\n            \"role_id\": 1,\n            \"role_name\": \"superadmin\",\n            \"permissions\": [\n                \"Training\",\n                \"Screening Training\",\n                \"Scoring Training\",\n                \"Final Training\",\n                \"Sertification\",\n                \"Screening Sertification\",\n                \"Scoring Sertification\",\n                \"Final Sertification\",\n                \"Funding\",\n                \"Screening Funding\",\n                \"Scoring Funding\",\n                \"Final Funding\",\n                \"Setting\",\n                \"User Management\",\n                \"Score Configuration\",\n                \"Cutoff Configuration\",\n                \"SLA Configuration\"\n            ]\n        }\n    ],\n    \"message\": \"Get all role permissions data\",\n    \"status\": true,\n    \"statusCode\": 200\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Role Permissions",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"role_id\": 2,\n    \"permissions\": [2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 19, 20]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/v1/role-permissions",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"v1",
+								"role-permissions"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	]
+}

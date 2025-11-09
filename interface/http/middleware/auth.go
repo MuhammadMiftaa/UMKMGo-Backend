@@ -41,7 +41,17 @@ func AuthMiddleware() fiber.Handler {
 			})
 		}
 
+		requestID := c.Get("X-Request-ID")
+		if requestID == "" {
+			requestID = utils.GenerateRequestID()
+			c.Set("X-Request-ID", requestID)
+		} 
+
 		c.Locals("user_data", userData)
+		c.Locals("userID", userData.ID)
+		c.Locals("role", userData.Role)
+		c.Locals("requestID", requestID)
+
 		return c.Next()
 	}
 }

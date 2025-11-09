@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"time"
 
+	"sapaUMKM-backend/config/redis"
 	"sapaUMKM-backend/internal/repository"
 	"sapaUMKM-backend/internal/types/dto"
 	"sapaUMKM-backend/internal/types/model"
@@ -11,29 +13,32 @@ import (
 )
 
 type UsersService interface {
-	Register(user dto.Users) (dto.Users, error)
-	Login(user dto.Users) (*string, error)
-	VerifyUser(email string) (dto.Users, error)
-	GetAllUsers() ([]dto.Users, error)
-	GetUserByID(id int) (dto.Users, error)
-	GetUserByEmail(email string) (dto.Users, error)
-	UpdateUser(id int, userNew dto.Users) (dto.Users, error)
-	DeleteUser(id int) (dto.Users, error)
+	Register(ctx context.Context, user dto.Users) (dto.Users, error)
+	Login(ctx context.Context, user dto.Users) (*string, error)
+	SetOTP(ctx context.Context, email string, otp string, expiration time.Duration) error
+	ValidateOTP(ctx context.Context, email string, otp string) (bool, error)
+	VerifyUser(ctx context.Context, email string) (dto.Users, error)
+	GetAllUsers(ctx context.Context) ([]dto.Users, error)
+	GetUserByID(ctx context.Context, id int) (dto.Users, error)
+	GetUserByEmail(ctx context.Context, email string) (dto.Users, error)
+	UpdateUser(ctx context.Context, id int, userNew dto.Users) (dto.Users, error)
+	DeleteUser(ctx context.Context, id int) (dto.Users, error)
 
-	GetListPermissions() ([]dto.Permissions, error)
-	GetListRolePermissions() ([]model.RolePermissionsResponse, error)
-	UpdateRolePermissions(rolePermissions dto.RolePermissions) error
+	GetListPermissions(ctx context.Context) ([]dto.Permissions, error)
+	GetListRolePermissions(ctx context.Context) ([]model.RolePermissionsResponse, error)
+	UpdateRolePermissions(ctx context.Context, rolePermissions dto.RolePermissions) error
 }
 
 type usersService struct {
-	userRepository repository.UsersRepository
+	userRepository  repository.UsersRepository
+	redisRepository redis.RedisRepository
 }
 
-func NewUsersService(usersRepository repository.UsersRepository) UsersService {
-	return &usersService{usersRepository}
+func NewUsersService(usersRepository repository.UsersRepository, redisRepository redis.RedisRepository) UsersService {
+	return &usersService{usersRepository, redisRepository}
 }
 
-func (user_serv *usersService) Register(user dto.Users) (dto.Users, error) {
+func (user_serv *usersService) Register(ctx context.Context, user dto.Users) (dto.Users, error) {
 	// VALIDASI APAKAH NAME, EMAIL, PASSWORD KOSONG
 	if user.Name == "" || user.Email == "" || user.Password == "" || user.ConfirmPassword == "" || user.RoleID == nil {
 		return dto.Users{}, errors.New("name, email, and password cannot be blank")
@@ -45,7 +50,7 @@ func (user_serv *usersService) Register(user dto.Users) (dto.Users, error) {
 	}
 
 	// MENGECEK APAKAH EMAIL SUDAH DIGUNAKAN
-	userExist, err := user_serv.userRepository.GetUserByEmail(user.Email)
+	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, user.Email)
 	if err == nil && (userExist.Email != "") {
 		return dto.Users{}, errors.New("email already exists")
 	}
@@ -68,7 +73,7 @@ func (user_serv *usersService) Register(user dto.Users) (dto.Users, error) {
 	}
 
 	// VALIDASI APAKAH ROLE ID ADA
-	if !user_serv.userRepository.IsRoleExist(*user.RoleID) {
+	if !user_serv.userRepository.IsRoleExist(ctx, *user.RoleID) {
 		return dto.Users{}, errors.New("role id not found")
 	}
 
@@ -79,7 +84,7 @@ func (user_serv *usersService) Register(user dto.Users) (dto.Users, error) {
 	}
 	user.Password = hashedPassword
 
-	newUser, err := user_serv.userRepository.CreateUser(model.Users{
+	newUser, err := user_serv.userRepository.CreateUser(ctx, model.Users{
 		Name:     user.Name,
 		Email:    user.Email,
 		Password: user.Password,
@@ -97,14 +102,14 @@ func (user_serv *usersService) Register(user dto.Users) (dto.Users, error) {
 	}, nil
 }
 
-func (user_serv *usersService) Login(user dto.Users) (*string, error) {
+func (user_serv *usersService) Login(ctx context.Context, user dto.Users) (*string, error) {
 	// VALIDASI APAKAH EMAIL DAN PASSWORD KOSONG
 	if user.Email == "" || user.Password == "" {
 		return nil, errors.New("email and password cannot be blank")
 	}
 
 	// MENGECEK APAKAH USER SUDAH TERDAFTAR
-	userExist, err := user_serv.userRepository.GetUserByEmail(user.Email)
+	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, user.Email)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -120,24 +125,31 @@ func (user_serv *usersService) Login(user dto.Users) (*string, error) {
 	}
 
 	// AMBIL ROLE NAME
-	role, err := user_serv.userRepository.GetRoleByID(userExist.RoleID)
+	role, err := user_serv.userRepository.GetRoleByID(ctx, userExist.RoleID)
 	if err != nil {
 		return nil, errors.New("role not found")
 	}
 
 	// UPDATE LAST LOGIN
 	userExist.LastLoginAt = time.Now()
-	userExist, err = user_serv.userRepository.UpdateUser(userExist)
+	userExist, err = user_serv.userRepository.UpdateUser(ctx, userExist)
+	if err != nil {
+		return nil, err
+	}
+
+	// AMBIL LIST ROLE PERMISSIONS
+	rolePermissions, err := user_serv.userRepository.GetListPermissionsByRoleID(ctx, userExist.RoleID)
 	if err != nil {
 		return nil, err
 	}
 
 	token, err := utils.GenerateToken(dto.Users{
-		ID:       userExist.ID,
-		Name:     userExist.Name,
-		Email:    userExist.Email,
-		RoleID:   &userExist.RoleID,
-		RoleName: role.Name,
+		ID:          userExist.ID,
+		Name:        userExist.Name,
+		Email:       userExist.Email,
+		RoleID:      &userExist.RoleID,
+		RoleName:    role.Name,
+		Permissions: rolePermissions,
 	})
 	if err != nil {
 		return nil, err
@@ -146,16 +158,68 @@ func (user_serv *usersService) Login(user dto.Users) (*string, error) {
 	return &token, nil
 }
 
-func (user_serv *usersService) VerifyUser(email string) (dto.Users, error) {
+func (user_serv *usersService) SetOTP(ctx context.Context, email string, otp string, expiration time.Duration) error {
+	// VALIDASI APAKAH EMAIL KOSONG
+	if email == "" {
+		return errors.New("email cannot be blank")
+	}
+
+	// VALIDASI UNTUK FORMAT EMAIL SUDAH BENAR
+	if isValid := utils.EmailValidator(email); !isValid {
+		return errors.New("please enter a valid email address")
+	}
+
+	// MENGECEK APAKAH USER SUDAH TERDAFTAR
+	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, email)
+	if err != nil || userExist.Email == "" {
+		return errors.New("user not found")
+	}
+
+	// SET OTP KE REDIS
+	err = user_serv.redisRepository.Set(ctx, email, otp, expiration)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (user_serv *usersService) ValidateOTP(ctx context.Context, email string, otp string) (bool, error) {
+	// VALIDASI APAKAH EMAIL KOSONG
+	if email == "" {
+		return false, errors.New("email cannot be blank")
+	}
+
+	// VALIDASI UNTUK FORMAT EMAIL SUDAH BENAR
+	if isValid := utils.EmailValidator(email); !isValid {
+		return false, errors.New("please enter a valid email address")
+	}
+
+	// MENGECEK APAKAH USER SUDAH TERDAFTAR
+	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, email)
+	if err != nil || userExist.Email == "" {
+		return false, errors.New("user not found")
+	}
+
+	// VALIDASI OTP DARI REDIS
+	validOTP, err := user_serv.redisRepository.Get(ctx, email)
+	if err != nil || validOTP != otp {
+		return false, errors.New("invalid or expired OTP")
+	}
+
+	return true, nil
+}
+
+func (user_serv *usersService) VerifyUser(ctx context.Context, email string) (dto.Users, error) {
 	// MENGAMBIL DATA YANG INGIN DI UPDATE
-	user, err := user_serv.userRepository.GetUserByEmail(email)
+	user, err := user_serv.userRepository.GetUserByEmail(ctx, email)
 	if err != nil {
 		return dto.Users{}, err
 	}
 
 	user.IsActive = true
 
-	userExist, err := user_serv.userRepository.UpdateUser(user)
+	userExist, err := user_serv.userRepository.UpdateUser(ctx, user)
 	if err != nil {
 		return dto.Users{}, err
 	}
@@ -167,8 +231,8 @@ func (user_serv *usersService) VerifyUser(email string) (dto.Users, error) {
 	}, nil
 }
 
-func (user_serv *usersService) GetAllUsers() ([]dto.Users, error) {
-	users, err := user_serv.userRepository.GetAllUsers()
+func (user_serv *usersService) GetAllUsers(ctx context.Context) ([]dto.Users, error) {
+	users, err := user_serv.userRepository.GetAllUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -190,8 +254,8 @@ func (user_serv *usersService) GetAllUsers() ([]dto.Users, error) {
 	return usersDTO, nil
 }
 
-func (user_serv *usersService) GetUserByID(id int) (dto.Users, error) {
-	user, err := user_serv.userRepository.GetUserByID(id)
+func (user_serv *usersService) GetUserByID(ctx context.Context, id int) (dto.Users, error) {
+	user, err := user_serv.userRepository.GetUserByID(ctx, id)
 	if err != nil {
 		return dto.Users{}, err
 	}
@@ -203,8 +267,8 @@ func (user_serv *usersService) GetUserByID(id int) (dto.Users, error) {
 	}, nil
 }
 
-func (user_serv *usersService) GetUserByEmail(email string) (dto.Users, error) {
-	user, err := user_serv.userRepository.GetUserByEmail(email)
+func (user_serv *usersService) GetUserByEmail(ctx context.Context, email string) (dto.Users, error) {
+	user, err := user_serv.userRepository.GetUserByEmail(ctx, email)
 	if err != nil {
 		return dto.Users{}, err
 	}
@@ -216,9 +280,9 @@ func (user_serv *usersService) GetUserByEmail(email string) (dto.Users, error) {
 	}, nil
 }
 
-func (user_serv *usersService) UpdateUser(id int, userNew dto.Users) (dto.Users, error) {
+func (user_serv *usersService) UpdateUser(ctx context.Context, id int, userNew dto.Users) (dto.Users, error) {
 	// MENGAMBIL DATA YANG INGIN DI UPDATE
-	user, err := user_serv.userRepository.GetUserByID(id)
+	user, err := user_serv.userRepository.GetUserByID(ctx, id)
 	if err != nil {
 		return dto.Users{}, err
 	}
@@ -234,7 +298,7 @@ func (user_serv *usersService) UpdateUser(id int, userNew dto.Users) (dto.Users,
 	}
 
 	// MENGECEK APAKAH EMAIL SUDAH DIGUNAKAN
-	userExist, err := user_serv.userRepository.GetUserByEmail(userNew.Email)
+	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, userNew.Email)
 	if err == nil && (userExist.Email != "") {
 		return dto.Users{}, errors.New("email already exists")
 	}
@@ -257,7 +321,7 @@ func (user_serv *usersService) UpdateUser(id int, userNew dto.Users) (dto.Users,
 	}
 
 	// VALIDASI APAKAH ROLE ID ADA
-	if !user_serv.userRepository.IsRoleExist(*userNew.RoleID) {
+	if !user_serv.userRepository.IsRoleExist(ctx, *userNew.RoleID) {
 		return dto.Users{}, errors.New("role id not found")
 	}
 
@@ -274,7 +338,7 @@ func (user_serv *usersService) UpdateUser(id int, userNew dto.Users) (dto.Users,
 	user.RoleID = *userNew.RoleID
 
 	// UPDATE DATA USER
-	userUpdated, err := user_serv.userRepository.UpdateUser(user)
+	userUpdated, err := user_serv.userRepository.UpdateUser(ctx, user)
 	if err != nil {
 		return dto.Users{}, err
 	}
@@ -286,14 +350,14 @@ func (user_serv *usersService) UpdateUser(id int, userNew dto.Users) (dto.Users,
 	}, nil
 }
 
-func (user_serv *usersService) DeleteUser(id int) (dto.Users, error) {
+func (user_serv *usersService) DeleteUser(ctx context.Context, id int) (dto.Users, error) {
 	// MENGAMBIL DATA YANG INGIN DI DELETE
-	user, err := user_serv.userRepository.GetUserByID(id)
+	user, err := user_serv.userRepository.GetUserByID(ctx, id)
 	if err != nil {
 		return dto.Users{}, err
 	}
 
-	userDeleted, err := user_serv.userRepository.DeleteUser(user)
+	userDeleted, err := user_serv.userRepository.DeleteUser(ctx, user)
 	if err != nil {
 		return dto.Users{}, err
 	}
@@ -305,8 +369,8 @@ func (user_serv *usersService) DeleteUser(id int) (dto.Users, error) {
 	}, nil
 }
 
-func (user_serv *usersService) GetListPermissions() ([]dto.Permissions, error) {
-	permissions, err := user_serv.userRepository.GetListPermissions()
+func (user_serv *usersService) GetListPermissions(ctx context.Context) ([]dto.Permissions, error) {
+	permissions, err := user_serv.userRepository.GetListPermissions(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -324,8 +388,8 @@ func (user_serv *usersService) GetListPermissions() ([]dto.Permissions, error) {
 	return result, nil
 }
 
-func (user_serv *usersService) GetListRolePermissions() ([]model.RolePermissionsResponse, error) {
-	rolePermissions, err := user_serv.userRepository.GetListRolePermissions()
+func (user_serv *usersService) GetListRolePermissions(ctx context.Context) ([]model.RolePermissionsResponse, error) {
+	rolePermissions, err := user_serv.userRepository.GetListRolePermissions(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -333,25 +397,26 @@ func (user_serv *usersService) GetListRolePermissions() ([]model.RolePermissions
 	return rolePermissions, nil
 }
 
-func (user_serv *usersService) UpdateRolePermissions(rolePermissions dto.RolePermissions) error {
+func (user_serv *usersService) UpdateRolePermissions(ctx context.Context, rolePermissions dto.RolePermissions) error {
 	// VALIDASI APAKAH ROLE ID ADA
-	if !user_serv.userRepository.IsRoleExist(rolePermissions.RoleID) {
+	if !user_serv.userRepository.IsRoleExist(ctx, rolePermissions.RoleID) {
 		return errors.New("role id not found")
 	}
 
 	// VALIDASI APAKAH PERMISSION VALID
-	if isAllExists := user_serv.userRepository.IsPermissionExist(rolePermissions.Permissions); !isAllExists {
+	permissionIDs, isAllExists := user_serv.userRepository.IsPermissionExist(ctx, rolePermissions.Permissions)
+	if !isAllExists {
 		return errors.New("one or more permissions are invalid")
 	}
 
 	// DELETE PERMISSION YANG ADA
-	err := user_serv.userRepository.DeletePermissionsByRoleID(rolePermissions.RoleID)
+	err := user_serv.userRepository.DeletePermissionsByRoleID(ctx, rolePermissions.RoleID)
 	if err != nil {
 		return err
 	}
 
 	// ADD PERMISSION YANG BARU
-	err = user_serv.userRepository.AddRolePermissions(rolePermissions.RoleID, rolePermissions.Permissions)
+	err = user_serv.userRepository.AddRolePermissions(ctx, rolePermissions.RoleID, permissionIDs)
 	if err != nil {
 		return err
 	}

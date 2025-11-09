@@ -1,7 +1,9 @@
 package env
 
 import (
+	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -26,6 +28,14 @@ type (
 		RPort string `env:"REDIS_PORT"`
 	}
 
+	Minio struct {
+		Host        string `env:"MINIO_HOST"`
+		AccessKey   string `env:"MINIO_ROOT_USER"`
+		SecretKey   string `env:"MINIO_ROOT_PASSWORD"`
+		MaxOpenConn int    `env:"MINIO_MAX_OPEN_CONN"`
+		UseSSL      int    `env:"MINIO_USE_SSL"`
+	}
+
 	ZSMTP struct {
 		ZSHost     string `env:"ZOHO_SMTP_HOST"`
 		ZSPort     string `env:"ZOHO_SMTP_PORT"`
@@ -39,6 +49,7 @@ type (
 		Server   Server
 		Database Database
 		Redis    Redis
+		Minio    Minio
 		ZSMTP    ZSMTP
 	}
 )
@@ -92,7 +103,35 @@ func LoadNative() ([]string, error) {
 	if Cfg.Redis.RPort, ok = os.LookupEnv("REDIS_PORT"); !ok {
 		missing = append(missing, "REDIS_PORT env is not set")
 	}
-	// ! ______________________________________________________, 
+	// ! ______________________________________________________
+
+	// ! Load MinIO configuration _____________________________
+	if Cfg.Minio.Host, ok = os.LookupEnv("MINIO_HOST"); !ok {
+		missing = append(missing, "MINIO_HOST env is not set")
+	}
+	if Cfg.Minio.AccessKey, ok = os.LookupEnv("MINIO_ROOT_USER"); !ok {
+		missing = append(missing, "MINIO_ROOT_USER env is not set")
+	}
+	if Cfg.Minio.SecretKey, ok = os.LookupEnv("MINIO_ROOT_PASSWORD"); !ok {
+		missing = append(missing, "MINIO_ROOT_PASSWORD env is not set")
+	}
+	if val, ok := os.LookupEnv("MINIO_MAX_OPEN_CONN"); !ok {
+		missing = append(missing, "MINIO_MAX_OPEN_CONN env is not set")
+	} else {
+		var err error
+		if Cfg.Minio.MaxOpenConn, err = strconv.Atoi(val); err != nil {
+			missing = append(missing, fmt.Sprintf("MINIO_MAX_OPEN_CONN must be int, got %s", val))
+		}
+	}
+	if val, ok := os.LookupEnv("MINIO_USE_SSL"); !ok {
+		missing = append(missing, "MINIO_USE_SSL env is not set")
+	} else {
+		var err error
+		if Cfg.Minio.UseSSL, err = strconv.Atoi(val); err != nil {
+			missing = append(missing, fmt.Sprintf("MINIO_USE_SSL must be int, got %s", val))
+		}
+	}
+	// ! ______________________________________________________
 
 	// ! Load Zoho SMTP configuration __________________________
 	if Cfg.ZSMTP.ZSHost, ok = os.LookupEnv("ZOHO_SMTP_HOST"); !ok {

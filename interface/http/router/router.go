@@ -3,6 +3,7 @@ package router
 import (
 	"sapaUMKM-backend/config/db"
 	"sapaUMKM-backend/config/redis"
+	"sapaUMKM-backend/config/storage"
 	"sapaUMKM-backend/interface/http/middleware"
 	"sapaUMKM-backend/interface/http/routes"
 
@@ -23,7 +24,7 @@ func SetupRouter() *fiber.App {
 	version := router.Group("/v1")
 
 	routes.UserRoutes(version, db.DB, redis.RDB)
-	routes.ProgramRoutes(version, db.DB, redis.RDB)
+	routes.ProgramRoutes(version, db.DB, redis.RDB, storage.MinioClient)
 
 	return router
 }

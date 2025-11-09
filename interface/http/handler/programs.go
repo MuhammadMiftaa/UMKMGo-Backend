@@ -21,7 +21,7 @@ func NewProgramsHandler(programsService service.ProgramsService) *programsHandle
 }
 
 func (h *programsHandler) GetAllPrograms(c *fiber.Ctx) error {
-	programs, err := h.programsService.GetAllPrograms()
+	programs, err := h.programsService.GetAllPrograms(c.Context())
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -49,7 +49,7 @@ func (h *programsHandler) GetProgramByID(c *fiber.Ctx) error {
 		})
 	}
 
-	program, err := h.programsService.GetProgramByID(intID)
+	program, err := h.programsService.GetProgramByID(c.Context(), intID)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -83,7 +83,7 @@ func (h *programsHandler) CreateProgram(c *fiber.Ctx) error {
 		programRequest.CreatedBy = int(userData.ID)
 	}
 
-	program, err := h.programsService.CreateProgram(programRequest)
+	program, err := h.programsService.CreateProgram(c.Context(), programRequest)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -121,7 +121,7 @@ func (h *programsHandler) UpdateProgram(c *fiber.Ctx) error {
 		})
 	}
 
-	program, err := h.programsService.UpdateProgram(intID, programRequest)
+	program, err := h.programsService.UpdateProgram(c.Context(), intID, programRequest)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -149,7 +149,7 @@ func (h *programsHandler) DeleteProgram(c *fiber.Ctx) error {
 		})
 	}
 
-	program, err := h.programsService.DeleteProgram(intID)
+	program, err := h.programsService.DeleteProgram(c.Context(), intID)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -177,7 +177,7 @@ func (h *programsHandler) ActivateProgram(c *fiber.Ctx) error {
 		})
 	}
 
-	program, err := h.programsService.ActivateProgram(intID)
+	program, err := h.programsService.ActivateProgram(c.Context(), intID)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -205,7 +205,7 @@ func (h *programsHandler) DeactivateProgram(c *fiber.Ctx) error {
 		})
 	}
 
-	program, err := h.programsService.DeactivateProgram(intID)
+	program, err := h.programsService.DeactivateProgram(c.Context(), intID)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,

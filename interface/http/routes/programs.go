@@ -1,23 +1,24 @@
 package routes
 
 import (
+	"sapaUMKM-backend/config/redis"
+	"sapaUMKM-backend/config/storage"
 	"sapaUMKM-backend/interface/http/handler"
 	"sapaUMKM-backend/interface/http/middleware"
 	"sapaUMKM-backend/internal/repository"
 	"sapaUMKM-backend/internal/service"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
-func ProgramRoutes(version fiber.Router, db *gorm.DB, redis *redis.Client) {
+func ProgramRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository, minio *storage.MinIOManager) {
 	// Repository initialization
 	programRepo := repository.NewProgramsRepository(db)
 	userRepo := repository.NewUsersRepository(db)
 
 	// Service initialization
-	programService := service.NewProgramsService(programRepo, userRepo)
+	programService := service.NewProgramsService(programRepo, userRepo, redis, minio)
 
 	// Handler initialization
 	programHandler := handler.NewProgramsHandler(programService)

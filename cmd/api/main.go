@@ -4,6 +4,8 @@ import (
 	"sapaUMKM-backend/config/db"
 	"sapaUMKM-backend/config/env"
 	"sapaUMKM-backend/config/log"
+	"sapaUMKM-backend/config/redis"
+	"sapaUMKM-backend/config/storage"
 	"sapaUMKM-backend/interface/http/router"
 )
 
@@ -24,6 +26,14 @@ func init() {
 	db.SetupDatabase(env.Cfg.Database) // Initialize the database connection and run migrations
 	log.Info("Setup Database Connection Success")
 
+	log.Info("Setup Redis Connection Start")
+	redis.SetupRedisDatabase(env.Cfg.Redis) // Initialize the Redis connection
+	log.Info("Setup Redis Connection Success")
+
+	log.Info("Setup MinIO Connection Start")
+	storage.SetupMinio(env.Cfg.Minio) // Initialize the MinIO connection
+	log.Info("Setup MinIO Connection Success")
+
 	log.Info("Starting sapaUMKM API...")
 }
 
@@ -31,7 +41,7 @@ func main() {
 	defer log.Info("sapaUMKM API stopped")
 
 	r := router.SetupRouter() // Set up the HTTP router
-	
+
 	r.Listen(":" + env.Cfg.Server.Port)
 	log.Info("Starting HTTP server on port " + env.Cfg.Server.Port)
 }

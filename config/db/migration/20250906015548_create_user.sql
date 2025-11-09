@@ -705,7 +705,7 @@ CREATE TABLE users (
 
 -- +goose StatementBegin
 INSERT INTO users (name, email, password, role_id) VALUES
-('Super Admin', 'superadmin@example.com', '$2a$04$qTicwGjrvEBZ1Cd6QwYuS.ENR2PRzu01/TSwzIeFsJKLu5P8.q.SS', 1);
+('Super Admin', 'superadmin@umkm.go.id', '$2a$04$qTicwGjrvEBZ1Cd6QwYuS.ENR2PRzu01/TSwzIeFsJKLu5P8.q.SS', 1);
 -- +goose StatementEnd
 
 -- +goose StatementBegin
@@ -720,8 +720,8 @@ CREATE TABLE umkms (
     address TEXT,
     province_id INT NOT NULL REFERENCES provinces(id),
     city_id INT NOT NULL REFERENCES cities(id),
-    district INT NOT NULL,
-    subdistrict INT NOT NULL,
+    district VARCHAR(100),
+    subdistrict VARCHAR(100),
     postal_code VARCHAR(10),
     nib VARCHAR(50),
     npwp VARCHAR(50),

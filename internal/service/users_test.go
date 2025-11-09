@@ -99,12 +99,28 @@ func (m *mockUsersRepository) IsRoleExist(id int) bool {
 	return exists
 }
 
-func (m *mockUsersRepository) IsPermissionExist(ids []int) bool {
-	return len(ids) <= len(m.permissions)
+func (m *mockUsersRepository) IsPermissionExist(ids []string) ([]int, bool) {
+	var existingIDs []int
+	for _, perm := range m.permissions {
+		for _, id := range ids {
+			if perm.Code == id {
+				existingIDs = append(existingIDs, perm.ID)
+			}
+		}
+	}
+	return existingIDs, len(existingIDs) == len(ids)
 }
 
 func (m *mockUsersRepository) GetListPermissions() ([]model.Permissions, error) {
 	return m.permissions, nil
+}
+
+func (m *mockUsersRepository) GetListPermissionsByRoleID(roleID int) ([]string, error) {
+	if _, exists := m.roles[roleID]; exists {
+		// Mocking permissions for the role
+		return []string{"VIEW_USERS", "MANAGE_USERS"}, nil
+	}
+	return nil, errors.New("role not found")
 }
 
 func (m *mockUsersRepository) GetListRolePermissions() ([]model.RolePermissionsResponse, error) {
@@ -526,11 +542,11 @@ func TestUpdateRolePermissions(t *testing.T) {
 		expectError bool
 		errorMsg    string
 	}{
-		{
+		{	
 			name: "Valid update",
 			input: dto.RolePermissions{
 				RoleID:      1,
-				Permissions: []int{1, 2},
+				Permissions: []string{"VIEW_USERS", "MANAGE_USERS"},
 			},
 			expectError: false,
 		},
@@ -538,7 +554,7 @@ func TestUpdateRolePermissions(t *testing.T) {
 			name: "Invalid role ID",
 			input: dto.RolePermissions{
 				RoleID:      999,
-				Permissions: []int{1, 2},
+				Permissions: []string{"VIEW_USERS", "MANAGE_USERS"},
 			},
 			expectError: true,
 			errorMsg:    "role id not found",

@@ -17,7 +17,7 @@ else
     echo "Unknown environment: $MODE"
     exit 1
 fi
-
+ 
 export GOOSE_DRIVER=postgres
 export GOOSE_DBSTRING="postgres://postgres:123@${DB_HOST}:${DB_PORT}/refina?sslmode=disable"
 export GOOSE_MIGRATION_DIR=/app/migrations

@@ -1,8 +1,6 @@
 package router
 
 import (
-	"sort"
-
 	"sapaUMKM-backend/config/db"
 	"sapaUMKM-backend/config/log"
 	"sapaUMKM-backend/config/redis"
@@ -32,19 +30,7 @@ func SetupRouter() *fiber.App {
 
 	for _, routes := range router.Stack() {
 		for _, r := range routes {
-			fields := map[string]interface{}{
-				"METHOD": r.Method,
-				"PATH":   r.Path,
-			}
-
-			keys := make([]string, 0, len(fields))
-			for k := range fields {
-				keys = append(keys, k)
-			}
-
-			sort.Strings(keys)
-
-			log.Info("Registered route - ", fields)
+			log.Log.Infof("Registered route - METHOD: %s, PATH: %s", r.Method, r.Path)
 		}
 	}
 

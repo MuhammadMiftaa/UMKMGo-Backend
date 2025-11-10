@@ -1,50 +1,51 @@
 -- +goose Up
 -- +goose StatementBegin
-
 TRUNCATE TABLE applications CASCADE;
+-- +goose StatementEnd
 
+-- +goose StatementBegin
 -- Seed Applications for Training (10 applications)
-INSERT INTO applications (umkm_id, program_id, type, status, submitted_at, expired_at, created_at, updated_at) VALUES
-(1, 1, 'training', 'screening', NOW() - INTERVAL '5 days', NOW() + INTERVAL '25 days', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
-(2, 2, 'training', 'screening', NOW() - INTERVAL '4 days', NOW() + INTERVAL '26 days', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
-(3, 3, 'training', 'screening', NOW() - INTERVAL '3 days', NOW() + INTERVAL '27 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-(4, 4, 'training', 'screening', NOW() - INTERVAL '2 days', NOW() + INTERVAL '28 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
-(5, 5, 'training', 'screening', NOW() - INTERVAL '1 day', NOW() + INTERVAL '29 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(1, 6, 'training', 'screening', NOW() - INTERVAL '6 days', NOW() + INTERVAL '24 days', NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
-(2, 7, 'training', 'screening', NOW() - INTERVAL '7 days', NOW() + INTERVAL '23 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-(3, 8, 'training', 'screening', NOW() - INTERVAL '8 days', NOW() + INTERVAL '22 days', NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
-(4, 9, 'training', 'screening', NOW() - INTERVAL '9 days', NOW() + INTERVAL '21 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
-(5, 10, 'training', 'screening', NOW() - INTERVAL '10 days', NOW() + INTERVAL '20 days', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
+INSERT INTO applications (id, umkm_id, program_id, type, status, submitted_at, expired_at, created_at, updated_at) VALUES
+(1, 1, 1, 'training', 'screening', NOW() - INTERVAL '5 days', NOW() + INTERVAL '25 days', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
+(2, 2, 2, 'training', 'screening', NOW() - INTERVAL '4 days', NOW() + INTERVAL '26 days', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
+(3, 3, 3, 'training', 'screening', NOW() - INTERVAL '3 days', NOW() + INTERVAL '27 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
+(4, 4, 4, 'training', 'screening', NOW() - INTERVAL '2 days', NOW() + INTERVAL '28 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
+(5, 5, 5, 'training', 'screening', NOW() - INTERVAL '1 day', NOW() + INTERVAL '29 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(6, 1, 6, 'training', 'screening', NOW() - INTERVAL '6 days', NOW() + INTERVAL '24 days', NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
+(7, 2, 7, 'training', 'screening', NOW() - INTERVAL '7 days', NOW() + INTERVAL '23 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+(8, 3, 8, 'training', 'screening', NOW() - INTERVAL '8 days', NOW() + INTERVAL '22 days', NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
+(9, 4, 9, 'training', 'screening', NOW() - INTERVAL '9 days', NOW() + INTERVAL '21 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
+(10, 5, 10, 'training', 'screening', NOW() - INTERVAL '10 days', NOW() + INTERVAL '20 days', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
 -- +goose StatementEnd
 
 -- +goose StatementBegin
 -- Seed Applications for Certification (10 applications)
-INSERT INTO applications (umkm_id, program_id, type, status, submitted_at, expired_at, created_at, updated_at) VALUES
-(1, 11, 'certification', 'screening', NOW() - INTERVAL '5 days', NOW() + INTERVAL '25 days', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
-(2, 12, 'certification', 'screening', NOW() - INTERVAL '4 days', NOW() + INTERVAL '26 days', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
-(3, 13, 'certification', 'screening', NOW() - INTERVAL '3 days', NOW() + INTERVAL '27 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-(4, 14, 'certification', 'screening', NOW() - INTERVAL '2 days', NOW() + INTERVAL '28 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
-(5, 15, 'certification', 'screening', NOW() - INTERVAL '1 day', NOW() + INTERVAL '29 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(1, 16, 'certification', 'screening', NOW() - INTERVAL '6 days', NOW() + INTERVAL '24 days', NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
-(2, 17, 'certification', 'screening', NOW() - INTERVAL '7 days', NOW() + INTERVAL '23 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-(3, 18, 'certification', 'screening', NOW() - INTERVAL '8 days', NOW() + INTERVAL '22 days', NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
-(4, 19, 'certification', 'screening', NOW() - INTERVAL '9 days', NOW() + INTERVAL '21 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
-(5, 20, 'certification', 'screening', NOW() - INTERVAL '10 days', NOW() + INTERVAL '20 days', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
+INSERT INTO applications (id, umkm_id, program_id, type, status, submitted_at, expired_at, created_at, updated_at) VALUES
+(11, 1, 11, 'certification', 'screening', NOW() - INTERVAL '5 days', NOW() + INTERVAL '25 days', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
+(12, 2, 12, 'certification', 'screening', NOW() - INTERVAL '4 days', NOW() + INTERVAL '26 days', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
+(13, 3, 13, 'certification', 'screening', NOW() - INTERVAL '3 days', NOW() + INTERVAL '27 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
+(14, 4, 14, 'certification', 'screening', NOW() - INTERVAL '2 days', NOW() + INTERVAL '28 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
+(15, 5, 15, 'certification', 'screening', NOW() - INTERVAL '1 day', NOW() + INTERVAL '29 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(16, 1, 16, 'certification', 'screening', NOW() - INTERVAL '6 days', NOW() + INTERVAL '24 days', NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
+(17, 2, 17, 'certification', 'screening', NOW() - INTERVAL '7 days', NOW() + INTERVAL '23 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+(18, 3, 18, 'certification', 'screening', NOW() - INTERVAL '8 days', NOW() + INTERVAL '22 days', NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
+(19, 4, 19, 'certification', 'screening', NOW() - INTERVAL '9 days', NOW() + INTERVAL '21 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
+(20, 5, 20, 'certification', 'screening', NOW() - INTERVAL '10 days', NOW() + INTERVAL '20 days', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
 -- +goose StatementEnd
 
 -- +goose StatementBegin
 -- Seed Applications for Funding (10 applications)
-INSERT INTO applications (umkm_id, program_id, type, status, submitted_at, expired_at, created_at, updated_at) VALUES
-(1, 21, 'funding', 'screening', NOW() - INTERVAL '5 days', NOW() + INTERVAL '25 days', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
-(2, 22, 'funding', 'screening', NOW() - INTERVAL '4 days', NOW() + INTERVAL '26 days', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
-(3, 23, 'funding', 'screening', NOW() - INTERVAL '3 days', NOW() + INTERVAL '27 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-(4, 24, 'funding', 'screening', NOW() - INTERVAL '2 days', NOW() + INTERVAL '28 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
-(5, 25, 'funding', 'screening', NOW() - INTERVAL '1 day', NOW() + INTERVAL '29 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(1, 26, 'funding', 'screening', NOW() - INTERVAL '6 days', NOW() + INTERVAL '24 days', NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
-(2, 27, 'funding', 'screening', NOW() - INTERVAL '7 days', NOW() + INTERVAL '23 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-(3, 28, 'funding', 'screening', NOW() - INTERVAL '8 days', NOW() + INTERVAL '22 days', NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
-(4, 29, 'funding', 'screening', NOW() - INTERVAL '9 days', NOW() + INTERVAL '21 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
-(5, 30, 'funding', 'screening', NOW() - INTERVAL '10 days', NOW() + INTERVAL '20 days', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
+INSERT INTO applications (id, umkm_id, program_id, type, status, submitted_at, expired_at, created_at, updated_at) VALUES
+(21, 1, 21, 'funding', 'screening', NOW() - INTERVAL '5 days', NOW() + INTERVAL '25 days', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
+(22, 2, 22, 'funding', 'screening', NOW() - INTERVAL '4 days', NOW() + INTERVAL '26 days', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
+(23, 3, 23, 'funding', 'screening', NOW() - INTERVAL '3 days', NOW() + INTERVAL '27 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
+(24, 4, 24, 'funding', 'screening', NOW() - INTERVAL '2 days', NOW() + INTERVAL '28 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
+(25, 5, 25, 'funding', 'screening', NOW() - INTERVAL '1 day', NOW() + INTERVAL '29 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(26, 1, 26, 'funding', 'screening', NOW() - INTERVAL '6 days', NOW() + INTERVAL '24 days', NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
+(27, 2, 27, 'funding', 'screening', NOW() - INTERVAL '7 days', NOW() + INTERVAL '23 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+(28, 3, 28, 'funding', 'screening', NOW() - INTERVAL '8 days', NOW() + INTERVAL '22 days', NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
+(29, 4, 29, 'funding', 'screening', NOW() - INTERVAL '9 days', NOW() + INTERVAL '21 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
+(30, 5, 30, 'funding', 'screening', NOW() - INTERVAL '10 days', NOW() + INTERVAL '20 days', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
 -- +goose StatementEnd
 
 -- +goose StatementBegin
@@ -140,42 +141,39 @@ INSERT INTO application_documents (application_id, type, file, created_at, updat
 (30, 'rekening', 'https://storage.example.com/documents/rekening_umkm5_fund10.pdf', NOW(), NOW());
 -- +goose StatementEnd
 
--- +goose StatementBegin
 -- Seed Application Histories (only submit action for all applications)
+-- +goose StatementBegin
 INSERT INTO application_histories (application_id, status, notes, actioned_at, actioned_by, created_at, updated_at) VALUES
--- Training Applications Histories (1-10)
-(1, 'submit', 'Application submitted for Digital Marketing Training', NOW() - INTERVAL '5 days', 6, NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
-(2, 'submit', 'Application submitted for Basic Accounting Training', NOW() - INTERVAL '4 days', 7, NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
-(3, 'submit', 'Application submitted for Business Management Training', NOW() - INTERVAL '3 days', 8, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-(4, 'submit', 'Application submitted for Export Import Training', NOW() - INTERVAL '2 days', 9, NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
-(5, 'submit', 'Application submitted for Product Photography Training', NOW() - INTERVAL '1 day', 10, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(6, 'submit', 'Application submitted for E-Commerce Training', NOW() - INTERVAL '6 days', 6, NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
-(7, 'submit', 'Application submitted for Social Media Marketing Training', NOW() - INTERVAL '7 days', 7, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-(8, 'submit', 'Application submitted for Packaging Design Training', NOW() - INTERVAL '8 days', 8, NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
-(9, 'submit', 'Application submitted for UMKM Branding Training', NOW() - INTERVAL '9 days', 9, NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
-(10, 'submit', 'Application submitted for Content Marketing Training', NOW() - INTERVAL '10 days', 10, NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days'),
--- Certification Applications Histories (11-20)
-(11, 'submit', 'Application submitted for Halal Certification', NOW() - INTERVAL '5 days', 6, NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
-(12, 'submit', 'Application submitted for SNI Product Certification', NOW() - INTERVAL '4 days', 7, NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
-(13, 'submit', 'Application submitted for ISO 9001 Certification', NOW() - INTERVAL '3 days', 8, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-(14, 'submit', 'Application submitted for HACCP Certification', NOW() - INTERVAL '2 days', 9, NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
-(15, 'submit', 'Application submitted for Organic Certification', NOW() - INTERVAL '1 day', 10, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(16, 'submit', 'Application submitted for PIRT Certification', NOW() - INTERVAL '6 days', 6, NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
-(17, 'submit', 'Application submitted for GMP Certification', NOW() - INTERVAL '7 days', 7, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-(18, 'submit', 'Application submitted for Fairtrade Certification', NOW() - INTERVAL '8 days', 8, NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
-(19, 'submit', 'Application submitted for Ecolabel Certification', NOW() - INTERVAL '9 days', 9, NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
-(20, 'submit', 'Application submitted for Food Safety Certification', NOW() - INTERVAL '10 days', 10, NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days'),
--- Funding Applications Histories (21-30)
-(21, 'submit', 'Application submitted for KUR Mikro', NOW() - INTERVAL '5 days', 6, NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
-(22, 'submit', 'Application submitted for KUR Kecil', NOW() - INTERVAL '4 days', 7, NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
-(23, 'submit', 'Application submitted for Ultra Mikro Financing', NOW() - INTERVAL '3 days', 8, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
-(24, 'submit', 'Application submitted for UMKM Venture Capital', NOW() - INTERVAL '2 days', 9, NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
-(25, 'submit', 'Application submitted for Syariah Mikro Loan', NOW() - INTERVAL '1 day', 10, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(26, 'submit', 'Application submitted for Revolving Fund UMKM', NOW() - INTERVAL '6 days', 6, NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
-(27, 'submit', 'Application submitted for Working Capital Credit', NOW() - INTERVAL '7 days', 7, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
-(28, 'submit', 'Application submitted for Investment Loan', NOW() - INTERVAL '8 days', 8, NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
-(29, 'submit', 'Application submitted for P2P Lending', NOW() - INTERVAL '9 days', 9, NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
-(30, 'submit', 'Application submitted for Productive Business Credit', NOW() - INTERVAL '10 days', 10, NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
+(1, 'submit', 'Application submitted for Digital Marketing Training', NOW() - INTERVAL '5 days', 101, NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
+(2, 'submit', 'Application submitted for Basic Accounting Training', NOW() - INTERVAL '4 days', 102, NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
+(3, 'submit', 'Application submitted for Business Management Training', NOW() - INTERVAL '3 days', 103, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
+(4, 'submit', 'Application submitted for Export Import Training', NOW() - INTERVAL '2 days', 104, NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
+(5, 'submit', 'Application submitted for Product Photography Training', NOW() - INTERVAL '1 day', 105, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(6, 'submit', 'Application submitted for E-Commerce Training', NOW() - INTERVAL '6 days', 101, NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
+(7, 'submit', 'Application submitted for Social Media Marketing Training', NOW() - INTERVAL '7 days', 102, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+(8, 'submit', 'Application submitted for Packaging Design Training', NOW() - INTERVAL '8 days', 103, NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
+(9, 'submit', 'Application submitted for UMKM Branding Training', NOW() - INTERVAL '9 days', 104, NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
+(10, 'submit', 'Application submitted for Content Marketing Training', NOW() - INTERVAL '10 days', 5, NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days'),
+(11, 'submit', 'Application submitted for Halal Certification', NOW() - INTERVAL '5 days', 101, NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
+(12, 'submit', 'Application submitted for SNI Product Certification', NOW() - INTERVAL '4 days', 102, NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
+(13, 'submit', 'Application submitted for ISO 9001 Certification', NOW() - INTERVAL '3 days', 103, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
+(14, 'submit', 'Application submitted for HACCP Certification', NOW() - INTERVAL '2 days', 104, NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
+(15, 'submit', 'Application submitted for Organic Certification', NOW() - INTERVAL '1 day', 105, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(16, 'submit', 'Application submitted for PIRT Certification', NOW() - INTERVAL '6 days', 101, NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
+(17, 'submit', 'Application submitted for GMP Certification', NOW() - INTERVAL '7 days', 102, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+(18, 'submit', 'Application submitted for Fairtrade Certification', NOW() - INTERVAL '8 days', 103, NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
+(19, 'submit', 'Application submitted for Ecolabel Certification', NOW() - INTERVAL '9 days', 104, NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
+(20, 'submit', 'Application submitted for Food Safety Certification', NOW() - INTERVAL '10 days', 5, NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days'),
+(21, 'submit', 'Application submitted for KUR Mikro', NOW() - INTERVAL '5 days', 101, NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'),
+(22, 'submit', 'Application submitted for KUR Kecil', NOW() - INTERVAL '4 days', 102, NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'),
+(23, 'submit', 'Application submitted for Ultra Mikro Financing', NOW() - INTERVAL '3 days', 103, NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'),
+(24, 'submit', 'Application submitted for UMKM Venture Capital', NOW() - INTERVAL '2 days', 104, NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
+(25, 'submit', 'Application submitted for Syariah Mikro Loan', NOW() - INTERVAL '1 day', 105, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(26, 'submit', 'Application submitted for Revolving Fund UMKM', NOW() - INTERVAL '6 days', 101, NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days'),
+(27, 'submit', 'Application submitted for Working Capital Credit', NOW() - INTERVAL '7 days', 102, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'),
+(28, 'submit', 'Application submitted for Investment Loan', NOW() - INTERVAL '8 days', 103, NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days'),
+(29, 'submit', 'Application submitted for P2P Lending', NOW() - INTERVAL '9 days', 104, NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days'),
+(30, 'submit', 'Application submitted for Productive Business Credit', NOW() - INTERVAL '10 days', 5, NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
 -- +goose StatementEnd
 
 -- +goose Down

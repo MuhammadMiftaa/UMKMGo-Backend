@@ -1,6 +1,6 @@
 package model
 
-type Permissions struct {
+type Permission struct {
 	ID          int    `json:"id" gorm:"primary_key"`
 	ParentID    *int   `json:"parent_id"`
 	Name        string `json:"name"`

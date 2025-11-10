@@ -1,6 +1,6 @@
 package model
 
-type Programs struct {
+type Program struct {
 	ID                  int      `json:"id" gorm:"primary_key"`
 	Title               string   `json:"title" gorm:"type:varchar(100);not null"`
 	Description         string   `json:"description" gorm:"type:text"`
@@ -22,5 +22,5 @@ type Programs struct {
 	CreatedBy           int      `json:"created_by"`
 
 	Base
-	Users Users `json:"users" gorm:"foreignKey:CreatedBy;references:ID"`
+	Users User `json:"users" gorm:"foreignKey:CreatedBy;references:ID"`
 }

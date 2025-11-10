@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type ApplicationHistories struct {
+type ApplicationHistory struct {
 	ID            int       `json:"id" gorm:"primary_key"`
 	ApplicationID int       `json:"application_id" gorm:"not null"`
 	Status        string    `json:"status" gorm:"type:application_history_action;not null"`
@@ -11,5 +11,5 @@ type ApplicationHistories struct {
 	ActionedBy    int       `json:"actioned_by" gorm:"not null"`
 	Base
 
-	User Users `json:"user" gorm:"foreignKey:ActionedBy"`
+	User User `json:"user" gorm:"foreignKey:ActionedBy"`
 }

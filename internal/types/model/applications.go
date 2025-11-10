@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type Applications struct {
+type Application struct {
 	ID          int       `json:"id" gorm:"primary_key"`
 	UMKMID      int       `json:"umkm_id" gorm:"not null"`
 	ProgramID   int       `json:"program_id" gorm:"not null"`
@@ -12,8 +12,8 @@ type Applications struct {
 	ExpiredAt   time.Time `json:"expired_at" gorm:"not null"`
 	Base
 
-	Documents []ApplicationDocuments `json:"documents" gorm:"foreignKey:ApplicationID"`
-	Histories []ApplicationHistories `json:"histories" gorm:"foreignKey:ApplicationID"`
-	Program   Programs               `json:"program" gorm:"foreignKey:ProgramID"`
-	UMKM      UMKMS                  `json:"umkm" gorm:"foreignKey:UMKMID"`
+	Documents []ApplicationDocument `json:"documents" gorm:"foreignKey:ApplicationID"`
+	Histories []ApplicationHistory  `json:"histories" gorm:"foreignKey:ApplicationID"`
+	Program   Program               `json:"program" gorm:"foreignKey:ProgramID"`
+	UMKM      UMKM                  `json:"umkm" gorm:"foreignKey:UMKMID"`
 }

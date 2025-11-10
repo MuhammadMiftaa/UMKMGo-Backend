@@ -2,7 +2,7 @@ package model
 
 import "database/sql"
 
-type UMKMS struct {
+type UMKM struct {
 	ID           int            `json:"id" gorm:"primary_key"`
 	UserID       int            `json:"user_id" gorm:"not null"`
 	BusinessName string         `json:"business_name" gorm:"type:varchar(100);not null"`
@@ -13,8 +13,8 @@ type UMKMS struct {
 	Address      string         `json:"address" gorm:"type:text"`
 	ProvinceID   int            `json:"province_id" gorm:"not null"`
 	CityID       int            `json:"city_id" gorm:"not null"`
-	District     int            `json:"district" gorm:"not null"`
-	Subdistrict  int            `json:"subdistrict" gorm:"not null"`
+	District     string         `json:"district" gorm:"not null"`
+	Subdistrict  string         `json:"subdistrict" gorm:"not null"`
 	PostalCode   string         `json:"postal_code" gorm:"type:varchar(10)"`
 	NIB          string         `json:"nib" gorm:"type:varchar(50)"`
 	NPWP         string         `json:"npwp" gorm:"type:varchar(50)"`
@@ -22,5 +22,8 @@ type UMKMS struct {
 	KartuNumber  string         `json:"kartu_number" gorm:"type:varchar(50)"`
 	Base
 
-	User Users `json:"user" gorm:"foreignKey:UserID"`
+	User         User          `json:"user" gorm:"foreignKey:UserID"`
+	Province     Province      `json:"province" gorm:"foreignKey:ProvinceID"`
+	City         City          `json:"city" gorm:"foreignKey:CityID"`
+	Applications []Application `json:"applications" gorm:"foreignKey:UMKMID"`
 }

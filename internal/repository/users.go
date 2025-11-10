@@ -5,26 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 
+	"sapaUMKM-backend/internal/types/dto"
 	"sapaUMKM-backend/internal/types/model"
 
 	"gorm.io/gorm"
 )
 
 type UsersRepository interface {
-	GetAllUsers(ctx context.Context) ([]model.Users, error)
-	GetUserByID(ctx context.Context, id int) (model.Users, error)
-	GetUserByEmail(ctx context.Context, email string) (model.Users, error)
-	CreateUser(ctx context.Context, user model.Users) (model.Users, error)
-	UpdateUser(ctx context.Context, user model.Users) (model.Users, error)
-	DeleteUser(ctx context.Context, user model.Users) (model.Users, error)
+	GetAllUsers(ctx context.Context) ([]model.User, error)
+	GetUserByID(ctx context.Context, id int) (model.User, error)
+	GetUserByEmail(ctx context.Context, email string) (model.User, error)
+	CreateUser(ctx context.Context, user model.User) (model.User, error)
+	UpdateUser(ctx context.Context, user model.User) (model.User, error)
+	DeleteUser(ctx context.Context, user model.User) (model.User, error)
 
-	GetAllRoles(ctx context.Context) ([]model.Roles, error)
-	GetRoleByID(ctx context.Context, id int) (model.Roles, error)
+	GetAllRoles(ctx context.Context) ([]model.Role, error)
+	GetRoleByID(ctx context.Context, id int) (model.Role, error)
 	IsRoleExist(ctx context.Context, id int) bool
 	IsPermissionExist(ctx context.Context, id []string) ([]int, bool)
-	GetListPermissions(ctx context.Context) ([]model.Permissions, error)
+	GetListPermissions(ctx context.Context) ([]model.Permission, error)
 	GetListPermissionsByRoleID(ctx context.Context, roleID int) ([]string, error)
-	GetListRolePermissions(ctx context.Context) ([]model.RolePermissionsResponse, error)
+	GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error)
 	DeletePermissionsByRoleID(ctx context.Context, roleID int) error
 	AddRolePermissions(ctx context.Context, roleID int, permissions []int) error
 }
@@ -37,8 +38,8 @@ func NewUsersRepository(db *gorm.DB) UsersRepository {
 	return &usersRepository{db}
 }
 
-func (user_repo *usersRepository) GetAllUsers(ctx context.Context) ([]model.Users, error) {
-	var users []model.Users
+func (user_repo *usersRepository) GetAllUsers(ctx context.Context) ([]model.User, error) {
+	var users []model.User
 	err := user_repo.db.WithContext(ctx).Preload("Roles").Find(&users).Error
 	if err != nil {
 		return nil, err
@@ -47,55 +48,55 @@ func (user_repo *usersRepository) GetAllUsers(ctx context.Context) ([]model.User
 	return users, nil
 }
 
-func (user_repo *usersRepository) GetUserByID(ctx context.Context, id int) (model.Users, error) {
-	var user model.Users
+func (user_repo *usersRepository) GetUserByID(ctx context.Context, id int) (model.User, error) {
+	var user model.User
 	err := user_repo.db.WithContext(ctx).First(&user, "id = ?", id).Error
 	if err != nil {
-		return model.Users{}, errors.New("user not found")
+		return model.User{}, errors.New("user not found")
 	}
 
 	return user, nil
 }
 
-func (user_repo *usersRepository) GetUserByEmail(ctx context.Context, email string) (model.Users, error) {
-	var user model.Users
+func (user_repo *usersRepository) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
+	var user model.User
 	err := user_repo.db.WithContext(ctx).First(&user, "email = ?", email).Error
 	if err != nil {
-		return model.Users{}, errors.New("user not found")
+		return model.User{}, errors.New("user not found")
 	}
 
 	return user, nil
 }
 
-func (user_repo *usersRepository) CreateUser(ctx context.Context, user model.Users) (model.Users, error) {
+func (user_repo *usersRepository) CreateUser(ctx context.Context, user model.User) (model.User, error) {
 	err := user_repo.db.WithContext(ctx).Create(&user).Error
 	if err != nil {
-		return model.Users{}, errors.New("failed to create user")
+		return model.User{}, errors.New("failed to create user")
 	}
 
 	return user, nil
 }
 
-func (user_repo *usersRepository) UpdateUser(ctx context.Context, user model.Users) (model.Users, error) {
+func (user_repo *usersRepository) UpdateUser(ctx context.Context, user model.User) (model.User, error) {
 	err := user_repo.db.WithContext(ctx).Save(&user).Error
 	if err != nil {
-		return model.Users{}, errors.New("failed to update user")
+		return model.User{}, errors.New("failed to update user")
 	}
 
 	return user, nil
 }
 
-func (user_repo *usersRepository) DeleteUser(ctx context.Context, user model.Users) (model.Users, error) {
+func (user_repo *usersRepository) DeleteUser(ctx context.Context, user model.User) (model.User, error) {
 	err := user_repo.db.WithContext(ctx).Delete(&user).Error
 	if err != nil {
-		return model.Users{}, errors.New("failed to delete user")
+		return model.User{}, errors.New("failed to delete user")
 	}
 
 	return user, nil
 }
 
-func (user_repo *usersRepository) GetAllRoles(ctx context.Context) ([]model.Roles, error) {
-	var roles []model.Roles
+func (user_repo *usersRepository) GetAllRoles(ctx context.Context) ([]model.Role, error) {
+	var roles []model.Role
 	err := user_repo.db.WithContext(ctx).Find(&roles).Error
 	if err != nil {
 		return nil, err
@@ -104,33 +105,33 @@ func (user_repo *usersRepository) GetAllRoles(ctx context.Context) ([]model.Role
 	return roles, nil
 }
 
-func (user_repo *usersRepository) GetRoleByID(ctx context.Context, id int) (model.Roles, error) {
-	var role model.Roles
+func (user_repo *usersRepository) GetRoleByID(ctx context.Context, id int) (model.Role, error) {
+	var role model.Role
 	err := user_repo.db.WithContext(ctx).First(&role, "id = ?", id).Error
 	if err != nil {
-		return model.Roles{}, errors.New("role not found")
+		return model.Role{}, errors.New("role not found")
 	}
 
 	return role, nil
 }
 
 func (user_repo *usersRepository) IsRoleExist(ctx context.Context, id int) bool {
-	var role model.Roles
+	var role model.Role
 	err := user_repo.db.WithContext(ctx).First(&role, "id = ?", id).Error
 	return err == nil
 }
 
 func (user_repo *usersRepository) IsPermissionExist(ctx context.Context, ids []string) ([]int, bool) {
 	var permissionIDs []int
-	err := user_repo.db.WithContext(ctx).Model(&model.Permissions{}).Where("code IN ?", ids).Pluck("id", &permissionIDs).Error
+	err := user_repo.db.WithContext(ctx).Model(&model.Permission{}).Where("code IN ?", ids).Pluck("id", &permissionIDs).Error
 	if err != nil {
 		return nil, false
 	}
 	return permissionIDs, len(permissionIDs) == len(ids)
 }
 
-func (user_repo *usersRepository) GetListPermissions(ctx context.Context) ([]model.Permissions, error) {
-	var permissions []model.Permissions
+func (user_repo *usersRepository) GetListPermissions(ctx context.Context) ([]model.Permission, error) {
+	var permissions []model.Permission
 	err := user_repo.db.WithContext(ctx).Where("parent_id IS NOT NULL").Find(&permissions).Error
 	if err != nil {
 		return nil, err
@@ -138,8 +139,8 @@ func (user_repo *usersRepository) GetListPermissions(ctx context.Context) ([]mod
 	return permissions, nil
 }
 
-func (user_repo *usersRepository) GetListRolePermissions(ctx context.Context) ([]model.RolePermissionsResponse, error) {
-	var rolePermissions []model.RolePermissionsResponse
+func (user_repo *usersRepository) GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error) {
+	var rolePermissions []dto.RolePermissionsResponse
 	err := user_repo.db.WithContext(ctx).Raw(`
 	SELECT 
 		roles.id AS role_id,
@@ -178,7 +179,7 @@ func (user_repo *usersRepository) GetListPermissionsByRoleID(ctx context.Context
 }
 
 func (user_repo *usersRepository) DeletePermissionsByRoleID(ctx context.Context, roleID int) error {
-	err := user_repo.db.WithContext(ctx).Where("role_id = ?", roleID).Unscoped().Delete(&model.RolePermissions{}).Error
+	err := user_repo.db.WithContext(ctx).Where("role_id = ?", roleID).Unscoped().Delete(&model.RolePermission{}).Error
 	if err != nil {
 		return errors.New("failed to delete role permissions")
 	}
@@ -186,9 +187,9 @@ func (user_repo *usersRepository) DeletePermissionsByRoleID(ctx context.Context,
 }
 
 func (user_repo *usersRepository) AddRolePermissions(ctx context.Context, roleID int, permissions []int) error {
-	var rolePermissions []model.RolePermissions
+	var rolePermissions []model.RolePermission
 	for _, permissionID := range permissions {
-		rolePermissions = append(rolePermissions, model.RolePermissions{
+		rolePermissions = append(rolePermissions, model.RolePermission{
 			RoleID:       roleID,
 			PermissionID: permissionID,
 		})

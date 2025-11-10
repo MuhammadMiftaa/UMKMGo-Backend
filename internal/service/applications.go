@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 
 	"sapaUMKM-backend/internal/repository"
 	"sapaUMKM-backend/internal/types/dto"
@@ -90,14 +91,32 @@ func (s *applicationsService) GetAllApplications(ctx context.Context, filterType
 			Documents:   documentsDTO,
 			Histories:   historiesDTO,
 			Program: &dto.Programs{
-				ID:    app.Program.ID,
-				Title: app.Program.Title,
-				Type:  app.Program.Type,
+				ID:                  app.Program.ID,
+				Title:               app.Program.Title,
+				Type:                app.Program.Type,
+				Location:            app.Program.Location,
+				ApplicationDeadline: app.Program.ApplicationDeadline,
 			},
 			UMKM: &dto.UMKM{
 				ID:           app.UMKM.ID,
 				BusinessName: app.UMKM.BusinessName,
 				NIK:          app.UMKM.NIK,
+				Address:      app.UMKM.Address,
+				District:     app.UMKM.District,
+				Subdistrict:  app.UMKM.Subdistrict,
+				User: dto.User{
+					ID:    app.UMKM.User.ID,
+					Name:  app.UMKM.User.Name,
+					Email: app.UMKM.User.Email,
+				},
+				Province: dto.Province{
+					ID:   app.UMKM.City.Province.ID,
+					Name: app.UMKM.City.Province.Name,
+				},
+				City: dto.City{
+					ID:   app.UMKM.City.ID,
+					Name: app.UMKM.City.Name,
+				},
 			},
 		}
 		applicationsDTO = append(applicationsDTO, applicationDTO)
@@ -111,6 +130,7 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 	if err != nil {
 		return dto.Applications{}, err
 	}
+	log.Println("Fetching application by ID:", application)
 
 	// Get documents
 	documents, _ := s.applicationRepository.GetApplicationDocuments(ctx, application.ID)
@@ -156,14 +176,32 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 		Documents:   documentsDTO,
 		Histories:   historiesDTO,
 		Program: &dto.Programs{
-			ID:    application.Program.ID,
-			Title: application.Program.Title,
-			Type:  application.Program.Type,
+			ID:                  application.Program.ID,
+			Title:               application.Program.Title,
+			Type:                application.Program.Type,
+			Location:            application.Program.Location,
+			ApplicationDeadline: application.Program.ApplicationDeadline,
 		},
 		UMKM: &dto.UMKM{
 			ID:           application.UMKM.ID,
 			BusinessName: application.UMKM.BusinessName,
 			NIK:          application.UMKM.NIK,
+			Address:      application.UMKM.Address,
+			District:     application.UMKM.District,
+			Subdistrict:  application.UMKM.Subdistrict,
+			User: dto.User{
+				ID:    application.UMKM.User.ID,
+				Name:  application.UMKM.User.Name,
+				Email: application.UMKM.User.Email,
+			},
+			Province: dto.Province{
+				ID:   application.UMKM.City.Province.ID,
+				Name: application.UMKM.City.Province.Name,
+			},
+			City: dto.City{
+				ID:   application.UMKM.City.ID,
+				Name: application.UMKM.City.Name,
+			},
 		},
 	}, nil
 }
@@ -224,7 +262,7 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 // 	}
 
 // 	// Create history - submit
-// 	history := model.ApplicationHistories{
+// 	history := model.ApplicationHistory{
 // 		ApplicationID: createdApplication.ID,
 // 		Status:        "submit",
 // 		Notes:         "Application submitted",
@@ -288,7 +326,7 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 // 	}
 
 // 	// Create history - resubmit
-// 	history := model.ApplicationHistories{
+// 	history := model.ApplicationHistory{
 // 		ApplicationID: updatedApplication.ID,
 // 		Status:        "submit",
 // 		Notes:         "Application resubmitted after revision",
@@ -344,7 +382,7 @@ func (s *applicationsService) ScreeningApprove(ctx context.Context, userID int, 
 	}
 
 	// Create history
-	history := model.ApplicationHistories{
+	history := model.ApplicationHistory{
 		ApplicationID: applicationID,
 		Status:        "approve_by_admin_screening",
 		Notes:         "Approved by admin screening",
@@ -385,7 +423,7 @@ func (s *applicationsService) ScreeningReject(ctx context.Context, userID int, d
 	}
 
 	// Create history
-	history := model.ApplicationHistories{
+	history := model.ApplicationHistory{
 		ApplicationID: decision.ApplicationID,
 		Status:        "reject_by_admin_screening",
 		Notes:         decision.Notes,
@@ -426,7 +464,7 @@ func (s *applicationsService) ScreeningRevise(ctx context.Context, userID int, d
 	}
 
 	// Create history
-	history := model.ApplicationHistories{
+	history := model.ApplicationHistory{
 		ApplicationID: decision.ApplicationID,
 		Status:        "revise",
 		Notes:         decision.Notes,
@@ -462,7 +500,7 @@ func (s *applicationsService) FinalApprove(ctx context.Context, userID int, appl
 	}
 
 	// Create history
-	history := model.ApplicationHistories{
+	history := model.ApplicationHistory{
 		ApplicationID: applicationID,
 		Status:        "approve_by_admin_vendor",
 		Notes:         "Approved by admin vendor",
@@ -503,7 +541,7 @@ func (s *applicationsService) FinalReject(ctx context.Context, userID int, decis
 	}
 
 	// Create history
-	history := model.ApplicationHistories{
+	history := model.ApplicationHistory{
 		ApplicationID: decision.ApplicationID,
 		Status:        "reject_by_admin_vendor",
 		Notes:         decision.Notes,

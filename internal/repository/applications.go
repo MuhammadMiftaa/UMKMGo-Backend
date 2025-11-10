@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"sapaUMKM-backend/internal/types/model"
@@ -11,24 +12,24 @@ import (
 )
 
 type ApplicationsRepository interface {
-	GetAllApplications(ctx context.Context, filterType string) ([]model.Applications, error)
-	GetApplicationByID(ctx context.Context, id int) (model.Applications, error)
-	CreateApplication(ctx context.Context, application model.Applications) (model.Applications, error)
-	UpdateApplication(ctx context.Context, application model.Applications) (model.Applications, error)
-	DeleteApplication(ctx context.Context, application model.Applications) (model.Applications, error)
+	GetAllApplications(ctx context.Context, filterType string) ([]model.Application, error)
+	GetApplicationByID(ctx context.Context, id int) (model.Application, error)
+	CreateApplication(ctx context.Context, application model.Application) (model.Application, error)
+	UpdateApplication(ctx context.Context, application model.Application) (model.Application, error)
+	DeleteApplication(ctx context.Context, application model.Application) (model.Application, error)
 
 	// Documents
-	CreateApplicationDocuments(ctx context.Context, documents []model.ApplicationDocuments) error
-	GetApplicationDocuments(ctx context.Context, applicationID int) ([]model.ApplicationDocuments, error)
+	CreateApplicationDocuments(ctx context.Context, documents []model.ApplicationDocument) error
+	GetApplicationDocuments(ctx context.Context, applicationID int) ([]model.ApplicationDocument, error)
 	DeleteApplicationDocuments(ctx context.Context, applicationID int) error
 
 	// Histories
-	CreateApplicationHistory(ctx context.Context, history model.ApplicationHistories) error
-	GetApplicationHistories(ctx context.Context, applicationID int) ([]model.ApplicationHistories, error)
+	CreateApplicationHistory(ctx context.Context, history model.ApplicationHistory) error
+	GetApplicationHistories(ctx context.Context, applicationID int) ([]model.ApplicationHistory, error)
 
 	// Validations
-	GetProgramByID(ctx context.Context, id int) (model.Programs, error)
-	GetUMKMByUserID(ctx context.Context, userID int) (model.UMKMS, error)
+	GetProgramByID(ctx context.Context, id int) (model.Program, error)
+	GetUMKMByUserID(ctx context.Context, userID int) (model.UMKM, error)
 	IsApplicationExists(ctx context.Context, umkmID, programID int) bool
 }
 
@@ -40,58 +41,73 @@ func NewApplicationsRepository(db *gorm.DB) ApplicationsRepository {
 	return &applicationsRepository{db}
 }
 
-func (repo *applicationsRepository) GetAllApplications(ctx context.Context, filterType string) ([]model.Applications, error) {
-	var applications []model.Applications
-	query := repo.db.WithContext(ctx).Preload("Program").Preload("UMKM.User").Preload("Documents").Preload("Histories.User").Where("applications.deleted_at IS NULL")
+func (repo *applicationsRepository) GetAllApplications(ctx context.Context, filterType string) ([]model.Application, error) {
+	var applications []model.Application
+	query := repo.db.WithContext(ctx).
+	Debug().
+	Preload("Program").
+	Preload("UMKM.User").
+	Preload("UMKM.City.Province").
+	Preload("Documents").
+	Preload("Histories.User").
+	Where("applications.deleted_at IS NULL")
 
 	if filterType != "" {
 		query = query.Where("type = ?", filterType)
 	}
-
-	err := query.Find(&applications).Error
+	log.Printf("Query: %s", query.Statement.SQL.String())
+	err := query.WithContext(ctx).Find(&applications).Error
 	if err != nil {
 		return nil, err
 	}
 	return applications, nil
 }
 
-func (repo *applicationsRepository) GetApplicationByID(ctx context.Context, id int) (model.Applications, error) {
-	var application model.Applications
-	err := repo.db.WithContext(ctx).Preload("Program").Preload("UMKM.User").Preload("Documents").Preload("Histories.User").Where("applications.id = ? AND applications.deleted_at IS NULL", id).First(&application).Error
+func (repo *applicationsRepository) GetApplicationByID(ctx context.Context, id int) (model.Application, error) {
+	var application model.Application
+	err := repo.db.WithContext(ctx).
+	Debug().
+	Preload("Program").
+	Preload("UMKM.User").
+	Preload("UMKM.City.Province").
+	Preload("Documents").
+	Preload("Histories.User").
+	Where("applications.id = ? AND applications.deleted_at IS NULL", id).
+	First(&application).Error
 	if err != nil {
-		return model.Applications{}, errors.New("application not found")
+		return model.Application{}, errors.New("application not found")
 	}
 	return application, nil
 }
 
-func (repo *applicationsRepository) CreateApplication(ctx context.Context, application model.Applications) (model.Applications, error) {
+func (repo *applicationsRepository) CreateApplication(ctx context.Context, application model.Application) (model.Application, error) {
 	application.SubmittedAt = time.Now()
 	application.ExpiredAt = time.Now().AddDate(0, 0, 30) // 30 days from now
 
 	err := repo.db.WithContext(ctx).Create(&application).Error
 	if err != nil {
-		return model.Applications{}, errors.New("failed to create application")
+		return model.Application{}, errors.New("failed to create application")
 	}
 	return application, nil
 }
 
-func (repo *applicationsRepository) UpdateApplication(ctx context.Context, application model.Applications) (model.Applications, error) {
+func (repo *applicationsRepository) UpdateApplication(ctx context.Context, application model.Application) (model.Application, error) {
 	err := repo.db.WithContext(ctx).Save(&application).Error
 	if err != nil {
-		return model.Applications{}, errors.New("failed to update application")
+		return model.Application{}, errors.New("failed to update application")
 	}
 	return application, nil
 }
 
-func (repo *applicationsRepository) DeleteApplication(ctx context.Context, application model.Applications) (model.Applications, error) {
+func (repo *applicationsRepository) DeleteApplication(ctx context.Context, application model.Application) (model.Application, error) {
 	err := repo.db.WithContext(ctx).Delete(&application).Error
 	if err != nil {
-		return model.Applications{}, errors.New("failed to delete application")
+		return model.Application{}, errors.New("failed to delete application")
 	}
 	return application, nil
 }
 
-func (repo *applicationsRepository) CreateApplicationDocuments(ctx context.Context, documents []model.ApplicationDocuments) error {
+func (repo *applicationsRepository) CreateApplicationDocuments(ctx context.Context, documents []model.ApplicationDocument) error {
 	if len(documents) == 0 {
 		return nil
 	}
@@ -102,8 +118,8 @@ func (repo *applicationsRepository) CreateApplicationDocuments(ctx context.Conte
 	return nil
 }
 
-func (repo *applicationsRepository) GetApplicationDocuments(ctx context.Context, applicationID int) ([]model.ApplicationDocuments, error) {
-	var documents []model.ApplicationDocuments
+func (repo *applicationsRepository) GetApplicationDocuments(ctx context.Context, applicationID int) ([]model.ApplicationDocument, error) {
+	var documents []model.ApplicationDocument
 	err := repo.db.WithContext(ctx).Where("application_id = ? AND deleted_at IS NULL", applicationID).Find(&documents).Error
 	if err != nil {
 		return nil, err
@@ -112,14 +128,14 @@ func (repo *applicationsRepository) GetApplicationDocuments(ctx context.Context,
 }
 
 func (repo *applicationsRepository) DeleteApplicationDocuments(ctx context.Context, applicationID int) error {
-	err := repo.db.WithContext(ctx).Where("application_id = ?", applicationID).Unscoped().Delete(&model.ApplicationDocuments{}).Error
+	err := repo.db.WithContext(ctx).Where("application_id = ?", applicationID).Unscoped().Delete(&model.ApplicationDocument{}).Error
 	if err != nil {
 		return errors.New("failed to delete application documents")
 	}
 	return nil
 }
 
-func (repo *applicationsRepository) CreateApplicationHistory(ctx context.Context, history model.ApplicationHistories) error {
+func (repo *applicationsRepository) CreateApplicationHistory(ctx context.Context, history model.ApplicationHistory) error {
 	history.ActionedAt = time.Now()
 	err := repo.db.WithContext(ctx).Create(&history).Error
 	if err != nil {
@@ -128,8 +144,8 @@ func (repo *applicationsRepository) CreateApplicationHistory(ctx context.Context
 	return nil
 }
 
-func (repo *applicationsRepository) GetApplicationHistories(ctx context.Context, applicationID int) ([]model.ApplicationHistories, error) {
-	var histories []model.ApplicationHistories
+func (repo *applicationsRepository) GetApplicationHistories(ctx context.Context, applicationID int) ([]model.ApplicationHistory, error) {
+	var histories []model.ApplicationHistory
 	err := repo.db.WithContext(ctx).Preload("User").Where("application_id = ? AND deleted_at IS NULL", applicationID).Order("actioned_at DESC").Find(&histories).Error
 	if err != nil {
 		return nil, err
@@ -137,26 +153,26 @@ func (repo *applicationsRepository) GetApplicationHistories(ctx context.Context,
 	return histories, nil
 }
 
-func (repo *applicationsRepository) GetProgramByID(ctx context.Context, id int) (model.Programs, error) {
-	var program model.Programs
+func (repo *applicationsRepository) GetProgramByID(ctx context.Context, id int) (model.Program, error) {
+	var program model.Program
 	err := repo.db.WithContext(ctx).Where("id = ? AND deleted_at IS NULL", id).First(&program).Error
 	if err != nil {
-		return model.Programs{}, errors.New("program not found")
+		return model.Program{}, errors.New("program not found")
 	}
 	return program, nil
 }
 
-func (repo *applicationsRepository) GetUMKMByUserID(ctx context.Context, userID int) (model.UMKMS, error) {
-	var umkm model.UMKMS
+func (repo *applicationsRepository) GetUMKMByUserID(ctx context.Context, userID int) (model.UMKM, error) {
+	var umkm model.UMKM
 	err := repo.db.WithContext(ctx).Where("user_id = ? AND deleted_at IS NULL", userID).First(&umkm).Error
 	if err != nil {
-		return model.UMKMS{}, errors.New("UMKM not found")
+		return model.UMKM{}, errors.New("UMKM not found")
 	}
 	return umkm, nil
 }
 
 func (repo *applicationsRepository) IsApplicationExists(ctx context.Context, umkmID, programID int) bool {
 	var count int64
-	repo.db.WithContext(ctx).Model(&model.Applications{}).Where("umkm_id = ? AND program_id = ? AND deleted_at IS NULL AND status NOT IN ('rejected')", umkmID, programID).Count(&count)
+	repo.db.WithContext(ctx).Model(&model.Application{}).Where("umkm_id = ? AND program_id = ? AND deleted_at IS NULL AND status NOT IN ('rejected')", umkmID, programID).Count(&count)
 	return count > 0
 }

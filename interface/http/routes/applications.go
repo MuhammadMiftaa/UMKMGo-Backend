@@ -1,17 +1,17 @@
 package routes
 
 import (
+	"sapaUMKM-backend/config/redis"
 	"sapaUMKM-backend/interface/http/handler"
 	"sapaUMKM-backend/interface/http/middleware"
 	"sapaUMKM-backend/internal/repository"
 	"sapaUMKM-backend/internal/service"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
-func ApplicationRoutes(version fiber.Router, db *gorm.DB, redis *redis.Client) {
+func ApplicationRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository) {
 	// Repository initialization
 	applicationRepo := repository.NewApplicationsRepository(db)
 	userRepo := repository.NewUsersRepository(db)

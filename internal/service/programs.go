@@ -195,7 +195,7 @@ func (s *programsService) CreateProgram(ctx context.Context, program dto.Program
 	}
 
 	// Create program
-	newProgram := model.Programs{
+	newProgram := model.Program{
 		Title:               program.Title,
 		Description:         program.Description,
 		Banner:              program.Banner,
@@ -223,9 +223,9 @@ func (s *programsService) CreateProgram(ctx context.Context, program dto.Program
 
 	// Create benefits
 	if len(program.Benefits) > 0 {
-		var benefits []model.ProgramBenefits
+		var benefits []model.ProgramBenefit
 		for _, b := range program.Benefits {
-			benefits = append(benefits, model.ProgramBenefits{
+			benefits = append(benefits, model.ProgramBenefit{
 				ProgramID: createdProgram.ID,
 				Name:      b,
 			})
@@ -237,9 +237,9 @@ func (s *programsService) CreateProgram(ctx context.Context, program dto.Program
 
 	// Create requirements
 	if len(program.Requirements) > 0 {
-		var requirements []model.ProgramRequirements
+		var requirements []model.ProgramRequirement
 		for _, r := range program.Requirements {
-			requirements = append(requirements, model.ProgramRequirements{
+			requirements = append(requirements, model.ProgramRequirement{
 				ProgramID: createdProgram.ID,
 				Name:      r,
 			})
@@ -353,9 +353,9 @@ func (s *programsService) UpdateProgram(ctx context.Context, id int, program dto
 		_ = s.programRepository.DeleteProgramBenefits(ctx, id)
 
 		// Create new benefits
-		var benefits []model.ProgramBenefits
+		var benefits []model.ProgramBenefit
 		for _, b := range program.Benefits {
-			benefits = append(benefits, model.ProgramBenefits{
+			benefits = append(benefits, model.ProgramBenefit{
 				ProgramID: id,
 				Name:      b,
 			})
@@ -371,9 +371,9 @@ func (s *programsService) UpdateProgram(ctx context.Context, id int, program dto
 		_ = s.programRepository.DeleteProgramRequirements(ctx, id)
 
 		// Create new requirements
-		var requirements []model.ProgramRequirements
+		var requirements []model.ProgramRequirement
 		for _, r := range program.Requirements {
-			requirements = append(requirements, model.ProgramRequirements{
+			requirements = append(requirements, model.ProgramRequirement{
 				ProgramID: id,
 				Name:      r,
 			})

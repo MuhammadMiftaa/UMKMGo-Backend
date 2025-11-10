@@ -11,7 +11,10 @@ CREATE TYPE card_type AS ENUM ('produktif', 'afirmatif');
 -- +goose StatementBegin
 CREATE TABLE "provinces" (
   id INT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL
+  name VARCHAR(255) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 -- +goose StatementEnd
 
@@ -60,7 +63,10 @@ INSERT INTO "provinces" VALUES
 CREATE TABLE "cities" (
   id INT PRIMARY KEY,
   province_id INT NOT NULL REFERENCES provinces(id),
-  name VARCHAR(255) NOT NULL
+  name VARCHAR(255) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 -- +goose StatementEnd
 
@@ -621,11 +627,11 @@ INSERT INTO permissions (id, parent_id, name, code, description) VALUES
 (3, 1, 'Manage Training Programs', 'MANAGE_TRAINING_PROGRAMS', 'Melakukan pengelolaan terhadap data program Training'),
 (4, 1, 'Final Training Application', 'FINAL_TRAINING', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk pelatihan'),
 (5, 1, 'View Training Application', 'VIEW_TRAINING', 'Melihat daftar pengajuan pelatihan yang tersedia'),
-(6, NULL, 'Sertification', 'SERTIFICATION', NULL),
-(7, 5, 'Screening Sertification Application', 'SCREENING_SERTIFICATION', 'Melakukan penyaringan awal data UMKM yang mendaftar sertifikasi'),
-(8, 5, 'Manage Sertification Programs', 'MANAGE_SERTIFICATION_PROGRAMS', 'Melakukan pengelolaan terhadap data program Sertification'),
-(9, 5, 'Final Sertification Application', 'FINAL_SERTIFICATION', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk sertifikasi'),
-(10, 5, 'View Sertification Application', 'VIEW_SERTIFICATION', 'Melihat daftar pengajuan sertifikasi yang tersedia'),
+(6, NULL, 'Certification', 'CERTIFICATION', NULL),
+(7, 5, 'Screening Certification Application', 'SCREENING_CERTIFICATION', 'Melakukan penyaringan awal data UMKM yang mendaftar sertifikasi'),
+(8, 5, 'Manage Certification Programs', 'MANAGE_CERTIFICATION_PROGRAMS', 'Melakukan pengelolaan terhadap data program Certification'),
+(9, 5, 'Final Certification Application', 'FINAL_CERTIFICATION', 'Memberikan keputusan akhir bagi UMKM yang telah dinyatakan lolos untuk sertifikasi'),
+(10, 5, 'View Certification Application', 'VIEW_CERTIFICATION', 'Melihat daftar pengajuan sertifikasi yang tersedia'),
 (11, NULL, 'Funding', 'FUNDING', NULL),
 (12, 9, 'Screening Funding Application', 'SCREENING_FUNDING', 'Melakukan penyaringan awal data UMKM yang mendaftar pendanaan'),
 (13, 9, 'Manage Funding Programs', 'MANAGE_FUNDING_PROGRAMS', 'Melakukan pengelolaan terhadap program Funding'),

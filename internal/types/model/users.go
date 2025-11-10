@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type Users struct {
+type User struct {
 	ID          int       `json:"id" gorm:"primary_key"`
 	Name        string    `json:"name"`
 	Email       string    `json:"email" gorm:"uniqueIndex"`
@@ -12,5 +12,5 @@ type Users struct {
 	LastLoginAt time.Time `json:"last_login_at"`
 
 	Base
-	Roles Roles `json:"role" gorm:"foreignKey:RoleID;references:ID"`
+	Roles Role `json:"role" gorm:"foreignKey:RoleID;references:ID"`
 }

@@ -25,7 +25,7 @@ type UsersService interface {
 	DeleteUser(ctx context.Context, id int) (dto.Users, error)
 
 	GetListPermissions(ctx context.Context) ([]dto.Permissions, error)
-	GetListRolePermissions(ctx context.Context) ([]model.RolePermissionsResponse, error)
+	GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error)
 	UpdateRolePermissions(ctx context.Context, rolePermissions dto.RolePermissions) error
 }
 
@@ -84,7 +84,7 @@ func (user_serv *usersService) Register(ctx context.Context, user dto.Users) (dt
 	}
 	user.Password = hashedPassword
 
-	newUser, err := user_serv.userRepository.CreateUser(ctx, model.Users{
+	newUser, err := user_serv.userRepository.CreateUser(ctx, model.User{
 		Name:     user.Name,
 		Email:    user.Email,
 		Password: user.Password,
@@ -388,7 +388,7 @@ func (user_serv *usersService) GetListPermissions(ctx context.Context) ([]dto.Pe
 	return result, nil
 }
 
-func (user_serv *usersService) GetListRolePermissions(ctx context.Context) ([]model.RolePermissionsResponse, error) {
+func (user_serv *usersService) GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error) {
 	rolePermissions, err := user_serv.userRepository.GetListRolePermissions(ctx)
 	if err != nil {
 		return nil, err

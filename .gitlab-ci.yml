@@ -143,7 +143,7 @@ migrate-staging:
   script:
     - |
       ssh -p $SSH_PORT -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} "
-        export APP_IMAGE_STG_MIGRATE=\"$CI_REGISTRY_IMAGE/migrate\" &&
+        export APP_IMAGE_STG_MIGRATE=\"$CI_REGISTRY_IMAGE/umkmgo-migrate\" &&
         export APP_IMAGE_STG_MIGRATE_TAG=$TAG_IMAGE &&
 
         cd ~/web/staging/umkmgo
@@ -178,7 +178,7 @@ migrate-production:
   script:
     - |
       ssh -p $SSH_PORT -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} "
-        export APP_IMAGE_PROD_MIGRATE=\"$CI_REGISTRY_IMAGE/migrate\" &&
+        export APP_IMAGE_PROD_MIGRATE=\"$CI_REGISTRY_IMAGE/umkmgo-migrate\" &&
         export APP_IMAGE_PROD_MIGRATE_TAG=$TAG_IMAGE &&
 
         cd ~/web/production/umkmgo

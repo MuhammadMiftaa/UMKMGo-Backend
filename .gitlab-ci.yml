@@ -9,25 +9,23 @@ stages:
 variables:
   TAG_IMAGE: $CI_COMMIT_TAG
 
-build_server:
+build_backend:
   stage: build
   image: docker:latest
   services:
     - docker:dind
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]{4}\.[0-9]{1,3}$/
-    # - changes:
-    #     - server/**/*
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
-    - echo "Building server application..."
-    - docker build -f server/Dockerfile.api -t "$CI_REGISTRY_IMAGE/server:latest" -t "$CI_REGISTRY_IMAGE/server:$TAG_IMAGE" ./server
-    - docker push "$CI_REGISTRY_IMAGE/server" --all-tags
-    - echo "$CI_JOB_ID" > server_build_job_id.txt
+    - echo "Building backend application..."
+    - docker build -f ./Dockerfile.api -t "$CI_REGISTRY_IMAGE/umkmgo-backend:latest" -t "$CI_REGISTRY_IMAGE/umkmgo-backend:$TAG_IMAGE" .
+    - docker push "$CI_REGISTRY_IMAGE/umkmgo-backend" --all-tags
+    - echo "$CI_JOB_ID" > umkmgo-backend_build_job_id.txt
   artifacts:
     paths:
-      - server_build_job_id.txt
+      - umkmgo-backend_build_job_id.txt
 
 build_migrate:
   stage: build
@@ -40,34 +38,30 @@ build_migrate:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
     - echo "Building migration image..."
-    - docker build -f server/Dockerfile.migrate -t "$CI_REGISTRY_IMAGE/migrate:latest" -t "$CI_REGISTRY_IMAGE/migrate:$TAG_IMAGE" ./server
-    - docker push "$CI_REGISTRY_IMAGE/migrate" --all-tags
-    - echo "$CI_JOB_ID" > migrate_build_job_id.txt
+    - docker build -f ./Dockerfile.migrate -t "$CI_REGISTRY_IMAGE/umkmgo-migrate:latest" -t "$CI_REGISTRY_IMAGE/umkmgo-migrate:$TAG_IMAGE" .
+    - docker push "$CI_REGISTRY_IMAGE/umkmgo-migrate" --all-tags
+    - echo "$CI_JOB_ID" > umkmgo-migrate_build_job_id.txt
   artifacts:
     paths:
-      - migrate_build_job_id.txt
+      - umkmgo-migrate_build_job_id.txt
 
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
-    - job: build_server
+    - job: build_backend
       artifacts: true
     - job: build_migrate
       artifacts: true
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]{4}\.[0-9]{1,3}$/
-    # - changes:
-    #     - server/**/*
-    # - changes:
-    #     - client/**/*
   variables:
     RELEASE_TITLE: "Release ${CI_COMMIT_TAG}"
     RELEASE_DESC: "Tagged after commit ${CI_COMMIT_SHORT_SHA}, message ${CI_COMMIT_TAG_MESSAGE}"
   script:
-    - export SERVER_BUILD_JOB_ID="$(cat server_build_job_id.txt)"
-    - export MIGRATE_BUILD_JOB_ID="$(cat migrate_build_job_id.txt)"
-    - echo "create release ${CI_COMMIT_TAG} from jobs $SERVER_BUILD_JOB_ID and $MIGRATE_BUILD_JOB_ID"
+    - export BACKEND_BUILD_JOB_ID="$(cat umkmgo-backend_build_job_id.txt)"
+    - export MIGRATE_BUILD_JOB_ID="$(cat umkmgo-migrate_build_job_id.txt)"
+    - echo "create release ${CI_COMMIT_TAG} from jobs $BACKEND_BUILD_JOB_ID and $MIGRATE_BUILD_JOB_ID"
     - release-cli create --name "${RELEASE_TITLE}" --description "${RELEASE_DESC}" --tag-name "${CI_COMMIT_TAG}"
 
 deploy-staging:
@@ -86,8 +80,10 @@ deploy-staging:
   script:
     - |
       ssh -p $SSH_PORT -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} "
-        export APP_IMAGE_STG_CLIENT=\"$CI_REGISTRY_IMAGE/client\" &&
-        export APP_IMAGE_STG_CLIENT_TAG=$TAG_IMAGE
+        export APP_IMAGE_STG_BACKEND="$CI_REGISTRY_IMAGE/umkmgo-backend" &&
+        export APP_IMAGE_STG_BACKEND_TAG=$TAG_IMAGE &&
+        export APP_IMAGE_STG_MIGRATE="$CI_REGISTRY_IMAGE/umkmgo-migrate" &&
+        export APP_IMAGE_STG_MIGRATE_TAG=$TAG_IMAGE &&
 
         cd ~/web/staging/umkmgo
 
@@ -113,8 +109,10 @@ deploy-production:
   script:
     - |
       ssh -p $SSH_PORT -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} " 
-        export APP_IMAGE_PROD_CLIENT=\"$CI_REGISTRY_IMAGE/client\" &&
-        export APP_IMAGE_PROD_CLIENT_TAG=$CI_COMMIT_TAG &&
+        export APP_IMAGE_PROD_BACKEND="$CI_REGISTRY_IMAGE/umkmgo-backend" &&
+        export APP_IMAGE_PROD_BACKEND_TAG=$TAG_IMAGE &&
+        export APP_IMAGE_PROD_MIGRATE="$CI_REGISTRY_IMAGE/umkmgo-migrate" &&
+        export APP_IMAGE_PROD_MIGRATE_TAG=$TAG_IMAGE &&
 
         cd ~/web/production/umkmgo
 
@@ -154,7 +152,7 @@ migrate-staging:
         docker pull $CI_REGISTRY_IMAGE/migrate:$TAG_IMAGE &&
         
         echo 'Running database migration for staging environment...' &&
-        docker compose -f docker-compose.stg.yml --profile migrate run --rm ref-staging-migrate
+        docker compose -f docker-compose.stg.yml --profile migrate run --rm umkmgo-staging-migrate
         
         echo 'Migration completed for staging environment'
       "
@@ -189,7 +187,7 @@ migrate-production:
         docker pull $CI_REGISTRY_IMAGE/migrate:$TAG_IMAGE &&
         
         echo 'Running database migration for production environment...' &&
-        docker compose -f docker-compose.prod.yml --profile migrate run --rm ref-production-migrate
+        docker compose -f docker-compose.prod.yml --profile migrate run --rm umkmgo-production-migrate
         
         echo 'Migration completed for production environment'
       "

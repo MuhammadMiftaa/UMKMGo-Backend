@@ -88,7 +88,7 @@ deploy-staging:
         cd ~/web/staging/umkmgo
 
         docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
-        docker compose rm -f umkmgo-staging-backend &&
+        docker compose -f docker-compose.stg.yml rm -f umkmgo-staging-backend &&
         docker compose -f docker-compose.stg.yml pull umkmgo-staging-backend umkmgo-staging-migrate &&
         docker compose -f docker-compose.stg.yml --profile backend up -d --build
       "
@@ -117,7 +117,7 @@ deploy-production:
         cd ~/web/production/umkmgo
 
         docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
-        docker compose rm -f umkmgo-production-backend &&
+        docker compose -f docker-compose.prod.yml rm -f umkmgo-production-backend &&
         docker compose -f docker-compose.prod.yml pull umkmgo-production-backend umkmgo-production-migrate &&
         docker compose -f docker-compose.prod.yml --profile backend up -d --build
       "

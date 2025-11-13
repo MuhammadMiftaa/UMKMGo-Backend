@@ -80,8 +80,46 @@ func (user_handler *usersHandler) Login(c *fiber.Ctx) error {
 	})
 }
 
+func (user_handler *usersHandler) UpdateProfile(c *fiber.Ctx) error {
+	var userRequest dto.Users
+	err := c.BodyParser(&userRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	// Get user ID from JWT token
+	userData, ok := c.Locals("user_data").(dto.UserData)
+	if !ok {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"statusCode": 401,
+			"status":     false,
+			"message":    "Unauthorized",
+		})
+	}
+
+	user, err := user_handler.usersService.UpdateProfile(c.Context(), int(userData.ID), userRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Update profile success",
+		"data":       user,
+	})
+}
+
 func (user_handler *usersHandler) GetAllUsers(c *fiber.Ctx) error {
-	users, err := user_handler.usersService.GetAllUsers(c.Context(), )
+	users, err := user_handler.usersService.GetAllUsers(c.Context())
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -267,7 +305,7 @@ func (user_handler *usersHandler) VerifyOTP(c *fiber.Ctx) error {
 }
 
 func (user_handler *usersHandler) GetListRolePermissions(c *fiber.Ctx) error {
-	rolePermissions, err := user_handler.usersService.GetListRolePermissions(c.Context(), )
+	rolePermissions, err := user_handler.usersService.GetListRolePermissions(c.Context())
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -285,7 +323,7 @@ func (user_handler *usersHandler) GetListRolePermissions(c *fiber.Ctx) error {
 }
 
 func (user_handler *usersHandler) GetListPermissions(c *fiber.Ctx) error {
-	permissions, err := user_handler.usersService.GetListPermissions(c.Context(), )
+	permissions, err := user_handler.usersService.GetListPermissions(c.Context())
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,

@@ -15,6 +15,7 @@ import (
 type UsersService interface {
 	Register(ctx context.Context, user dto.Users) (dto.Users, error)
 	Login(ctx context.Context, user dto.Users) (*string, error)
+	UpdateProfile(ctx context.Context, id int, userNew dto.Users) (dto.Users, error)
 	SetOTP(ctx context.Context, email string, otp string, expiration time.Duration) error
 	ValidateOTP(ctx context.Context, email string, otp string) (bool, error)
 	VerifyUser(ctx context.Context, email string) (dto.Users, error)
@@ -156,6 +157,46 @@ func (user_serv *usersService) Login(ctx context.Context, user dto.Users) (*stri
 	}
 
 	return &token, nil
+}
+
+func (user_serv *usersService) UpdateProfile(ctx context.Context, id int, userNew dto.Users) (dto.Users, error) {
+	// MENGAMBIL DATA YANG INGIN DI UPDATE
+	user, err := user_serv.userRepository.GetUserByID(ctx, id)
+	if err != nil {
+		return dto.Users{}, err
+	}
+
+	// VALIDASI APAKAH NAME, EMAIL KOSONG
+	if userNew.Name == "" || userNew.Email == "" {
+		return dto.Users{}, errors.New("name and email cannot be blank")
+	}
+
+	// VALIDASI UNTUK FORMAT EMAIL SUDAH BENAR
+	if isValid := utils.EmailValidator(userNew.Email); !isValid {
+		return dto.Users{}, errors.New("please enter a valid email address")
+	}
+
+	// MENGECEK APAKAH EMAIL SUDAH DIGUNAKAN OLEH USER LAIN
+	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, userNew.Email)
+	if err == nil && (userExist.Email != "") && userExist.ID != id {
+		return dto.Users{}, errors.New("email already exists")
+	}
+
+	// UPDATE ONLY NAME AND EMAIL
+	user.Name = userNew.Name
+	user.Email = userNew.Email
+
+	// UPDATE DATA USER
+	userUpdated, err := user_serv.userRepository.UpdateUser(ctx, user)
+	if err != nil {
+		return dto.Users{}, err
+	}
+
+	return dto.Users{
+		ID:    userUpdated.ID,
+		Name:  userUpdated.Name,
+		Email: userUpdated.Email,
+	}, nil
 }
 
 func (user_serv *usersService) SetOTP(ctx context.Context, email string, otp string, expiration time.Duration) error {

@@ -27,6 +27,8 @@ func SetupRouter() *fiber.App {
 	routes.UserRoutes(version, db.DB, redis.RDB)
 	routes.ProgramRoutes(version, db.DB, redis.RDB, storage.MinioClient)
 	routes.ApplicationRoutes(version, db.DB, redis.RDB)
+	routes.DashboardRoutes(version, db.DB)
+	routes.SLARoutes(version, db.DB)
 
 	for _, routes := range router.Stack() {
 		for _, r := range routes {

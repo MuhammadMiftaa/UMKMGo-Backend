@@ -21,6 +21,7 @@ func UserRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository) 
 	{
 		webAuth.Post("login", User_handler.Login)
 		webAuth.Post("register", User_handler.Register)
+		webAuth.Put("/profile", User_handler.UpdateProfile)
 	}
 
 	mobileAuth := version.Group("/mobileauth")

@@ -1,6 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:8080
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN1cGVyYWRtaW5AZXhhbXBsZS5jb20iLCJleHAiOjE3NjI4MjE1MDIsImlkIjoxLCJuYW1lIjoiU3VwZXIgQWRtaW4iLCJyb2xlIjoxLCJyb2xlX25hbWUiOiJzdXBlcmFkbWluIn0.kJNU0xw1hcwDb1qifZUk52onTlEDwec3DSQj8bEC0tM
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN1cGVyYWRtaW5AdW1rbS5nby5pZCIsImV4cCI6MTc2MzI5OTQ4NywiaWF0IjoxNzYzMDQwMjg3LCJpZCI6MSwibmFtZSI6IlN1cGVyIEFkbWluIiwicGVybWlzc2lvbnMiOlsiU0NSRUVOSU5HX1RSQUlOSU5HIiwiTUFOQUdFX1RSQUlOSU5HX1BST0dSQU1TIiwiRklOQUxfVFJBSU5JTkciLCJWSUVXX1RSQUlOSU5HIiwiU0NSRUVOSU5HX0NFUlRJRklDQVRJT04iLCJNQU5BR0VfQ0VSVElGSUNBVElPTl9QUk9HUkFNUyIsIkZJTkFMX0NFUlRJRklDQVRJT04iLCJWSUVXX0NFUlRJRklDQVRJT04iLCJTQ1JFRU5JTkdfRlVORElORyIsIk1BTkFHRV9GVU5ESU5HX1BST0dSQU1TIiwiRklOQUxfRlVORElORyIsIlZJRVdfRlVORElORyIsIlVTRVJfTUFOQUdFTUVOVCIsIlJPTEVfUEVSTUlTU0lPTlNfTUFOQUdFTUVOVCIsIkdFTkVSQVRFX1JFUE9SVCIsIlNMQV9DT05GSUdVUkFUSU9OIl0sInJvbGUiOjEsInJvbGVfbmFtZSI6InN1cGVyYWRtaW4ifQ.4bHCHUEp2B9PSGlMuuslpI7NvPB2DGFl0vV7RQbWxko
 
 ### ============================================
 ### AUTH - WEB DASHBOARD
@@ -25,6 +25,16 @@ Content-Type: application/json
     "password": "admin123",
     "confirm_password": "admin123",`
     "role_id": 2
+}
+
+### Update Profile
+PUT {{baseUrl}}/v1/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "Updated Name",
+    "email": "updated@email.com"
 }
 
 ### ============================================
@@ -121,7 +131,7 @@ Content-Type: application/json
 }
 
 ### ============================================
-### PROGRAMS - TRAINING
+### PROGRAMS MANAGEMENT
 ### ============================================
 
 ### Get All Programs
@@ -279,106 +289,6 @@ Authorization: Bearer {{token}}
 ### Delete Program
 DELETE {{baseUrl}}/v1/programs/1
 Authorization: Bearer {{token}}
-
-### ============================================
-### TESTING - Error Cases
-### ============================================
-
-### Login - Wrong Password
-POST {{baseUrl}}/v1/webauth/login
-Content-Type: application/json
-
-{
-    "email": "superadmin@umkm.go.id",
-    "password": "wrongpassword"
-}
-
-### Login - User Not Found
-POST {{baseUrl}}/v1/webauth/login
-Content-Type: application/json
-
-{
-    "email": "notfound@umkm.go.id",
-    "password": "admin123"
-}
-
-### Register - Email Already Exists
-POST {{baseUrl}}/v1/webauth/register
-Content-Type: application/json
-
-{
-    "name": "Admin Duplicate",
-    "email": "superadmin@umkm.go.id",
-    "password": "admin123",
-    "confirm_password": "admin123",
-    "role_id": 2
-}
-
-### Register - Password Mismatch
-POST {{baseUrl}}/v1/webauth/register
-Content-Type: application/json
-
-{
-    "name": "Admin Test",
-    "email": "test@umkm.go.id",
-    "password": "admin123",
-    "confirm_password": "admin456",
-    "role_id": 2
-}
-
-### Register - Invalid Role
-POST {{baseUrl}}/v1/webauth/register
-Content-Type: application/json
-
-{
-    "name": "Admin Test",
-    "email": "test@umkm.go.id",
-    "password": "admin123",
-    "confirm_password": "admin123",
-    "role_id": 999
-}
-
-### Create Program - Missing Required Fields
-POST {{baseUrl}}/v1/programs/
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "description": "Program without title"
-}
-
-### Create Program - Invalid Type
-POST {{baseUrl}}/v1/programs/
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "title": "Test Program",
-    "type": "invalid_type",
-    "application_deadline": "2025-12-31"
-}
-
-### Get Program - Not Found
-GET {{baseUrl}}/v1/programs/9999
-Authorization: Bearer {{token}}
-
-### Update Program - Not Found
-PUT {{baseUrl}}/v1/programs/9999
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "title": "Updated Program",
-    "type": "training",
-    "application_deadline": "2025-12-31"
-}
-
-### Unauthorized Access (No Token)
-GET {{baseUrl}}/v1/users
-
-### Unauthorized Access (Invalid Token)
-GET {{baseUrl}}/v1/users
-Authorization: Bearer invalid_token_here
 
 ### ============================================
 ### APPLICATIONS MANAGEMENT
@@ -563,105 +473,83 @@ Content-Type: application/json
 }
 
 ### ============================================
-### ERROR CASES - Applications
+### DASHBOARD STATISTICS
 ### ============================================
 
-### Create Application - Missing Program ID
-POST {{baseUrl}}/v1/applications/
+### Dashboard - UMKM by Card Type
+GET {{baseUrl}}/v1/dashboard/umkm-by-card-type
+Authorization: Bearer {{token}}
+
+### Dashboard - Application Status Summary
+GET {{baseUrl}}/v1/dashboard/application-status-summary
+Authorization: Bearer {{token}}
+
+### Dashboard - Application Status Detail
+GET {{baseUrl}}/v1/dashboard/application-status-detail
+Authorization: Bearer {{token}}
+
+### Dashboard - Application by Program
+GET {{baseUrl}}/v1/dashboard/application-by-type
+Authorization: Bearer {{token}}
+
+### ============================================
+### SLA MANAGEMENT
+### ============================================
+
+### Get SLA for Screening and Final Decisions
+GET {{baseUrl}}/v1/sla/screening
+Authorization: Bearer {{token}}
+
+### Get SLA for Final Decisions
+GET {{baseUrl}}/v1/sla/final
+Authorization: Bearer {{token}}    
+
+### Update SLA for Screening
+PUT {{baseUrl}}/v1/sla/screening
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "documents": [
-        {
-            "type": "ktp",
-            "file": "https://example.com/documents/ktp.pdf"
-        }
-    ]
+    "max_days": 10,
+    "description": "Updated screening SLA"
 }
 
-### Create Application - Missing Documents
-POST {{baseUrl}}/v1/applications/
+### Update SLA for Final Decisions
+PUT {{baseUrl}}/v1/sla/final
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "program_id": 1
+    "max_days": 15,
+    "description": "Updated final SLA"
 }
 
-### Create Application - Program Not Found
-POST {{baseUrl}}/v1/applications/
+### Export All Applications Data
+POST {{baseUrl}}/v1/sla/export-applications
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "program_id": 9999,
-    "documents": [
-        {
-            "type": "ktp",
-            "file": "https://example.com/documents/ktp.pdf"
-        }
-    ]
+    "file_type": "pdf",
+    "application_type": "all"
 }
 
-### Create Application - Already Applied
-POST {{baseUrl}}/v1/applications/
+### Export Applications Data - Training Only
+POST {{baseUrl}}/v1/sla/export-applications
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "program_id": 1,
-    "documents": [
-        {
-            "type": "ktp",
-            "file": "https://example.com/documents/ktp.pdf"
-        }
-    ]
+    "file_type": "excel",
+    "application_type": "training"
 }
 
-### Screening Reject - Missing Notes
-PUT {{baseUrl}}/v1/applications/screening-reject/1
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{}
-
-### Screening Revise - Missing Notes
-PUT {{baseUrl}}/v1/applications/screening-revise/1
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{}
-
-### Screening Approve - Wrong Status
-PUT {{baseUrl}}/v1/applications/screening-approve/1
-Authorization: Bearer {{token}}
-
-### Final Approve - Wrong Status (must be in final status)
-PUT {{baseUrl}}/v1/applications/final-approve/1
-Authorization: Bearer {{token}}
-
-### Final Reject - Missing Notes
-PUT {{baseUrl}}/v1/applications/final-reject/1
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{}
-
-### Get Application - Not Found
-GET {{baseUrl}}/v1/applications/9999
-Authorization: Bearer {{token}}
-
-### Update Application - Not in Revised Status
-PUT {{baseUrl}}/v1/applications/1
+### Export Programs Data
+POST {{baseUrl}}/v1/sla/export-programs
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "documents": [
-        {
-            "type": "ktp",
-            "file": "https://example.com/documents/ktp.pdf"
-        }
-    ]
+    "file_type": "pdf",
+    "application_type": "all"
 }

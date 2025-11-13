@@ -328,9 +328,9 @@ func (user_serv *usersService) UpdateUser(ctx context.Context, id int, userNew d
 		return dto.Users{}, err
 	}
 
-	// VALIDASI APAKAH NAME, EMAIL, PASSWORD KOSONG
-	if userNew.Name == "" || userNew.Email == "" || userNew.Password == "" || userNew.ConfirmPassword == "" || userNew.RoleID == nil {
-		return dto.Users{}, errors.New("name, email, and password cannot be blank")
+	// VALIDASI APAKAH NAME, EMAIL, ROLE KOSONG
+	if userNew.Name == "" || userNew.Email == "" || userNew.RoleID == nil {
+		return dto.Users{}, errors.New("name, email, and role cannot be blank")
 	}
 
 	// VALIDASI UNTUK FORMAT EMAIL SUDAH BENAR
@@ -344,38 +344,13 @@ func (user_serv *usersService) UpdateUser(ctx context.Context, id int, userNew d
 		return dto.Users{}, errors.New("email already exists")
 	}
 
-	// VALIDASI PASSWORD SUDAH SESUAI, MIN 8 KARAKTER, MENGANDUNG ALFABET DAN NUMERIK
-	hasMinLen, hasLetter, hasDigit := utils.PasswordValidator(userNew.Password)
-	if !hasMinLen {
-		return dto.Users{}, errors.New("password must be at least 8 characters long")
-	}
-	if !hasLetter {
-		return dto.Users{}, errors.New("password must contain at least one letter")
-	}
-	if !hasDigit {
-		return dto.Users{}, errors.New("password must contain at least one number")
-	}
-
-	// VALIDASI PASSWORD DAN CONFIRM PASSWORD SUDAH SESUAI
-	if userNew.Password != userNew.ConfirmPassword {
-		return dto.Users{}, errors.New("password and confirm password do not match")
-	}
-
 	// VALIDASI APAKAH ROLE ID ADA
 	if !user_serv.userRepository.IsRoleExist(ctx, *userNew.RoleID) {
 		return dto.Users{}, errors.New("role id not found")
 	}
 
-	// HASHING PASSWORD MENGGUNAKAN BCRYPT
-	hashedPassword, err := utils.PasswordHashing(userNew.Password)
-	if err != nil {
-		return dto.Users{}, err
-	}
-	userNew.Password = hashedPassword
-
 	user.Name = userNew.Name
 	user.Email = userNew.Email
-	user.Password = userNew.Password
 	user.RoleID = *userNew.RoleID
 
 	// UPDATE DATA USER

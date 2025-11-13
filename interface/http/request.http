@@ -99,8 +99,6 @@ Content-Type: application/json
 {
     "name": "Admin Screening Updated",
     "email": "adminscreening@umkm.go.id",
-    "password": "admin123",
-    "confirm_password": "admin123",
     "role_id": 2
 }
 

@@ -49,6 +49,15 @@ type (
 		Token string `env:"FONNTE_TOKEN"`
 	}
 
+	Vault struct {
+		Addr               string `env:"VAULT_ADDR"`
+		RoleID             string `env:"VAULT_ROLE_ID"`
+		SecretID           string `env:"VAULT_SECRET_ID"`
+		TransitPath        string `env:"VAULT_TRANSIT_PATH"`
+		NIKEncryptionKey   string `env:"VAULT_NIK_ENCRYPTION_KEY"`
+		KartuEncryptionKey string `env:"VAULT_KARTU_ENCRYPTION_KEY"`
+	}
+
 	Config struct {
 		Server   Server
 		Database Database
@@ -56,6 +65,7 @@ type (
 		Minio    Minio
 		ZSMTP    ZSMTP
 		Fonnte   Fonnte
+		Vault    Vault
 	}
 )
 
@@ -164,6 +174,27 @@ func LoadNative() ([]string, error) {
 	// ! Load Fonnte configuration _____________________________
 	if Cfg.Fonnte.Token, ok = os.LookupEnv("FONNTE_TOKEN"); !ok {
 		missing = append(missing, "FONNTE_TOKEN env is not set")
+	}
+	// ! ______________________________________________________
+
+	// ! Load Vault configuration ______________________________
+	if Cfg.Vault.Addr, ok = os.LookupEnv("VAULT_ADDR"); !ok {
+		missing = append(missing, "VAULT_ADDR env is not set")
+	}
+	if Cfg.Vault.RoleID, ok = os.LookupEnv("VAULT_ROLE_ID"); !ok {
+		missing = append(missing, "VAULT_ROLE_ID env is not set")
+	}
+	if Cfg.Vault.SecretID, ok = os.LookupEnv("VAULT_SECRET_ID"); !ok {
+		missing = append(missing, "VAULT_SECRET_ID env is not set")
+	}
+	if Cfg.Vault.TransitPath, ok = os.LookupEnv("VAULT_TRANSIT_PATH"); !ok {
+		missing = append(missing, "VAULT_TRANSIT_PATH env is not set")
+	}
+	if Cfg.Vault.NIKEncryptionKey, ok = os.LookupEnv("VAULT_NIK_ENCRYPTION_KEY"); !ok {
+		missing = append(missing, "VAULT_NIK_ENCRYPTION_KEY env is not set")
+	}
+	if Cfg.Vault.KartuEncryptionKey, ok = os.LookupEnv("VAULT_KARTU_ENCRYPTION_KEY"); !ok {
+		missing = append(missing, "VAULT_KARTU_ENCRYPTION_KEY env is not set")
 	}
 	// ! ______________________________________________________
 

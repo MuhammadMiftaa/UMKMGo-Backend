@@ -6,6 +6,7 @@ import (
 	"UMKMGo-backend/config/log"
 	"UMKMGo-backend/config/redis"
 	"UMKMGo-backend/config/storage"
+	"UMKMGo-backend/config/vault"
 	"UMKMGo-backend/interface/http/router"
 )
 
@@ -33,6 +34,10 @@ func init() {
 	log.Info("Setup MinIO Connection Start")
 	storage.SetupMinio(env.Cfg.Minio) // Initialize the MinIO connection
 	log.Info("Setup MinIO Connection Success")
+
+	log.Info("Setup Vault Connection Start")
+	vault.SetupVault(env.Cfg.Vault) // Initialize the Vault connection
+	log.Info("Setup Vault Connection Success")
 
 	log.Info("Starting UMKMGo API...")
 }

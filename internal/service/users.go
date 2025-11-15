@@ -5,9 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/config/log"
 	"UMKMGo-backend/config/otp"
 	"UMKMGo-backend/config/redis"
+	"UMKMGo-backend/config/vault"
 	"UMKMGo-backend/internal/repository"
 	"UMKMGo-backend/internal/types/dto"
 	"UMKMGo-backend/internal/types/model"
@@ -621,15 +623,28 @@ func (user_serv *usersService) RegisterMobileProfile(ctx context.Context, user d
 		return nil, err
 	}
 
+	// AMBIL ROLE UMKM DARI DATABASE
 	role, err := user_serv.userRepository.GetRoleByName(ctx, constant.RoleUMKM)
 	if err != nil {
 		return nil, errors.New("role UMKM not found")
 	}
 
+	// PROSES ENKRIPSI NIK MENGGUNAKAN VAULT DENGAN ALGORITMA AES256-GCM96
+	ciphertextNIK, err := vault.EncryptTransit(ctx, env.Cfg.Vault.TransitPath, env.Cfg.Vault.NIKEncryptionKey, []byte(user.NIK))
+	if err != nil {
+		return nil, errors.New("failed to encrypt NIK - " + err.Error())
+	}
+
+	// PROSES ENKRIPSI KARTU NUMBER MENGGUNAKAN VAULT DENGAN ALGORITMA AES256-GCM96
+	ciphertextKartuNumber, err := vault.EncryptTransit(ctx, env.Cfg.Vault.TransitPath, env.Cfg.Vault.KartuEncryptionKey, []byte(user.KartuNumber))
+	if err != nil {
+		return nil, errors.New("failed to encrypt Kartu Number - " + err.Error())
+	}
+
 	res, err := user_serv.userRepository.CreateUMKM(ctx,
 		model.UMKM{
 			BusinessName: user.BusinessName,
-			NIK:          user.NIK,
+			NIK:          ciphertextNIK,
 			Gender:       user.Gender,
 			BirthDate:    birthDate,
 			Phone:        validPhone,
@@ -639,7 +654,7 @@ func (user_serv *usersService) RegisterMobileProfile(ctx context.Context, user d
 			District:     user.District,
 			PostalCode:   user.PostalCode,
 			KartuType:    user.KartuType,
-			KartuNumber:  user.KartuNumber,
+			KartuNumber:  ciphertextKartuNumber,
 		},
 		model.User{
 			Name:        user.Fullname,

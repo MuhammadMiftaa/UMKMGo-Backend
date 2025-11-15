@@ -27,6 +27,7 @@ func UserRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository) 
 
 	mobileAuth := version.Group("/mobileauth")
 	{
+		mobileAuth.Get("meta", User_handler.GetMeta)
 		mobileAuth.Post("login", User_handler.LoginMobile)
 		mobileAuth.Post("register", User_handler.RegisterMobile)
 		mobileAuth.Post("register/profile", User_handler.RegisterMobileProfile)

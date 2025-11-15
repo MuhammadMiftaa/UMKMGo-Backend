@@ -289,7 +289,25 @@ func (user_handler *usersHandler) UpdateRolePermissions(c *fiber.Ctx) error {
 	})
 }
 
-// = Mobile Auth =
+// ====================== Mobile Auth =================================
+
+func (user_handler *usersHandler) GetMeta(c *fiber.Ctx) error {
+	meta, err := user_handler.usersService.MetaCityAndProvince(c.Context())
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"statusCode": 500,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Get meta data",
+		"data":       meta,
+	})
+}
 
 func (user_handler *usersHandler) RegisterMobile(c *fiber.Ctx) error {
 	var userRequest dto.RegisterMobile

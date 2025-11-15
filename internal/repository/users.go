@@ -32,6 +32,9 @@ type UsersRepository interface {
 	GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error)
 	DeletePermissionsByRoleID(ctx context.Context, roleID int) error
 	AddRolePermissions(ctx context.Context, roleID int, permissions []int) error
+
+	GetProvinces(ctx context.Context) ([]dto.Province, error)
+	GetCities(ctx context.Context) ([]dto.City, error)
 }
 
 type usersRepository struct {
@@ -267,4 +270,41 @@ func (user_repo *usersRepository) GetUMKMByPhone(ctx context.Context, phone stri
 	}
 
 	return umkm, nil
+}
+
+func (user_repo *usersRepository) GetProvinces(ctx context.Context) ([]dto.Province, error) {
+	var provinces []model.Province
+	err := user_repo.db.WithContext(ctx).Find(&provinces).Error
+	if err != nil {
+		return nil, errors.New("failed to get provinces")
+	}
+
+	var provincesResponse []dto.Province
+	for _, province := range provinces {
+		provincesResponse = append(provincesResponse, dto.Province{
+			ID:   province.ID,
+			Name: province.Name,
+		})
+	}
+
+	return provincesResponse, nil
+}
+
+func (user_repo *usersRepository) GetCities(ctx context.Context) ([]dto.City, error) {
+	var cities []model.City
+	err := user_repo.db.WithContext(ctx).Find(&cities).Error
+	if err != nil {
+		return nil, errors.New("failed to get cities")
+	}
+
+	var citiesResponse []dto.City
+	for _, city := range cities {
+		citiesResponse = append(citiesResponse, dto.City{
+			ID:         city.ID,
+			Name:       city.Name,
+			ProvinceID: city.ProvinceID,
+		})
+	}
+
+	return citiesResponse, nil
 }

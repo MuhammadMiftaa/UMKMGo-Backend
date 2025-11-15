@@ -82,3 +82,8 @@ type RegisterOTP struct {
 	UMKM  model.UMKM `json:"umkm,omitempty"`
 	User  model.User `json:"user,omitempty"`
 }
+
+type MetaCityAndProvince struct {
+	Provinces []Province `json:"provinces,omitempty"`
+	Cities    []City     `json:"cities,omitempty"`
+}

@@ -28,6 +28,7 @@ type UsersService interface {
 	UpdateUser(ctx context.Context, id int, userNew dto.Users) (dto.Users, error)
 	DeleteUser(ctx context.Context, id int) (dto.Users, error)
 
+	MetaCityAndProvince(ctx context.Context) ([]dto.MetaCityAndProvince, error)
 	RegisterMobile(ctx context.Context, email, phone string) error
 	VerifyOTP(ctx context.Context, phone, code string) (*string, error)
 	RegisterMobileProfile(ctx context.Context, user dto.UMKMMobile, tempToken string) (*string, error)
@@ -451,7 +452,27 @@ func (user_serv *usersService) UpdateRolePermissions(ctx context.Context, rolePe
 	return nil
 }
 
-//  = Mobile Auth =
+// ====================== Mobile Auth =================================
+
+func (user_serv *usersService) MetaCityAndProvince(ctx context.Context) ([]dto.MetaCityAndProvince, error) {
+	var result []dto.MetaCityAndProvince
+	provinces, err := user_serv.userRepository.GetProvinces(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cities, err := user_serv.userRepository.GetCities(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result = append(result, dto.MetaCityAndProvince{
+		Provinces: provinces,
+		Cities:    cities,
+	})
+
+	return result, nil
+}
 
 func (user_serv *usersService) RegisterMobile(ctx context.Context, email, phone string) error {
 	// VALIDASI APAKAH EMAIL DAN PHONE KOSONG

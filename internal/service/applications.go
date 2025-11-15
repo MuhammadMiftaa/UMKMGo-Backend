@@ -97,7 +97,7 @@ func (s *applicationsService) GetAllApplications(ctx context.Context, filterType
 				Location:            app.Program.Location,
 				ApplicationDeadline: app.Program.ApplicationDeadline,
 			},
-			UMKM: &dto.UMKM{
+			UMKM: &dto.UMKMWeb{
 				ID:           app.UMKM.ID,
 				BusinessName: app.UMKM.BusinessName,
 				NIK:          app.UMKM.NIK,
@@ -182,7 +182,7 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 			Location:            application.Program.Location,
 			ApplicationDeadline: application.Program.ApplicationDeadline,
 		},
-		UMKM: &dto.UMKM{
+		UMKM: &dto.UMKMWeb{
 			ID:           application.UMKM.ID,
 			BusinessName: application.UMKM.BusinessName,
 			NIK:          application.UMKM.NIK,

@@ -1,15 +1,11 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
-	"sapaUMKM-backend/config/env"
 	"sapaUMKM-backend/internal/service"
 	"sapaUMKM-backend/internal/types/dto"
-	"sapaUMKM-backend/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -230,80 +226,6 @@ func (user_handler *usersHandler) DeleteUser(c *fiber.Ctx) error {
 	})
 }
 
-func (user_handler *usersHandler) SendOTP(c *fiber.Ctx) error {
-	var OTP dto.OTP
-	if err := c.BodyParser(&OTP); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"statusCode": 400,
-			"status":     false,
-			"message":    "Invalid request body",
-		})
-	}
-	OTP.OTP = utils.GenerateOTP()
-
-	// Simpan OTP ke Redis
-	if err := user_handler.usersService.SetOTP(c.Context(), OTP.Email, OTP.OTP, 5*time.Minute); err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"statusCode": 500,
-			"status":     false,
-			"message":    "Failed to save OTP",
-		})
-	}
-
-	// Kirimkan OTP ke email
-	SMTPProvider := utils.NewZohoSMTP(env.Cfg.ZSMTP)
-	if err := utils.NewSMTPClient(SMTPProvider).SendSingleEmail(OTP.Email, "OTP Verification", "otp-email-template.html", OTP); err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"statusCode": 500,
-			"status":     false,
-			"message":    fmt.Sprintf("Failed to send email, error: %v", err),
-		})
-	}
-
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"status":     true,
-		"statusCode": 200,
-		"message":    "OTP sent successfully",
-		"data":       OTP.Email,
-	})
-}
-
-func (user_handler *usersHandler) VerifyOTP(c *fiber.Ctx) error {
-	var OTP dto.OTP
-	if err := c.BodyParser(&OTP); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"statusCode": 400,
-			"status":     false,
-			"message":    err.Error(),
-		})
-	}
-
-	valid, err := user_handler.usersService.ValidateOTP(c.Context(), OTP.Email, OTP.OTP)
-	if err != nil || !valid {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-			"statusCode": 401,
-			"status":     false,
-			"message":    "Invalid or expired OTP",
-		})
-	}
-
-	user, err := user_handler.usersService.VerifyUser(c.Context(), OTP.Email)
-	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"statusCode": 500,
-			"status":     false,
-			"message":    "Failed to verify user",
-		})
-	}
-
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"status":     true,
-		"statusCode": 200,
-		"message":    "OTP verified successfully",
-		"data":       user,
-	})
-}
-
 func (user_handler *usersHandler) GetListRolePermissions(c *fiber.Ctx) error {
 	rolePermissions, err := user_handler.usersService.GetListRolePermissions(c.Context())
 	if err != nil {
@@ -364,5 +286,174 @@ func (user_handler *usersHandler) UpdateRolePermissions(c *fiber.Ctx) error {
 		"statusCode": 200,
 		"status":     true,
 		"message":    "Update role permissions",
+	})
+}
+
+// = Mobile Auth =
+
+func (user_handler *usersHandler) RegisterMobile(c *fiber.Ctx) error {
+	var userRequest dto.RegisterMobile
+	err := c.BodyParser(&userRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	if err := user_handler.usersService.RegisterMobile(c.Context(), userRequest.Email, userRequest.Phone); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "User registered successfully, please send OTP to verify",
+	})
+}
+
+func (user_handler *usersHandler) VerifyOTP(c *fiber.Ctx) error {
+	var userRequest dto.RegisterMobile
+	err := c.BodyParser(&userRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	tempToken, err := user_handler.usersService.VerifyOTP(c.Context(), userRequest.Phone, userRequest.OTPCode)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "OTP sent successfully",
+		"data": fiber.Map{
+			"temp_token": tempToken,
+			"phone":      userRequest.Phone,
+		},
+	})
+}
+
+func (user_handler *usersHandler) RegisterMobileProfile(c *fiber.Ctx) error {
+	var userRequest dto.UMKMMobile
+	err := c.BodyParser(&userRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	tempToken := c.Query("temp_token")
+	if tempToken == "" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    "Temporary token is required",
+		})
+	}
+
+	user, err := user_handler.usersService.RegisterMobileProfile(c.Context(), userRequest, tempToken)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "User profile registered successfully",
+		"data":       user,
+	})
+}
+
+func (user_handler *usersHandler) LoginMobile(c *fiber.Ctx) error {
+	var userRequest dto.UMKMMobile
+	err := c.BodyParser(&userRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	token, err := user_handler.usersService.LoginMobile(c.Context(), userRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Login user data",
+		"data":       token,
+	})
+}
+
+func (user_handler *usersHandler) ForgotPassword(c *fiber.Ctx) error {
+	phone := c.Query("phone")
+
+	if err := user_handler.usersService.ForgotPassword(c.Context(), phone); err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"statusCode": 500,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Reset password request sent, please send OTP to verify",
+	})
+}
+
+func (user_handler *usersHandler) ResetPassword(c *fiber.Ctx) error {
+	var resetRequest dto.ResetPasswordMobile
+	err := c.BodyParser(&resetRequest)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	tempToken := c.Query("temp_token")
+	if err := user_handler.usersService.ResetPassword(c.Context(), resetRequest, tempToken); err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"statusCode": 500,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Password reset successfully",
 	})
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -53,9 +54,9 @@ func ComparePass(hashPassword, reqPassword string) bool {
 	return err == nil
 }
 
-// ~ GenerateToken creates a JWT token for the user
+// ~ GenerateWebToken creates a JWT token for the user
 // ~ It includes user ID, name, email, role, role name, and permissions in the token claims.
-func GenerateToken(user dto.Users) (string, error) {
+func GenerateWebToken(user dto.Users) (string, error) {
 	expirationTime := time.Now().Add(3 * 24 * time.Hour)
 	claims := jwt.MapClaims{
 		"id":          user.ID,
@@ -66,6 +67,29 @@ func GenerateToken(user dto.Users) (string, error) {
 		"permissions": user.Permissions,
 		"iat":         time.Now().Unix(),
 		"exp":         expirationTime.Unix(),
+	}
+
+	parseToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := parseToken.SignedString([]byte(env.Cfg.Server.JWTSecretKey))
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
+}
+
+func GenerateMobileToken(user dto.UMKMMobile) (string, error) {
+	expirationTime := time.Now().Add(3 * 24 * time.Hour)
+	claims := jwt.MapClaims{
+		"id":            user.ID,
+		"name":          user.Fullname,
+		"business_name": user.BusinessName,
+		"email":         user.Email,
+		"phone":         user.Phone,
+		"kartu_type":    user.KartuType,
+		"iat":           time.Now().Unix(),
+		"exp":           expirationTime.Unix(),
 	}
 
 	parseToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -131,4 +155,121 @@ func GenerateRequestID() string {
 // ~ GenerateFileName creates a standardized file name based on the original name and a prefix used for MinIO storage
 func GenerateFileName(originalName, prefix string) string {
 	return strings.ToLower(fmt.Sprintf("%s/%s_", strings.Join(strings.Split(originalName, " "), "_"), prefix))
+}
+
+// ~ NIKValidator validates the Indonesian National Identity Number (NIK)
+func NIKValidator(nik string) error {
+	if len(nik) != 16 {
+		return errors.New("NIK harus 16 digit")
+	}
+
+	// hanya angka
+	matched, err := regexp.MatchString(`^[0-9]{16}$`, nik)
+	if err != nil {
+		return err
+	}
+	if !matched {
+		return errors.New("NIK harus hanya berisi angka")
+	}
+
+	// tanggal lahir posisi: 7-8 (0-based index 6-7) untuk “tanggal”
+	// bulan 9-10 (index 8-9), tahun 11-12 (index 10-11)
+	tStr := nik[6:8]
+	mStr := nik[8:10]
+	yStr := nik[10:12]
+
+	tInt, err := strconv.Atoi(tStr)
+	if err != nil {
+		return errors.New("Format tanggal lahir tidak valid")
+	}
+	mInt, err := strconv.Atoi(mStr)
+	if err != nil {
+		return errors.New("Format bulan lahir tidak valid")
+	}
+	yInt, err := strconv.Atoi(yStr)
+	if err != nil {
+		return errors.New("Format tahun lahir tidak valid")
+	}
+
+	// jika tanggal > 40 maka perempuan → kurangi 40
+	if tInt > 40 {
+		tInt -= 40
+	}
+
+	if tInt < 1 || tInt > 31 {
+		return errors.New("Tanggal lahir di NIK tidak valid")
+	}
+	if mInt < 1 || mInt > 12 {
+		return errors.New("Bulan lahir di NIK tidak valid")
+	}
+
+	// tentukan tahun lengkap (asumsi 1900 atau 2000)
+	now := time.Now().Year()
+	yy := yInt
+	fullYear := 0
+	if yy <= (now % 100) {
+		fullYear = 2000 + yy
+	} else {
+		fullYear = 1900 + yy
+	}
+	// validasi tahun masuk logika (misal: tidak di masa depan)
+	if fullYear > now {
+		return errors.New("Tahun lahir di NIK lebih besar dari sekarang")
+	}
+
+	// Jika semua oke
+	return nil
+}
+
+// ~ NormalizePhone normalizes an Indonesian phone number to a standard format
+func NormalizePhone(phone string) (string, error) {
+	if phone == "" {
+		return "", errors.New("nomor kosong")
+	}
+
+	// Hilangkan spasi, dash, titik, dsb — hanya sisakan + dan digit
+	re := regexp.MustCompile(`[^0-9+]+`)
+	p := re.ReplaceAllString(phone, "")
+	p = strings.TrimSpace(p)
+
+	if p == "" {
+		return "", errors.New("nomor tidak valid")
+	}
+
+	// Jika sudah diawali '8' → return apa adanya
+	if strings.HasPrefix(p, "8") {
+		return p, nil
+	}
+
+	// +62XXXXXXXX
+	if strings.HasPrefix(p, "+62") {
+		p = p[3:]
+	} else if strings.HasPrefix(p, "62") {
+		// 62XXXXXXXX
+		p = p[2:]
+	} else if strings.HasPrefix(p, "0") {
+		// 08XXXXXXXX
+		p = p[1:]
+	} else {
+		return "", errors.New("format nomor tidak dikenali (harus 0, 62, +62, atau 8)")
+	}
+
+	// Validasi dasar — panjang nomor minimal 9 digit (contoh: 812xxxxxx)
+	if len(p) < 9 {
+		return "", errors.New("panjang nomor tidak valid")
+	}
+
+	return p, nil
+}
+
+// ~ RandomString generates a random hexadecimal string of the specified size
+func RandomString(size int) string {
+	b := make([]byte, 32)
+	rand.Read(b)
+
+	if size <= 0 {
+		return fmt.Sprintf("%x", b)
+	}
+
+	return fmt.Sprintf("%x", b)[:size]
 }

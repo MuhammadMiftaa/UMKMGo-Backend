@@ -19,8 +19,12 @@ type UsersRepository interface {
 	UpdateUser(ctx context.Context, user model.User) (model.User, error)
 	DeleteUser(ctx context.Context, user model.User) (model.User, error)
 
+	CreateUMKM(ctx context.Context, umkm model.UMKM, user model.User) (dto.UMKMMobile, error)
+	GetUMKMByPhone(ctx context.Context, phone string) (model.UMKM, error)
+
 	GetAllRoles(ctx context.Context) ([]model.Role, error)
 	GetRoleByID(ctx context.Context, id int) (model.Role, error)
+	GetRoleByName(ctx context.Context, name string) (model.Role, error)
 	IsRoleExist(ctx context.Context, id int) bool
 	IsPermissionExist(ctx context.Context, id []string) ([]int, bool)
 	GetListPermissions(ctx context.Context) ([]model.Permission, error)
@@ -115,6 +119,16 @@ func (user_repo *usersRepository) GetRoleByID(ctx context.Context, id int) (mode
 	return role, nil
 }
 
+func (user_repo *usersRepository) GetRoleByName(ctx context.Context, name string) (model.Role, error) {
+	var role model.Role
+	err := user_repo.db.WithContext(ctx).First(&role, "name = ?", name).Error
+	if err != nil {
+		return model.Role{}, errors.New("role not found")
+	}
+
+	return role, nil
+}
+
 func (user_repo *usersRepository) IsRoleExist(ctx context.Context, id int) bool {
 	var role model.Role
 	err := user_repo.db.WithContext(ctx).First(&role, "id = ?", id).Error
@@ -171,7 +185,7 @@ func (user_repo *usersRepository) GetListPermissionsByRoleID(ctx context.Context
 	if err := json.Unmarshal([]byte(rolePermissionsRaw), &rolePermissions); err != nil {
 		return nil, errors.New("failed to parse role permissions")
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -200,4 +214,57 @@ func (user_repo *usersRepository) AddRolePermissions(ctx context.Context, roleID
 		return errors.New("failed to add role permissions")
 	}
 	return nil
+}
+
+func (user_repo *usersRepository) CreateUMKM(ctx context.Context, umkm model.UMKM, user model.User) (dto.UMKMMobile, error) {
+	var umkmResponse dto.UMKMMobile
+	err := user_repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Create user first
+		if err := tx.Create(&user).Error; err != nil {
+			return errors.New("failed to create user")
+		}
+
+		// Set UserID in UMKM
+		umkm.UserID = user.ID
+
+		// Create UMKM
+		if err := tx.Create(&umkm).Error; err != nil {
+			return errors.New("failed to create UMKM")
+		}
+
+		// Map UMKM to response DTO
+		umkmResponse = dto.UMKMMobile{
+			ID:           umkm.ID,
+			UserID:       umkm.UserID,
+			BusinessName: umkm.BusinessName,
+			NIK:          umkm.NIK,
+			Gender:       umkm.Gender,
+			BirthDate:    umkm.BirthDate.Format("2006-01-02"),
+			Phone:        umkm.Phone,
+			Address:      umkm.Address,
+			ProvinceID:   umkm.ProvinceID,
+			CityID:       umkm.CityID,
+			District:     umkm.District,
+			PostalCode:   umkm.PostalCode,
+			KartuType:    umkm.KartuType,
+			KartuNumber:  umkm.KartuNumber,
+			Fullname:     user.Name,
+			Email:        user.Email,
+		}
+		return nil
+	})
+	if err != nil {
+		return dto.UMKMMobile{}, err
+	}
+	return umkmResponse, nil
+}
+
+func (user_repo *usersRepository) GetUMKMByPhone(ctx context.Context, phone string) (model.UMKM, error) {
+	var umkm model.UMKM
+	err := user_repo.db.WithContext(ctx).Preload("User").First(&umkm, "phone = ?", phone).Error
+	if err != nil {
+		return model.UMKM{}, errors.New("UMKM not found")
+	}
+
+	return umkm, nil
 }

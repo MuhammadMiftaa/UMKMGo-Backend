@@ -5,11 +5,14 @@ import (
 	"errors"
 	"time"
 
+	"sapaUMKM-backend/config/log"
+	"sapaUMKM-backend/config/otp"
 	"sapaUMKM-backend/config/redis"
 	"sapaUMKM-backend/internal/repository"
 	"sapaUMKM-backend/internal/types/dto"
 	"sapaUMKM-backend/internal/types/model"
 	"sapaUMKM-backend/internal/utils"
+	"sapaUMKM-backend/internal/utils/constant"
 )
 
 type UsersService interface {
@@ -25,6 +28,13 @@ type UsersService interface {
 	UpdateUser(ctx context.Context, id int, userNew dto.Users) (dto.Users, error)
 	DeleteUser(ctx context.Context, id int) (dto.Users, error)
 
+	RegisterMobile(ctx context.Context, email, phone string) error
+	VerifyOTP(ctx context.Context, phone, code string) (*string, error)
+	RegisterMobileProfile(ctx context.Context, user dto.UMKMMobile, tempToken string) (*string, error)
+	LoginMobile(ctx context.Context, user dto.UMKMMobile) (*string, error)
+	ForgotPassword(ctx context.Context, phone string) error
+	ResetPassword(ctx context.Context, user dto.ResetPasswordMobile, tempToken string) error
+
 	GetListPermissions(ctx context.Context) ([]dto.Permissions, error)
 	GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error)
 	UpdateRolePermissions(ctx context.Context, rolePermissions dto.RolePermissions) error
@@ -32,11 +42,12 @@ type UsersService interface {
 
 type usersService struct {
 	userRepository  repository.UsersRepository
+	otpRepository   repository.OTPRepository
 	redisRepository redis.RedisRepository
 }
 
-func NewUsersService(usersRepository repository.UsersRepository, redisRepository redis.RedisRepository) UsersService {
-	return &usersService{usersRepository, redisRepository}
+func NewUsersService(usersRepository repository.UsersRepository, otpRepository repository.OTPRepository, redisRepository redis.RedisRepository) UsersService {
+	return &usersService{usersRepository, otpRepository, redisRepository}
 }
 
 func (user_serv *usersService) Register(ctx context.Context, user dto.Users) (dto.Users, error) {
@@ -144,7 +155,7 @@ func (user_serv *usersService) Login(ctx context.Context, user dto.Users) (*stri
 		return nil, err
 	}
 
-	token, err := utils.GenerateToken(dto.Users{
+	token, err := utils.GenerateWebToken(dto.Users{
 		ID:          userExist.ID,
 		Name:        userExist.Name,
 		Email:       userExist.Email,
@@ -435,6 +446,330 @@ func (user_serv *usersService) UpdateRolePermissions(ctx context.Context, rolePe
 	err = user_serv.userRepository.AddRolePermissions(ctx, rolePermissions.RoleID, permissionIDs)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+//  = Mobile Auth =
+
+func (user_serv *usersService) RegisterMobile(ctx context.Context, email, phone string) error {
+	// VALIDASI APAKAH EMAIL DAN PHONE KOSONG
+	if email == "" || phone == "" {
+		return errors.New("email and phone cannot be blank")
+	}
+
+	// VALIDASI UNTUK FORMAT EMAIL SUDAH BENAR
+	if isValid := utils.EmailValidator(email); !isValid {
+		return errors.New("please enter a valid email address")
+	}
+
+	// VALIDASI NOMOR TELEPON
+	validPhone, err := utils.NormalizePhone(phone)
+	if err != nil {
+		return errors.New("please enter a valid phone number")
+	}
+
+	// MENGECEK APAKAH USER SUDAH TERDAFTAR
+	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, email)
+	if err == nil && (userExist.Email != "") {
+		return errors.New("email already exists")
+	}
+
+	otpCode := utils.GenerateOTP()
+	OTP := model.OTP{
+		PhoneNumber: validPhone,
+		Email:       email,
+		OTPCode:     otpCode,
+		ExpiresAt:   time.Now().Add(5 * time.Minute),
+		Status:      constant.OTPStatusActive,
+	}
+
+	if err := user_serv.otpRepository.CreateOTP(ctx, OTP); err != nil {
+		return errors.New("failed to create OTP")
+	}
+
+	if _, err := otp.SendOTP(validPhone, otpCode); err != nil {
+		return errors.New("failed to send OTP")
+	}
+
+	return nil
+}
+
+func (user_serv *usersService) VerifyOTP(ctx context.Context, phone, code string) (*string, error) {
+	phone, err := utils.NormalizePhone(phone)
+	if err != nil {
+		return nil, errors.New("please enter a valid phone number")
+	}
+
+	OTP, err := user_serv.otpRepository.GetOTPByPhone(ctx, phone)
+	if err != nil {
+		return nil, errors.New("failed to get OTP")
+	}
+	log.Log.Debugln("Exp:", OTP.ExpiresAt)
+	log.Log.Debugln("Status:", OTP.Status)
+	if OTP == nil || OTP.ExpiresAt.Before(time.Now()) || OTP.Status != constant.OTPStatusActive {
+		return nil, errors.New("OTP expired or not found")
+	}
+
+	if OTP.OTPCode != code {
+		return nil, errors.New("invalid OTP")
+	}
+
+	tempToken := utils.RandomString(10)
+	OTP.TempToken = &tempToken
+
+	if err := user_serv.otpRepository.UpdateOTP(ctx, *OTP); err != nil {
+		return nil, errors.New("failed to update OTP")
+	}
+
+	return &tempToken, nil
+}
+
+func (user_serv *usersService) RegisterMobileProfile(ctx context.Context, user dto.UMKMMobile, tempToken string) (*string, error) {
+	OTP, err := user_serv.otpRepository.GetOTPByTempToken(ctx, tempToken)
+	if err != nil {
+		return nil, errors.New("failed to get OTP")
+	}
+
+	if OTP == nil || OTP.Status != constant.OTPStatusActive {
+		return nil, errors.New("OTP expired or not found")
+	}
+
+	// INPUT VALIDATION
+	if user.Fullname == "" {
+		return nil, errors.New("fullname cannot be blank")
+	}
+	if user.BusinessName == "" {
+		return nil, errors.New("business name cannot be blank")
+	}
+	if user.NIK == "" {
+		return nil, errors.New("NIK cannot be blank")
+	}
+	if user.BirthDate == "" {
+		return nil, errors.New("birth date cannot be blank")
+	}
+	if user.Gender == "" {
+		return nil, errors.New("gender cannot be blank")
+	}
+	if user.Address == "" {
+		return nil, errors.New("address cannot be blank")
+	}
+	if user.ProvinceID == 0 {
+		return nil, errors.New("province cannot be blank")
+	}
+	if user.CityID == 0 {
+		return nil, errors.New("city cannot be blank")
+	}
+	if user.District == "" {
+		return nil, errors.New("district cannot be blank")
+	}
+	if user.PostalCode == "" {
+		return nil, errors.New("postal code cannot be blank")
+	}
+	if user.KartuType == "" {
+		return nil, errors.New("kartu type cannot be blank")
+	}
+	if user.KartuNumber == "" {
+		return nil, errors.New("kartu number cannot be blank")
+	}
+	if hasLetter, hasDigit, hasMinLen := utils.PasswordValidator(user.Password); !hasLetter || !hasDigit || !hasMinLen {
+		return nil, errors.New("password must contain at least 8 characters, 1 letter and 1 number")
+	}
+
+	// VALIDASI NOMOR TELEPON
+	validPhone, err := utils.NormalizePhone(OTP.PhoneNumber)
+	if err != nil {
+		return nil, errors.New("please enter a valid phone number")
+	}
+
+	// ! VALIDASI UNTUK FORMAT NIK
+	// if err := utils.NIKValidator(user.NIK); err != nil {
+	// 	return nil, errors.New("please enter a valid NIK")
+	// }
+
+	// VALIDASI TANGGAL LAHIR
+	birthDate, err := time.Parse("2006-01-02", user.BirthDate)
+	if err != nil {
+		return nil, errors.New("please enter a valid birth date in format YYYY-MM-DD")
+	}
+
+	// HASHING PASSWORD MENGGUNAKAN BCRYPT
+	hashedPassword, err := utils.PasswordHashing(user.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	role, err := user_serv.userRepository.GetRoleByName(ctx, constant.RoleUMKM)
+	if err != nil {
+		return nil, errors.New("role UMKM not found")
+	}
+
+	res, err := user_serv.userRepository.CreateUMKM(ctx,
+		model.UMKM{
+			BusinessName: user.BusinessName,
+			NIK:          user.NIK,
+			Gender:       user.Gender,
+			BirthDate:    birthDate,
+			Phone:        validPhone,
+			Address:      user.Address,
+			ProvinceID:   user.ProvinceID,
+			CityID:       user.CityID,
+			District:     user.District,
+			PostalCode:   user.PostalCode,
+			KartuType:    user.KartuType,
+			KartuNumber:  user.KartuNumber,
+		},
+		model.User{
+			Name:        user.Fullname,
+			Email:       OTP.Email,
+			Password:    hashedPassword,
+			RoleID:      role.ID,
+			IsActive:    true,
+			LastLoginAt: time.Now(),
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	OTP.Status = constant.OTPStatusUsed
+	if err := user_serv.otpRepository.UpdateOTP(ctx, *OTP); err != nil {
+		return nil, errors.New("failed to update OTP status")
+	}
+
+	token, err := utils.GenerateMobileToken(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return &token, nil
+}
+
+func (user_serv *usersService) LoginMobile(ctx context.Context, user dto.UMKMMobile) (*string, error) {
+	// VALIDASI APAKAH PHONE DAN PASSWORD KOSONG
+	if user.Phone == "" || user.Password == "" {
+		return nil, errors.New("phone and password cannot be blank")
+	}
+
+	// MENGGUNAKAN NORMALIZE PHONE UNTUK MEMASTIKAN FORMAT YANG BENAR
+	validPhone, err := utils.NormalizePhone(user.Phone)
+	if err != nil {
+		return nil, errors.New("please enter a valid phone number")
+	}
+
+	// MENGECEK APAKAH USER SUDAH TERDAFTAR
+	userExist, err := user_serv.userRepository.GetUMKMByPhone(ctx, validPhone)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	// VALIDASI APAKAH PASSWORD SUDAH SESUAI
+	if !utils.ComparePass(userExist.User.Password, user.Password) {
+		return nil, errors.New("password is incorrect")
+	}
+
+	token, err := utils.GenerateMobileToken(dto.UMKMMobile{
+		ID:           userExist.ID,
+		Fullname:     userExist.User.Name,
+		BusinessName: userExist.BusinessName,
+		Email:        userExist.User.Email,
+		Phone:        userExist.Phone,
+		KartuType:    userExist.KartuType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &token, nil
+}
+
+func (user_serv *usersService) ForgotPassword(ctx context.Context, phone string) error {
+	// VALIDASI APAKAH PHONE KOSONG
+	if phone == "" {
+		return errors.New("phone cannot be blank")
+	}
+
+	// VALIDASI NOMOR TELEPON
+	validPhone, err := utils.NormalizePhone(phone)
+	if err != nil {
+		return errors.New("please enter a valid phone number")
+	}
+
+	// MENGECEK APAKAH USER SUDAH TERDAFTAR
+	userExist, err := user_serv.userRepository.GetUMKMByPhone(ctx, validPhone)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	otpCode := utils.GenerateOTP()
+	OTP := model.OTP{
+		PhoneNumber: validPhone,
+		Email:       userExist.User.Email,
+		OTPCode:     otpCode,
+		ExpiresAt:   time.Now().Add(5 * time.Minute),
+		Status:      constant.OTPStatusActive,
+	}
+
+	if err := user_serv.otpRepository.CreateOTP(ctx, OTP); err != nil {
+		return errors.New("failed to create OTP")
+	}
+
+	if _, err := otp.SendOTP(validPhone, otpCode); err != nil {
+		return errors.New("failed to send OTP")
+	}
+
+	return nil
+}
+
+func (user_serv *usersService) ResetPassword(ctx context.Context, user dto.ResetPasswordMobile, tempToken string) error {
+	// VALIDASI APAKAH PHONE, PASSWORD, DAN CONFIRM PASSWORD KOSONG
+	if user.Password == "" || user.ConfirmPassword == "" {
+		return errors.New("password cannot be blank")
+	}
+
+	// MENGAMBIL OTP DARI TEMP TOKEN
+	OTP, err := user_serv.otpRepository.GetOTPByTempToken(ctx, tempToken)
+	if err != nil {
+		return errors.New("failed to get OTP")
+	}
+
+	if OTP == nil || OTP.Status != constant.OTPStatusActive {
+		return errors.New("OTP expired or not found")
+	}
+
+	// MENGECEK APAKAH USER SUDAH TERDAFTAR
+	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, OTP.Email)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	// VALIDASI PASSWORD SUDAH SESUAI, MIN 8 KARAKTER, MENGANDUNG ALFABET DAN NUMERIK
+	if hasLetter, hasDigit, hasMinLen := utils.PasswordValidator(user.Password); !hasLetter || !hasDigit || !hasMinLen {
+		return errors.New("password must contain at least 8 characters, 1 letter and 1 number")
+	}
+
+	// VALIDASI PASSWORD DAN CONFIRM PASSWORD SUDAH SESUAI
+	if user.Password != user.ConfirmPassword {
+		return errors.New("password and confirm password do not match")
+	}
+
+	// HASHING PASSWORD MENGGUNAKAN BCRYPT
+	hashedPassword, err := utils.PasswordHashing(user.Password)
+	if err != nil {
+		return err
+	}
+
+	userExist.Password = hashedPassword
+
+	// UPDATE PASSWORD USER
+	if _, err := user_serv.userRepository.UpdateUser(ctx, userExist); err != nil {
+		return errors.New("failed to update password")
+	}
+
+	// UPDATE STATUS OTP MENJADI USED
+	OTP.Status = constant.OTPStatusUsed
+	if err := user_serv.otpRepository.UpdateOTP(ctx, *OTP); err != nil {
+		return errors.New("failed to update OTP status")
 	}
 
 	return nil

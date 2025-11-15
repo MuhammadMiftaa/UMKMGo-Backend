@@ -45,12 +45,17 @@ type (
 		ZSAuth     bool   `env:"ZOHO_SMTP_AUTH"`
 	}
 
+	Fonnte struct {
+		Token string `env:"FONNTE_TOKEN"`
+	}
+
 	Config struct {
 		Server   Server
 		Database Database
 		Redis    Redis
 		Minio    Minio
 		ZSMTP    ZSMTP
+		Fonnte   Fonnte
 	}
 )
 
@@ -153,6 +158,12 @@ func LoadNative() ([]string, error) {
 		missing = append(missing, "ZOHO_SMTP_AUTH env is not set")
 	} else {
 		Cfg.ZSMTP.ZSAuth = zohoAuth == "true"
+	}
+	// ! ______________________________________________________
+
+	// ! Load Fonnte configuration _____________________________
+	if Cfg.Fonnte.Token, ok = os.LookupEnv("FONNTE_TOKEN"); !ok {
+		missing = append(missing, "FONNTE_TOKEN env is not set")
 	}
 	// ! ______________________________________________________
 

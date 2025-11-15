@@ -13,7 +13,8 @@ import (
 
 func UserRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository) {
 	User_repo := repository.NewUsersRepository(db)
-	User_serv := service.NewUsersService(User_repo, redis)
+	OTP_repo := repository.NewOTPRepository(db)
+	User_serv := service.NewUsersService(User_repo, OTP_repo, redis)
 
 	User_handler := handler.NewUsersHandler(User_serv)
 
@@ -26,9 +27,11 @@ func UserRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository) 
 
 	mobileAuth := version.Group("/mobileauth")
 	{
-		mobileAuth.Post("login", User_handler.Login)
-		mobileAuth.Post("register", User_handler.Register)
-		mobileAuth.Post("send/otp", User_handler.SendOTP)
+		mobileAuth.Post("login", User_handler.LoginMobile)
+		mobileAuth.Post("register", User_handler.RegisterMobile)
+		mobileAuth.Post("register/profile", User_handler.RegisterMobileProfile)
+		mobileAuth.Post("forgot-password", User_handler.ForgotPassword)
+		mobileAuth.Post("reset-password", User_handler.ResetPassword)
 		mobileAuth.Post("verify/otp", User_handler.VerifyOTP)
 	}
 

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"log"
 
-	"sapaUMKM-backend/internal/repository"
-	"sapaUMKM-backend/internal/types/dto"
-	"sapaUMKM-backend/internal/types/model"
+	"UMKMGo-backend/internal/repository"
+	"UMKMGo-backend/internal/types/dto"
+	"UMKMGo-backend/internal/types/model"
 )
 
 type ApplicationsService interface {

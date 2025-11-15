@@ -1,12 +1,12 @@
 package main
 
 import (
-	"sapaUMKM-backend/config/db"
-	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/config/log"
-	"sapaUMKM-backend/config/redis"
-	"sapaUMKM-backend/config/storage"
-	"sapaUMKM-backend/interface/http/router"
+	"UMKMGo-backend/config/db"
+	"UMKMGo-backend/config/env"
+	"UMKMGo-backend/config/log"
+	"UMKMGo-backend/config/redis"
+	"UMKMGo-backend/config/storage"
+	"UMKMGo-backend/interface/http/router"
 )
 
 func init() {
@@ -34,11 +34,11 @@ func init() {
 	storage.SetupMinio(env.Cfg.Minio) // Initialize the MinIO connection
 	log.Info("Setup MinIO Connection Success")
 
-	log.Info("Starting sapaUMKM API...")
+	log.Info("Starting UMKMGo API...")
 }
 
 func main() {
-	defer log.Info("sapaUMKM API stopped")
+	defer log.Info("UMKMGo API stopped")
 
 	r := router.SetupRouter() // Set up the HTTP router
 

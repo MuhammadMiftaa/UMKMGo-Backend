@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/config/log"
+	"UMKMGo-backend/config/env"
+	"UMKMGo-backend/config/log"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"

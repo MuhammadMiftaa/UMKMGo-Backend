@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"sapaUMKM-backend/config/redis"
-	"sapaUMKM-backend/config/storage"
-	"sapaUMKM-backend/internal/repository"
-	"sapaUMKM-backend/internal/types/dto"
-	"sapaUMKM-backend/internal/types/model"
-	"sapaUMKM-backend/internal/utils"
+	"UMKMGo-backend/config/redis"
+	"UMKMGo-backend/config/storage"
+	"UMKMGo-backend/internal/repository"
+	"UMKMGo-backend/internal/types/dto"
+	"UMKMGo-backend/internal/types/model"
+	"UMKMGo-backend/internal/utils"
 )
 
 type ProgramsService interface {

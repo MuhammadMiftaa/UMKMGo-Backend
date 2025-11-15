@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"sapaUMKM-backend/internal/service"
+	"UMKMGo-backend/internal/service"
 
 	"github.com/gofiber/fiber/v2"
 )

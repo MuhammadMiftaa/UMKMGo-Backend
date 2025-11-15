@@ -1,6 +1,6 @@
 package dto
 
-import "sapaUMKM-backend/internal/types/model"
+import "UMKMGo-backend/internal/types/model"
 
 type RegisterMobile struct {
 	Email   string `json:"email,omitempty"`

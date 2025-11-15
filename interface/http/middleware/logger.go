@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"sapaUMKM-backend/config/log"
+	"UMKMGo-backend/config/log"
 
 	"github.com/gofiber/fiber/v2"
 )

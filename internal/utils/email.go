@@ -7,9 +7,9 @@ import (
 	"net/smtp"
 	"time"
 
-	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/config/log"
-	htmlTemplate "sapaUMKM-backend/template"
+	"UMKMGo-backend/config/env"
+	"UMKMGo-backend/config/log"
+	htmlTemplate "UMKMGo-backend/template"
 )
 
 type SMTPInterface interface {

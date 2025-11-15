@@ -2,8 +2,9 @@ package db
 
 import (
 	"fmt"
-	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/config/log"
+
+	"UMKMGo-backend/config/env"
+	"UMKMGo-backend/config/log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

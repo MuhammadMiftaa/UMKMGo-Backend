@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"sapaUMKM-backend/internal/types/model"
+	"UMKMGo-backend/internal/types/model"
 
 	"gorm.io/gorm"
 )
@@ -44,13 +44,13 @@ func NewApplicationsRepository(db *gorm.DB) ApplicationsRepository {
 func (repo *applicationsRepository) GetAllApplications(ctx context.Context, filterType string) ([]model.Application, error) {
 	var applications []model.Application
 	query := repo.db.WithContext(ctx).
-	Debug().
-	Preload("Program").
-	Preload("UMKM.User").
-	Preload("UMKM.City.Province").
-	Preload("Documents").
-	Preload("Histories.User").
-	Where("applications.deleted_at IS NULL")
+		Debug().
+		Preload("Program").
+		Preload("UMKM.User").
+		Preload("UMKM.City.Province").
+		Preload("Documents").
+		Preload("Histories.User").
+		Where("applications.deleted_at IS NULL")
 
 	if filterType != "" {
 		query = query.Where("type = ?", filterType)
@@ -66,14 +66,14 @@ func (repo *applicationsRepository) GetAllApplications(ctx context.Context, filt
 func (repo *applicationsRepository) GetApplicationByID(ctx context.Context, id int) (model.Application, error) {
 	var application model.Application
 	err := repo.db.WithContext(ctx).
-	Debug().
-	Preload("Program").
-	Preload("UMKM.User").
-	Preload("UMKM.City.Province").
-	Preload("Documents").
-	Preload("Histories.User").
-	Where("applications.id = ? AND applications.deleted_at IS NULL", id).
-	First(&application).Error
+		Debug().
+		Preload("Program").
+		Preload("UMKM.User").
+		Preload("UMKM.City.Province").
+		Preload("Documents").
+		Preload("Histories.User").
+		Where("applications.id = ? AND applications.deleted_at IS NULL", id).
+		First(&application).Error
 	if err != nil {
 		return model.Application{}, errors.New("application not found")
 	}

@@ -2,7 +2,8 @@ package middleware
 
 import (
 	"context"
-	"sapaUMKM-backend/internal/utils/constant"
+
+	"UMKMGo-backend/internal/utils/constant"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -11,7 +12,7 @@ func ContextMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), constant.DefaultConnectionTimeout)
 		defer cancel()
-		
+
 		ctx = context.WithValue(ctx, "requestID", c.Locals("requestID"))
 		ctx = context.WithValue(ctx, "userID", c.Locals("userID"))
 		ctx = context.WithValue(ctx, "role", c.Locals("role"))

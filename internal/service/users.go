@@ -5,14 +5,14 @@ import (
 	"errors"
 	"time"
 
-	"sapaUMKM-backend/config/log"
-	"sapaUMKM-backend/config/otp"
-	"sapaUMKM-backend/config/redis"
-	"sapaUMKM-backend/internal/repository"
-	"sapaUMKM-backend/internal/types/dto"
-	"sapaUMKM-backend/internal/types/model"
-	"sapaUMKM-backend/internal/utils"
-	"sapaUMKM-backend/internal/utils/constant"
+	"UMKMGo-backend/config/log"
+	"UMKMGo-backend/config/otp"
+	"UMKMGo-backend/config/redis"
+	"UMKMGo-backend/internal/repository"
+	"UMKMGo-backend/internal/types/dto"
+	"UMKMGo-backend/internal/types/model"
+	"UMKMGo-backend/internal/utils"
+	"UMKMGo-backend/internal/utils/constant"
 )
 
 type UsersService interface {

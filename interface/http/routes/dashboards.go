@@ -1,24 +1,24 @@
 package routes
 
 import (
-	"sapaUMKM-backend/interface/http/handler"
-	"sapaUMKM-backend/interface/http/middleware"
-	"sapaUMKM-backend/internal/repository"
-	"sapaUMKM-backend/internal/service"
-	
+	"UMKMGo-backend/interface/http/handler"
+	"UMKMGo-backend/interface/http/middleware"
+	"UMKMGo-backend/internal/repository"
+	"UMKMGo-backend/internal/service"
+
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
 func DashboardRoutes(version fiber.Router, db *gorm.DB) {
 	dashboardRepo := repository.NewDashboardRepository(db)
-	
+
 	dashboardService := service.NewDashboardService(dashboardRepo)
-	
+
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
-	
+
 	version.Use(middleware.AuthMiddleware())
-	
+
 	dashboard := version.Group("/dashboard")
 	{
 		dashboard.Get("/umkm-by-card-type", dashboardHandler.GetUMKMByCardType)

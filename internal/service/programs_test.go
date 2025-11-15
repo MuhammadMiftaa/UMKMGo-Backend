@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"sapaUMKM-backend/internal/types/dto"
-	"sapaUMKM-backend/internal/types/model"
+	"UMKMGo-backend/internal/types/dto"
+	"UMKMGo-backend/internal/types/model"
 )
 
 // Mock programs repository

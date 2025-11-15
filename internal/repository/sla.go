@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"sapaUMKM-backend/internal/types/model"
+	"UMKMGo-backend/internal/types/model"
 
 	"gorm.io/gorm"
 )

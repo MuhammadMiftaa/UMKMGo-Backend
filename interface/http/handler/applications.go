@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"sapaUMKM-backend/internal/service"
-	"sapaUMKM-backend/internal/types/dto"
+	"UMKMGo-backend/internal/service"
+	"UMKMGo-backend/internal/types/dto"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -22,7 +22,7 @@ func NewApplicationsHandler(applicationsService service.ApplicationsService) *ap
 
 func (h *applicationsHandler) GetAllApplications(c *fiber.Ctx) error {
 	filterType := c.Query("type", "")
-	
+
 	applications, err := h.applicationsService.GetAllApplications(c.Context(), filterType)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{

@@ -1,4 +1,4 @@
-module sapaUMKM-backend
+module UMKMGo-backend
 
 go 1.24.4
 

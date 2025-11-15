@@ -10,8 +10,8 @@ import (
 	"time"
 	"unicode"
 
-	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/internal/types/dto"
+	"UMKMGo-backend/config/env"
+	"UMKMGo-backend/internal/types/dto"
 
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"

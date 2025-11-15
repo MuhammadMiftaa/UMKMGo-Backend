@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"sapaUMKM-backend/internal/repository"
-	"sapaUMKM-backend/internal/types/dto"
+	"UMKMGo-backend/internal/repository"
+	"UMKMGo-backend/internal/types/dto"
 )
 
 type DashboardService interface {

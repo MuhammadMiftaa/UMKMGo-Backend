@@ -3,7 +3,7 @@ package middleware
 import (
 	"strings"
 
-	"sapaUMKM-backend/internal/utils"
+	"UMKMGo-backend/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -45,7 +45,7 @@ func AuthMiddleware() fiber.Handler {
 		if requestID == "" {
 			requestID = utils.GenerateRequestID()
 			c.Set("X-Request-ID", requestID)
-		} 
+		}
 
 		c.Locals("user_data", userData)
 		c.Locals("userID", userData.ID)

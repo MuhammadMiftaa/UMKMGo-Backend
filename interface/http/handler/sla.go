@@ -2,9 +2,10 @@ package handler
 
 import (
 	"net/http"
-	"sapaUMKM-backend/internal/service"
-	"sapaUMKM-backend/internal/types/dto"
-	
+
+	"UMKMGo-backend/internal/service"
+	"UMKMGo-backend/internal/types/dto"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -27,7 +28,7 @@ func (h *slaHandler) GetSLAScreening(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"statusCode": 200,
 		"status":     true,
@@ -64,7 +65,7 @@ func (h *slaHandler) UpdateSLAScreening(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	result, err := h.slaService.UpdateSLAScreening(c.Context(), slaRequest)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -73,7 +74,7 @@ func (h *slaHandler) UpdateSLAScreening(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"statusCode": 200,
 		"status":     true,
@@ -92,7 +93,7 @@ func (h *slaHandler) UpdateSLAFinal(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	result, err := h.slaService.UpdateSLAFinal(c.Context(), slaRequest)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -101,7 +102,7 @@ func (h *slaHandler) UpdateSLAFinal(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"statusCode": 200,
 		"status":     true,
@@ -120,7 +121,7 @@ func (h *slaHandler) ExportApplications(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	fileData, filename, err := h.slaService.ExportApplications(c.Context(), exportRequest)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -129,16 +130,16 @@ func (h *slaHandler) ExportApplications(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	// Set content type based on file type
 	contentType := "text/plain"
 	if exportRequest.FileType == "excel" {
 		contentType = "text/csv"
 	}
-	
+
 	c.Set("Content-Type", contentType)
 	c.Set("Content-Disposition", "attachment; filename="+filename)
-	
+
 	return c.Send(fileData)
 }
 
@@ -152,7 +153,7 @@ func (h *slaHandler) ExportPrograms(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	fileData, filename, err := h.slaService.ExportPrograms(c.Context(), exportRequest)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -161,15 +162,15 @@ func (h *slaHandler) ExportPrograms(c *fiber.Ctx) error {
 			"message":    err.Error(),
 		})
 	}
-	
+
 	// Set content type based on file type
 	contentType := "text/plain"
 	if exportRequest.FileType == "excel" {
 		contentType = "text/csv"
 	}
-	
+
 	c.Set("Content-Type", contentType)
 	c.Set("Content-Disposition", "attachment; filename="+filename)
-	
+
 	return c.Send(fileData)
 }

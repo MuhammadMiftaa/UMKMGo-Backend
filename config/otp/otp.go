@@ -2,7 +2,8 @@ package otp
 
 import (
 	"log"
-	"sapaUMKM-backend/config/env"
+
+	"UMKMGo-backend/config/env"
 )
 
 func SendOTP(phone, otpCode string) (string, error) {

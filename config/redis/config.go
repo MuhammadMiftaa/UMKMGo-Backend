@@ -3,9 +3,9 @@ package redis
 import (
 	"fmt"
 
-	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/config/log"
-	"sapaUMKM-backend/internal/utils/constant"
+	"UMKMGo-backend/config/env"
+	"UMKMGo-backend/config/log"
+	"UMKMGo-backend/internal/utils/constant"
 
 	"github.com/go-redis/redis/v8"
 )

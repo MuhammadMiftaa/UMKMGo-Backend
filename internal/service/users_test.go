@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"sapaUMKM-backend/internal/types/dto"
-	"sapaUMKM-backend/internal/types/model"
+	"UMKMGo-backend/internal/types/dto"
+	"UMKMGo-backend/internal/types/model"
 )
 
 // Mock repository for testing
@@ -542,7 +542,7 @@ func TestUpdateRolePermissions(t *testing.T) {
 		expectError bool
 		errorMsg    string
 	}{
-		{	
+		{
 			name: "Valid update",
 			input: dto.RolePermissions{
 				RoleID:      1,

@@ -1,12 +1,12 @@
 package router
 
 import (
-	"sapaUMKM-backend/config/db"
-	"sapaUMKM-backend/config/log"
-	"sapaUMKM-backend/config/redis"
-	"sapaUMKM-backend/config/storage"
-	"sapaUMKM-backend/interface/http/middleware"
-	"sapaUMKM-backend/interface/http/routes"
+	"UMKMGo-backend/config/db"
+	"UMKMGo-backend/config/log"
+	"UMKMGo-backend/config/redis"
+	"UMKMGo-backend/config/storage"
+	"UMKMGo-backend/interface/http/middleware"
+	"UMKMGo-backend/interface/http/routes"
 
 	"github.com/gofiber/fiber/v2"
 )

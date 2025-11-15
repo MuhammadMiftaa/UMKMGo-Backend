@@ -1,11 +1,11 @@
 package routes
 
 import (
-	"sapaUMKM-backend/config/redis"
-	"sapaUMKM-backend/interface/http/handler"
-	"sapaUMKM-backend/interface/http/middleware"
-	"sapaUMKM-backend/internal/repository"
-	"sapaUMKM-backend/internal/service"
+	"UMKMGo-backend/config/redis"
+	"UMKMGo-backend/interface/http/handler"
+	"UMKMGo-backend/interface/http/middleware"
+	"UMKMGo-backend/internal/repository"
+	"UMKMGo-backend/internal/service"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"

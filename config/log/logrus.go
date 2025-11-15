@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"sapaUMKM-backend/config/env"
-	"sapaUMKM-backend/internal/utils/constant"
 	"strings"
 	"time"
+
+	"UMKMGo-backend/config/env"
+	"UMKMGo-backend/internal/utils/constant"
 
 	"github.com/sirupsen/logrus"
 )

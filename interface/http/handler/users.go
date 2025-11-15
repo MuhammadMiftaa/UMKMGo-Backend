@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"sapaUMKM-backend/internal/service"
-	"sapaUMKM-backend/internal/types/dto"
+	"UMKMGo-backend/internal/service"
+	"UMKMGo-backend/internal/types/dto"
 
 	"github.com/gofiber/fiber/v2"
 )

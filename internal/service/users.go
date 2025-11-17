@@ -7,7 +7,6 @@ import (
 
 	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/config/log"
-	"UMKMGo-backend/config/otp"
 	"UMKMGo-backend/config/redis"
 	"UMKMGo-backend/config/vault"
 	"UMKMGo-backend/internal/repository"
@@ -15,6 +14,8 @@ import (
 	"UMKMGo-backend/internal/types/model"
 	"UMKMGo-backend/internal/utils"
 	"UMKMGo-backend/internal/utils/constant"
+
+	otp "github.com/MuhammadMiftaa/Internal/golang/otp-whatsapp"
 )
 
 type UsersService interface {
@@ -512,7 +513,12 @@ func (user_serv *usersService) RegisterMobile(ctx context.Context, email, phone 
 		return errors.New("failed to create OTP")
 	}
 
-	if _, err := otp.SendOTP(validPhone, otpCode); err != nil {
+	vendor, err := otp.InitVendor(otp.VENDOR_FONNTE, env.Cfg.Fonnte.Token, "", "")
+	if err != nil {
+		return errors.New("failed to initialize OTP vendor")
+	}
+
+	if _, err := otp.SendOTP(vendor, validPhone, otpCode); err != nil {
 		return errors.New("failed to send OTP")
 	}
 
@@ -750,7 +756,12 @@ func (user_serv *usersService) ForgotPassword(ctx context.Context, phone string)
 		return errors.New("failed to create OTP")
 	}
 
-	if _, err := otp.SendOTP(validPhone, otpCode); err != nil {
+	vendor, err := otp.InitVendor(otp.VENDOR_FONNTE, env.Cfg.Fonnte.Token, "", "")
+	if err != nil {
+		return errors.New("failed to initialize OTP vendor")
+	}
+
+	if _, err := otp.SendOTP(vendor, validPhone, otpCode); err != nil {
 		return errors.New("failed to send OTP")
 	}
 

@@ -83,8 +83,6 @@ func SetupMinio(cfg env.Minio) {
 		if err != nil {
 			panic(fmt.Sprintf("Failed to initialize MinIO: %v", err))
 		}
-
-		log.Info("MinIO client initialized successfully")
 	})
 }
 

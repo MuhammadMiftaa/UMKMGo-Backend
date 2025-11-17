@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/MuhammadMiftaa/Internal/golang/otp-whatsapp v0.0.0-20251117114631-0352972af49f // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect

@@ -551,3 +551,74 @@ Content-Type: application/json
     "file_type": "pdf",
     "application_type": "all"
 }
+
+
+# ============================================
+# MOBILE APP API
+# ============================================
+
+# Mobile App API Endpoints
+GET /v1/mobile/programs/training
+Authorization: Bearer {token}
+
+GET /v1/mobile/programs/certification
+Authorization: Bearer {token}
+
+GET /v1/mobile/programs/funding
+Authorization: Bearer {token}
+
+GET /v1/mobile/programs/{id}
+Authorization: Bearer {token}
+
+GET /v1/mobile/profile
+Authorization: Bearer {token}
+
+PUT /v1/mobile/profile
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "business_name": "Warung Makan Berkah Updated",
+  "gender": "male",
+  "birth_date": "1985-05-15",
+  "phone": "81234567890",
+  "address": "Jl. Sudirman No. 123",
+  "province_id": 32,
+  "city_id": 3273,
+  "district": "Karang Pilang",
+  "subdistrict": "Kedurus",
+  "postal_code": "40123",
+  "kartu_type": "produktif"
+}
+
+POST /v1/mobile/documents/nib
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "document": "data:application/pdf;base64,JVBERi0xLjQKJeLj..."
+}
+
+POST /v1/mobile/documents/npwp
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "document": "data:application/pdf;base64,JVBERi0xLjQKJeLj..."
+}
+
+POST /v1/mobile/documents/revenue-record
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "document": "data:application/pdf;base64,JVBERi0xLjQKJeLj..."
+}
+
+POST /v1/mobile/documents/business-permit
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "document": "data:application/pdf;base64,JVBERi0xLjQKJeLj..."
+}

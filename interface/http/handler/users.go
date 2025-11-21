@@ -320,7 +320,8 @@ func (user_handler *usersHandler) RegisterMobile(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := user_handler.usersService.RegisterMobile(c.Context(), userRequest.Email, userRequest.Phone); err != nil {
+	var otp string
+	if otp, err = user_handler.usersService.RegisterMobile(c.Context(), userRequest.Email, userRequest.Phone); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
 			"status":     false,
@@ -332,6 +333,10 @@ func (user_handler *usersHandler) RegisterMobile(c *fiber.Ctx) error {
 		"statusCode": 200,
 		"status":     true,
 		"message":    "User registered successfully, please send OTP to verify",
+		"data": fiber.Map{
+			"phone":    userRequest.Phone,
+			"otp_code": otp, // For testing purposes; remove in production
+		},
 	})
 }
 
@@ -434,7 +439,9 @@ func (user_handler *usersHandler) LoginMobile(c *fiber.Ctx) error {
 func (user_handler *usersHandler) ForgotPassword(c *fiber.Ctx) error {
 	phone := c.Query("phone")
 
-	if err := user_handler.usersService.ForgotPassword(c.Context(), phone); err != nil {
+	var otp string
+	var err error
+	if otp, err = user_handler.usersService.ForgotPassword(c.Context(), phone); err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
 			"statusCode": 500,
 			"status":     false,
@@ -446,6 +453,10 @@ func (user_handler *usersHandler) ForgotPassword(c *fiber.Ctx) error {
 		"statusCode": 200,
 		"status":     true,
 		"message":    "Reset password request sent, please send OTP to verify",
+		"data": fiber.Map{
+			"phone":    phone,
+			"otp_code": otp, // For testing purposes; remove in production
+		},
 	})
 }
 

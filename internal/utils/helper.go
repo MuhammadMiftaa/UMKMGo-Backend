@@ -67,6 +67,7 @@ func GenerateWebToken(user dto.Users) (string, error) {
 		"permissions": user.Permissions,
 		"iat":         time.Now().Unix(),
 		"exp":         expirationTime.Unix(),
+		"is_admin":    true,
 	}
 
 	parseToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -79,6 +80,8 @@ func GenerateWebToken(user dto.Users) (string, error) {
 	return signedToken, nil
 }
 
+// ~ GenerateMobileToken creates a JWT token for mobile users
+// ~ It includes user ID, name, business name, email, phone, kartu type, and expiration time in the token claims.
 func GenerateMobileToken(user dto.UMKMMobile) (string, error) {
 	expirationTime := time.Now().Add(3 * 24 * time.Hour)
 	claims := jwt.MapClaims{
@@ -90,6 +93,7 @@ func GenerateMobileToken(user dto.UMKMMobile) (string, error) {
 		"kartu_type":    user.KartuType,
 		"iat":           time.Now().Unix(),
 		"exp":           expirationTime.Unix(),
+		"is_admin":      false,
 	}
 
 	parseToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -117,13 +121,26 @@ func VerifyToken(jwtToken string) (dto.UserData, error) {
 		return dto.UserData{}, errors.New("token is invalid")
 	}
 
-	return dto.UserData{
-		ID:       claims["id"].(float64),
-		Name:     claims["name"].(string),
-		Email:    claims["email"].(string),
-		Role:     claims["role"].(float64),
-		RoleName: claims["role_name"].(string),
-	}, nil
+	isAdmin, ok := claims["is_admin"].(bool)
+	if !ok {
+		return dto.UserData{}, errors.New("token missing or invalid is_admin claim")
+	}
+	var userData dto.UserData
+
+	userData.ID, _ = claims["id"].(float64)
+	userData.Name, _ = claims["name"].(string)
+	userData.Email, _ = claims["email"].(string)
+
+	if isAdmin {
+		userData.Role, _ = claims["role"].(float64)
+		userData.RoleName, _ = claims["role_name"].(string)
+	} else {
+		userData.BusinessName, _ = claims["business_name"].(string)
+		userData.KartuType, _ = claims["kartu_type"].(string)
+		userData.Phone, _ = claims["phone"].(string)
+	}
+
+	return userData, nil
 }
 
 // ~ GenerateOTP creates a random 6-digit OTP (One Time Password)

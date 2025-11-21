@@ -9,8 +9,23 @@ import (
 	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/config/log"
 
+	"UMKMGo-backend/internal/repository"
+	"UMKMGo-backend/internal/types/model"
+
 	vault "github.com/hashicorp/vault/api"
 )
+
+type DecryptParams struct {
+	UserID    int
+	UMKMID    *int
+	FieldName string
+	TableName string
+	RecordID  int
+	Purpose   string
+	IPAddress string
+	UserAgent string
+	RequestID string
+}
 
 var VaultClient *vault.Client
 
@@ -120,4 +135,84 @@ func DecryptTransit(ctx context.Context, transitMount, transitKey, ciphertext st
 		return nil, fmt.Errorf("failed decode plaintext base64: %w", err)
 	}
 	return plaintext, nil
+}
+
+// DecryptWithLog decrypts data and logs to vault_decrypt_logs
+func DecryptWithLog(
+	ctx context.Context,
+	ciphertext string,
+	encryptionKey string,
+	params DecryptParams,
+	vaultLogRepo repository.VaultDecryptLogRepository,
+) ([]byte, error) {
+	// Perform decryption
+	plaintext, err := DecryptTransit(
+		ctx,
+		env.Cfg.Vault.TransitPath,
+		encryptionKey,
+		ciphertext,
+	)
+
+	// Create log entry
+	logEntry := model.VaultDecryptLog{
+		UserID:    params.UserID,
+		UMKMID:    params.UMKMID,
+		FieldName: params.FieldName,
+		TableName: params.TableName,
+		RecordID:  params.RecordID,
+		Purpose:   params.Purpose,
+		IPAddress: params.IPAddress,
+		UserAgent: params.UserAgent,
+		RequestID: params.RequestID,
+		Success:   err == nil,
+	}
+
+	if err != nil {
+		logEntry.ErrorMessage = err.Error()
+	}
+
+	// Log the decrypt operation (don't fail if logging fails)
+	if logErr := vaultLogRepo.LogDecrypt(ctx, logEntry); logErr != nil {
+		log.Log.Errorf("failed to log decrypt operation: %v", logErr)
+	}
+
+	return plaintext, err
+}
+
+// DecryptNIKWithLog is a helper for NIK decryption
+func DecryptNIKWithLog(
+	ctx context.Context,
+	ciphertext string,
+	params DecryptParams,
+	vaultLogRepo repository.VaultDecryptLogRepository,
+) ([]byte, error) {
+	params.FieldName = "nik"
+	params.TableName = "umkms"
+	return DecryptWithLog(ctx, ciphertext, env.Cfg.Vault.NIKEncryptionKey, params, vaultLogRepo)
+}
+
+// DecryptKartuNumberWithLog is a helper for Kartu Number decryption
+func DecryptKartuNumberWithLog(
+	ctx context.Context,
+	ciphertext string,
+	params DecryptParams,
+	vaultLogRepo repository.VaultDecryptLogRepository,
+) ([]byte, error) {
+	params.FieldName = "kartu_number"
+	params.TableName = "umkms"
+	return DecryptWithLog(ctx, ciphertext, env.Cfg.Vault.KartuEncryptionKey, params, vaultLogRepo)
+}
+
+// GetContextInfo extracts common context information
+func GetContextInfo(ctx context.Context) (ipAddress, userAgent, requestID string) {
+	if val := ctx.Value("ipAddress"); val != nil {
+		ipAddress, _ = val.(string)
+	}
+	if val := ctx.Value("userAgent"); val != nil {
+		userAgent, _ = val.(string)
+	}
+	if val := ctx.Value("requestID"); val != nil {
+		requestID, _ = val.(string)
+	}
+	return
 }

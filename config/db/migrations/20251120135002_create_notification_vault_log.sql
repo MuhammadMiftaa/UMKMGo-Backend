@@ -3,6 +3,45 @@
 
 -- +goose Up
 -- +goose StatementBegin
+CREATE TYPE decrypt_purpose AS ENUM (
+    'profile_view',
+    'application_review',
+    'application_creation',
+    'profile_update',
+    'admin_verification',
+    'report_generation',
+    'compliance_audit',
+    'system_process'
+);
+-- +goose StatementEnd
+
+-- +goose StatementBegin
+CREATE TABLE vault_decrypt_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    umkm_id INT REFERENCES umkms(id) ON DELETE SET NULL,
+    field_name VARCHAR(100) NOT NULL, -- 'nik', 'kartu_number', etc
+    table_name VARCHAR(100) NOT NULL, -- 'umkms', etc
+    record_id INT NOT NULL, -- ID of the decrypted record
+    purpose decrypt_purpose NOT NULL,
+    ip_address INET,
+    user_agent TEXT,
+    request_id VARCHAR(50), -- For tracking related operations
+    success BOOLEAN NOT NULL DEFAULT TRUE,
+    error_message TEXT,
+    decrypted_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- +goose StatementEnd
+
+-- +goose StatementBegin
+CREATE INDEX idx_vault_decrypt_logs_user_id ON vault_decrypt_logs(user_id);
+CREATE INDEX idx_vault_decrypt_logs_umkm_id ON vault_decrypt_logs(umkm_id);
+CREATE INDEX idx_vault_decrypt_logs_decrypted_at ON vault_decrypt_logs(decrypted_at DESC);
+CREATE INDEX idx_vault_decrypt_logs_purpose ON vault_decrypt_logs(purpose);
+CREATE INDEX idx_vault_decrypt_logs_field_name ON vault_decrypt_logs(field_name);
+-- +goose StatementEnd
+
+-- +goose StatementBegin
 CREATE TYPE notification_type AS ENUM (
     'application_submitted',
     'screening_approved',
@@ -48,52 +87,6 @@ DROP TABLE IF EXISTS notifications;
 DROP TYPE IF EXISTS notification_type;
 -- +goose StatementEnd
 
----
-
--- Migration 2: Create vault decrypt log table
--- File: config/db/migrations/YYYYMMDDHHMMSS_create_vault_decrypt_log.sql
-
--- +goose Up
--- +goose StatementBegin
-CREATE TYPE decrypt_purpose AS ENUM (
-    'profile_view',
-    'application_review',
-    'application_creation',
-    'profile_update',
-    'admin_verification',
-    'report_generation',
-    'compliance_audit',
-    'system_process'
-);
--- +goose StatementEnd
-
--- +goose StatementBegin
-CREATE TABLE vault_decrypt_logs (
-    id BIGSERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    umkm_id INT REFERENCES umkms(id) ON DELETE SET NULL,
-    field_name VARCHAR(100) NOT NULL, -- 'nik', 'kartu_number', etc
-    table_name VARCHAR(100) NOT NULL, -- 'umkms', etc
-    record_id INT NOT NULL, -- ID of the decrypted record
-    purpose decrypt_purpose NOT NULL,
-    ip_address INET,
-    user_agent TEXT,
-    request_id VARCHAR(50), -- For tracking related operations
-    success BOOLEAN NOT NULL DEFAULT TRUE,
-    error_message TEXT,
-    decrypted_at TIMESTAMPTZ DEFAULT NOW()
-);
--- +goose StatementEnd
-
--- +goose StatementBegin
-CREATE INDEX idx_vault_decrypt_logs_user_id ON vault_decrypt_logs(user_id);
-CREATE INDEX idx_vault_decrypt_logs_umkm_id ON vault_decrypt_logs(umkm_id);
-CREATE INDEX idx_vault_decrypt_logs_decrypted_at ON vault_decrypt_logs(decrypted_at DESC);
-CREATE INDEX idx_vault_decrypt_logs_purpose ON vault_decrypt_logs(purpose);
-CREATE INDEX idx_vault_decrypt_logs_field_name ON vault_decrypt_logs(field_name);
--- +goose StatementEnd
-
--- +goose Down
 -- +goose StatementBegin
 DROP INDEX IF EXISTS idx_vault_decrypt_logs_field_name;
 DROP INDEX IF EXISTS idx_vault_decrypt_logs_purpose;

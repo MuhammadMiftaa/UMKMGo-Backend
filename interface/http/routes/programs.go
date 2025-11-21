@@ -24,7 +24,7 @@ func ProgramRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepositor
 	programHandler := handler.NewProgramsHandler(programService)
 
 	// Apply auth middleware
-	version.Use(middleware.AuthMiddleware())
+	version.Use(middleware.AuthMiddleware(), middleware.ContextMiddleware())
 
 	programs := version.Group("/programs")
 	{

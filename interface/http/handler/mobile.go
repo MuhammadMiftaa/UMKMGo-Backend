@@ -470,3 +470,62 @@ func (h *MobileHandler) GetApplicationDetail(c *fiber.Ctx) error {
 		"data":       application,
 	})
 }
+
+// GetNotificationsByUMKMID retrieves notifications for a specific UMKM ID.
+func (h *MobileHandler) GetNotificationsByUMKMID(c *fiber.Ctx) error {
+	umkmID, ok := c.Locals("userID").(int)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
+	}
+
+	notifications, err := h.mobileService.GetNotificationsByUMKMID(c.Context(), umkmID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve notifications"})
+	}
+
+	return c.JSON(notifications)
+}
+
+// GetUnreadCount retrieves the count of unread notifications for a specific UMKM ID.
+func (h *MobileHandler) GetUnreadCount(c *fiber.Ctx) error {
+	umkmID, ok := c.Locals("userID").(int)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
+	}
+	count, err := h.mobileService.GetUnreadCount(c.Context(), umkmID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve unread count"})
+	}
+
+	return c.JSON(fiber.Map{"unread_count": count})
+}
+
+// MarkNotificationsAsRead marks specified notifications as read for a specific UMKM ID.
+func (h *MobileHandler) MarkNotificationsAsRead(c *fiber.Ctx) error {
+	var request struct {
+		NotificationIDs []int `json:"notification_ids"`
+	}
+	umkmID, ok := c.Locals("userID").(int)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
+	}
+	if err := h.mobileService.MarkNotificationsAsRead(c.Context(), umkmID, request.NotificationIDs); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to mark notifications as read"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Notifications marked as read"})
+}
+
+// MarkAllNotificationsAsRead marks all notifications as read for a specific UMKM ID.
+func (h *MobileHandler) MarkAllNotificationsAsRead(c *fiber.Ctx) error {
+	umkmID, ok := c.Locals("userID").(int)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
+	}
+
+	if err := h.mobileService.MarkAllNotificationsAsRead(c.Context(), umkmID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to mark all notifications as read"})
+	}
+
+	return c.JSON(fiber.Map{"message": "All notifications marked as read"})
+}

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/config/storage"
 	"UMKMGo-backend/config/vault"
-	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/internal/repository"
 	"UMKMGo-backend/internal/types/dto"
 	"UMKMGo-backend/internal/types/model"
@@ -22,36 +22,44 @@ type MobileService interface {
 	GetCertificationPrograms(ctx context.Context) ([]dto.ProgramListMobile, error)
 	GetFundingPrograms(ctx context.Context) ([]dto.ProgramListMobile, error)
 	GetProgramDetail(ctx context.Context, id int) (dto.ProgramDetailMobile, error)
-	
+
 	// UMKM Profile
 	GetUMKMProfile(ctx context.Context, userID int) (dto.UMKMProfile, error)
 	UpdateUMKMProfile(ctx context.Context, userID int, request dto.UpdateUMKMProfile) (dto.UMKMProfile, error)
-	
+
 	// Documents
 	UploadNIB(ctx context.Context, userID int, document string) error
 	UploadNPWP(ctx context.Context, userID int, document string) error
 	UploadRevenueRecord(ctx context.Context, userID int, document string) error
 	UploadBusinessPermit(ctx context.Context, userID int, document string) error
-	
+
 	// Applications
 	CreateTrainingApplication(ctx context.Context, userID int, request dto.CreateApplicationTraining) (dto.ApplicationDetailMobile, error)
 	CreateCertificationApplication(ctx context.Context, userID int, request dto.CreateApplicationCertification) (dto.ApplicationDetailMobile, error)
 	CreateFundingApplication(ctx context.Context, userID int, request dto.CreateApplicationFunding) (dto.ApplicationDetailMobile, error)
 	GetApplicationList(ctx context.Context, userID int) ([]dto.ApplicationListMobile, error)
 	GetApplicationDetail(ctx context.Context, id int) (dto.ApplicationDetailMobile, error)
+
+	// Notifications
+	GetNotificationsByUMKMID(ctx context.Context, umkmID int) ([]dto.NotificationResponse, error)
+	GetUnreadCount(ctx context.Context, umkmID int) (int64, error)
+	MarkNotificationsAsRead(ctx context.Context, umkmID int, notificationIDs []int) error
+	MarkAllNotificationsAsRead(ctx context.Context, umkmID int) error
 }
 
 type mobileService struct {
-	mobileRepo  repository.MobileRepository
-	programRepo repository.ProgramsRepository
-	minio       *storage.MinIOManager
+	mobileRepo       repository.MobileRepository
+	programRepo      repository.ProgramsRepository
+	notificationRepo repository.NotificationRepository
+	minio            *storage.MinIOManager
 }
 
-func NewMobileService(mobileRepo repository.MobileRepository, programRepo repository.ProgramsRepository, minio *storage.MinIOManager) MobileService {
+func NewMobileService(mobileRepo repository.MobileRepository, programRepo repository.ProgramsRepository, notificationRepo repository.NotificationRepository, minio *storage.MinIOManager) MobileService {
 	return &mobileService{
-		mobileRepo:  mobileRepo,
-		programRepo: programRepo,
-		minio:       minio,
+		mobileRepo:       mobileRepo,
+		programRepo:      programRepo,
+		notificationRepo: notificationRepo,
+		minio:            minio,
 	}
 }
 
@@ -61,7 +69,7 @@ func (s *mobileService) GetTrainingPrograms(ctx context.Context) ([]dto.ProgramL
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return s.mapProgramsToDTO(programs), nil
 }
 
@@ -70,7 +78,7 @@ func (s *mobileService) GetCertificationPrograms(ctx context.Context) ([]dto.Pro
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return s.mapProgramsToDTO(programs), nil
 }
 
@@ -79,7 +87,7 @@ func (s *mobileService) GetFundingPrograms(ctx context.Context) ([]dto.ProgramLi
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return s.mapProgramsToDTO(programs), nil
 }
 
@@ -88,21 +96,21 @@ func (s *mobileService) GetProgramDetail(ctx context.Context, id int) (dto.Progr
 	if err != nil {
 		return dto.ProgramDetailMobile{}, err
 	}
-	
+
 	// Get benefits and requirements
 	benefits, _ := s.programRepo.GetProgramBenefits(ctx, program.ID)
 	requirements, _ := s.programRepo.GetProgramRequirements(ctx, program.ID)
-	
+
 	var benefitNames []string
 	for _, b := range benefits {
 		benefitNames = append(benefitNames, b.Name)
 	}
-	
+
 	var requirementNames []string
 	for _, r := range requirements {
 		requirementNames = append(requirementNames, r.Name)
 	}
-	
+
 	return dto.ProgramDetailMobile{
 		ProgramListMobile: s.mapProgramToDTO(program),
 		Benefits:          benefitNames,
@@ -116,19 +124,19 @@ func (s *mobileService) GetUMKMProfile(ctx context.Context, userID int) (dto.UMK
 	if err != nil {
 		return dto.UMKMProfile{}, err
 	}
-	
+
 	// Decrypt NIK
 	decryptedNIK, err := vault.DecryptTransit(ctx, env.Cfg.Vault.TransitPath, env.Cfg.Vault.NIKEncryptionKey, umkm.NIK)
 	if err != nil {
 		return dto.UMKMProfile{}, errors.New("failed to decrypt NIK")
 	}
-	
+
 	// Decrypt Kartu Number
 	decryptedKartu, err := vault.DecryptTransit(ctx, env.Cfg.Vault.TransitPath, env.Cfg.Vault.KartuEncryptionKey, umkm.KartuNumber)
 	if err != nil {
 		return dto.UMKMProfile{}, errors.New("failed to decrypt Kartu Number")
 	}
-	
+
 	return dto.UMKMProfile{
 		ID:             umkm.ID,
 		UserID:         umkm.UserID,
@@ -171,19 +179,19 @@ func (s *mobileService) UpdateUMKMProfile(ctx context.Context, userID int, reque
 	if err != nil {
 		return dto.UMKMProfile{}, err
 	}
-	
+
 	// Validate phone
 	validPhone, err := utils.NormalizePhone(request.Phone)
 	if err != nil {
 		return dto.UMKMProfile{}, errors.New("invalid phone number")
 	}
-	
+
 	// Parse birth date
 	birthDate, err := time.Parse("2006-01-02", request.BirthDate)
 	if err != nil {
 		return dto.UMKMProfile{}, errors.New("invalid birth date format, use YYYY-MM-DD")
 	}
-	
+
 	// Update fields
 	umkm.BusinessName = request.BusinessName
 	umkm.Gender = request.Gender
@@ -196,13 +204,13 @@ func (s *mobileService) UpdateUMKMProfile(ctx context.Context, userID int, reque
 	umkm.Subdistrict = request.Subdistrict
 	umkm.PostalCode = request.PostalCode
 	umkm.KartuType = request.KartuType
-	
+
 	// Update in database
 	_, err = s.mobileRepo.UpdateUMKMProfile(ctx, umkm)
 	if err != nil {
 		return dto.UMKMProfile{}, err
 	}
-	
+
 	// Return updated profile
 	return s.GetUMKMProfile(ctx, userID)
 }
@@ -213,7 +221,7 @@ func (s *mobileService) UploadNIB(ctx context.Context, userID int, document stri
 	if err != nil {
 		return err
 	}
-	
+
 	// Upload to MinIO
 	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
 		Base64Data: document,
@@ -223,7 +231,7 @@ func (s *mobileService) UploadNIB(ctx context.Context, userID int, document stri
 	if err != nil {
 		return err
 	}
-	
+
 	// Delete old document if exists
 	if umkm.NIB != "" {
 		oldObjectName := storage.ExtractObjectNameFromURL(umkm.NIB)
@@ -231,7 +239,7 @@ func (s *mobileService) UploadNIB(ctx context.Context, userID int, document stri
 			s.minio.DeleteFile(ctx, "umkmgo-documents", oldObjectName)
 		}
 	}
-	
+
 	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, "nib", res.URL)
 }
 
@@ -240,7 +248,7 @@ func (s *mobileService) UploadNPWP(ctx context.Context, userID int, document str
 	if err != nil {
 		return err
 	}
-	
+
 	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
 		Base64Data: document,
 		BucketName: "umkmgo-documents",
@@ -249,14 +257,14 @@ func (s *mobileService) UploadNPWP(ctx context.Context, userID int, document str
 	if err != nil {
 		return err
 	}
-	
+
 	if umkm.NPWP != "" {
 		oldObjectName := storage.ExtractObjectNameFromURL(umkm.NPWP)
 		if oldObjectName != "" {
 			s.minio.DeleteFile(ctx, "umkmgo-documents", oldObjectName)
 		}
 	}
-	
+
 	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, "npwp", res.URL)
 }
 
@@ -265,7 +273,7 @@ func (s *mobileService) UploadRevenueRecord(ctx context.Context, userID int, doc
 	if err != nil {
 		return err
 	}
-	
+
 	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
 		Base64Data: document,
 		BucketName: "umkmgo-documents",
@@ -274,14 +282,14 @@ func (s *mobileService) UploadRevenueRecord(ctx context.Context, userID int, doc
 	if err != nil {
 		return err
 	}
-	
+
 	if umkm.RevenueRecord != "" {
 		oldObjectName := storage.ExtractObjectNameFromURL(umkm.RevenueRecord)
 		if oldObjectName != "" {
 			s.minio.DeleteFile(ctx, "umkmgo-documents", oldObjectName)
 		}
 	}
-	
+
 	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, "revenue_record", res.URL)
 }
 
@@ -290,7 +298,7 @@ func (s *mobileService) UploadBusinessPermit(ctx context.Context, userID int, do
 	if err != nil {
 		return err
 	}
-	
+
 	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
 		Base64Data: document,
 		BucketName: "umkmgo-documents",
@@ -299,14 +307,14 @@ func (s *mobileService) UploadBusinessPermit(ctx context.Context, userID int, do
 	if err != nil {
 		return err
 	}
-	
+
 	if umkm.BusinessPermit != "" {
 		oldObjectName := storage.ExtractObjectNameFromURL(umkm.BusinessPermit)
 		if oldObjectName != "" {
 			s.minio.DeleteFile(ctx, "umkmgo-documents", oldObjectName)
 		}
 	}
-	
+
 	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, "business_permit", res.URL)
 }
 
@@ -329,25 +337,25 @@ func (s *mobileService) createApplication(ctx context.Context, userID, programID
 	if err != nil {
 		return dto.ApplicationDetailMobile{}, errors.New("UMKM profile not found, please complete your profile first")
 	}
-	
+
 	// Validate program
 	program, err := s.mobileRepo.GetProgramByID(ctx, programID)
 	if err != nil {
 		return dto.ApplicationDetailMobile{}, err
 	}
-	
+
 	if program.Type != appType {
 		return dto.ApplicationDetailMobile{}, errors.New("program type mismatch")
 	}
-	
+
 	// Check if already applied
 	if s.mobileRepo.IsApplicationExists(ctx, umkm.ID, programID) {
 		return dto.ApplicationDetailMobile{}, errors.New("you have already applied for this program")
 	}
-	
+
 	// Get program requirements
 	requirements, _ := s.mobileRepo.GetProgramRequirements(ctx, programID)
-	
+
 	// Validate required documents
 	requiredDocs := make(map[string]bool)
 	for _, req := range requirements {
@@ -365,7 +373,7 @@ func (s *mobileService) createApplication(ctx context.Context, userID, programID
 			requiredDocs["business_permit"] = true
 		}
 	}
-	
+
 	// Check if all required documents are provided
 	for docType := range requiredDocs {
 		if _, exists := documents[docType]; !exists {
@@ -390,7 +398,7 @@ func (s *mobileService) createApplication(ctx context.Context, userID, programID
 			}
 		}
 	}
-	
+
 	// Create application
 	application := model.Application{
 		UMKMID:      umkm.ID,
@@ -400,15 +408,15 @@ func (s *mobileService) createApplication(ctx context.Context, userID, programID
 		SubmittedAt: time.Now(),
 		ExpiredAt:   time.Now().AddDate(0, 0, 30), // 30 days
 	}
-	
+
 	createdApp, err := s.mobileRepo.CreateApplication(ctx, application)
 	if err != nil {
 		return dto.ApplicationDetailMobile{}, err
 	}
-	
+
 	// Process documents
 	var appDocuments []model.ApplicationDocument
-	
+
 	// Add documents from request
 	for docType, docData := range documents {
 		// Upload to MinIO
@@ -420,14 +428,14 @@ func (s *mobileService) createApplication(ctx context.Context, userID, programID
 		if err != nil {
 			return dto.ApplicationDetailMobile{}, fmt.Errorf("failed to upload %s document", docType)
 		}
-		
+
 		appDocuments = append(appDocuments, model.ApplicationDocument{
 			ApplicationID: createdApp.ID,
 			Type:          docType,
 			File:          res.URL,
 		})
 	}
-	
+
 	// Add documents from profile if required and not in request
 	for docType := range requiredDocs {
 		if _, exists := documents[docType]; !exists {
@@ -442,7 +450,7 @@ func (s *mobileService) createApplication(ctx context.Context, userID, programID
 			case "business_permit":
 				fileURL = umkm.BusinessPermit
 			}
-			
+
 			if fileURL != "" {
 				appDocuments = append(appDocuments, model.ApplicationDocument{
 					ApplicationID: createdApp.ID,
@@ -452,12 +460,12 @@ func (s *mobileService) createApplication(ctx context.Context, userID, programID
 			}
 		}
 	}
-	
+
 	// Save documents
 	if err := s.mobileRepo.CreateApplicationDocuments(ctx, appDocuments); err != nil {
 		return dto.ApplicationDetailMobile{}, err
 	}
-	
+
 	// Create history
 	history := model.ApplicationHistory{
 		ApplicationID: createdApp.ID,
@@ -466,11 +474,11 @@ func (s *mobileService) createApplication(ctx context.Context, userID, programID
 		ActionedBy:    userID,
 		ActionedAt:    time.Now(),
 	}
-	
+
 	if err := s.mobileRepo.CreateApplicationHistory(ctx, history); err != nil {
 		return dto.ApplicationDetailMobile{}, err
 	}
-	
+
 	// Return detail
 	return s.GetApplicationDetail(ctx, createdApp.ID)
 }
@@ -480,12 +488,12 @@ func (s *mobileService) GetApplicationList(ctx context.Context, userID int) ([]d
 	if err != nil {
 		return nil, err
 	}
-	
+
 	applications, err := s.mobileRepo.GetApplicationsByUMKMID(ctx, umkm.ID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var result []dto.ApplicationListMobile
 	for _, app := range applications {
 		result = append(result, dto.ApplicationListMobile{
@@ -498,7 +506,7 @@ func (s *mobileService) GetApplicationList(ctx context.Context, userID int) ([]d
 			ExpiredAt:   app.ExpiredAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	
+
 	return result, nil
 }
 
@@ -507,21 +515,21 @@ func (s *mobileService) GetApplicationDetail(ctx context.Context, id int) (dto.A
 	if err != nil {
 		return dto.ApplicationDetailMobile{}, err
 	}
-	
+
 	// Get program benefits and requirements
 	benefits, _ := s.programRepo.GetProgramBenefits(ctx, application.ProgramID)
 	requirements, _ := s.programRepo.GetProgramRequirements(ctx, application.ProgramID)
-	
+
 	var benefitNames []string
 	for _, b := range benefits {
 		benefitNames = append(benefitNames, b.Name)
 	}
-	
+
 	var requirementNames []string
 	for _, r := range requirements {
 		requirementNames = append(requirementNames, r.Name)
 	}
-	
+
 	// Map documents
 	var documents []dto.ApplicationDocuments
 	for _, doc := range application.Documents {
@@ -534,7 +542,7 @@ func (s *mobileService) GetApplicationDetail(ctx context.Context, id int) (dto.A
 			UpdatedAt:     doc.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	
+
 	// Map histories
 	var histories []dto.ApplicationHistories
 	for _, hist := range application.Histories {
@@ -550,7 +558,7 @@ func (s *mobileService) GetApplicationDetail(ctx context.Context, id int) (dto.A
 			UpdatedAt:      hist.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	
+
 	return dto.ApplicationDetailMobile{
 		ID:          application.ID,
 		UMKMID:      application.UMKMID,
@@ -599,4 +607,44 @@ func (s *mobileService) mapProgramToDTO(p model.Program) dto.ProgramListMobile {
 		ApplicationDeadline: p.ApplicationDeadline,
 		IsActive:            p.IsActive,
 	}
+}
+
+func (s *mobileService) GetNotificationsByUMKMID(ctx context.Context, umkmID int) ([]dto.NotificationResponse, error) {
+	notifications, err := s.notificationRepo.GetNotificationsByUMKMID(ctx, umkmID, 100, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []dto.NotificationResponse
+	for _, n := range notifications {
+		var readAt string
+		if n.ReadAt != nil {
+			readAt = n.ReadAt.Format("2006-01-02 15:04:05")
+		}
+		response = append(response, dto.NotificationResponse{
+			ID:        n.ID,
+			Message:   n.Message,
+			IsRead:    n.IsRead,
+			CreatedAt: n.CreatedAt.Format("2006-01-02 15:04:05"),
+			ReadAt:    &readAt,
+		})
+	}
+
+	return response, nil
+}
+
+func (s *mobileService) GetUnreadCount(ctx context.Context, umkmID int) (int64, error) {
+	count, err := s.notificationRepo.GetUnreadCount(ctx, umkmID)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (s *mobileService) MarkNotificationsAsRead(ctx context.Context, umkmID int, notificationIDs []int) error {
+	return s.notificationRepo.MarkAsRead(ctx, notificationIDs, umkmID)
+}
+
+func (s *mobileService) MarkAllNotificationsAsRead(ctx context.Context, umkmID int) error {
+	return s.notificationRepo.MarkAllAsRead(ctx, umkmID)
 }

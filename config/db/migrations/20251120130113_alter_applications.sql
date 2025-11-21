@@ -9,7 +9,7 @@ CREATE TABLE training_applications (
     availability_notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ DEFAULT NULL,
+    deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 -- +goose StatementEnd
 

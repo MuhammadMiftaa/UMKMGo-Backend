@@ -1,6 +1,7 @@
 ### Variables
 @baseUrl = http://localhost:8080
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN1cGVyYWRtaW5AdW1rbS5nby5pZCIsImV4cCI6MTc2MzI5OTQ4NywiaWF0IjoxNzYzMDQwMjg3LCJpZCI6MSwibmFtZSI6IlN1cGVyIEFkbWluIiwicGVybWlzc2lvbnMiOlsiU0NSRUVOSU5HX1RSQUlOSU5HIiwiTUFOQUdFX1RSQUlOSU5HX1BST0dSQU1TIiwiRklOQUxfVFJBSU5JTkciLCJWSUVXX1RSQUlOSU5HIiwiU0NSRUVOSU5HX0NFUlRJRklDQVRJT04iLCJNQU5BR0VfQ0VSVElGSUNBVElPTl9QUk9HUkFNUyIsIkZJTkFMX0NFUlRJRklDQVRJT04iLCJWSUVXX0NFUlRJRklDQVRJT04iLCJTQ1JFRU5JTkdfRlVORElORyIsIk1BTkFHRV9GVU5ESU5HX1BST0dSQU1TIiwiRklOQUxfRlVORElORyIsIlZJRVdfRlVORElORyIsIlVTRVJfTUFOQUdFTUVOVCIsIlJPTEVfUEVSTUlTU0lPTlNfTUFOQUdFTUVOVCIsIkdFTkVSQVRFX1JFUE9SVCIsIlNMQV9DT05GSUdVUkFUSU9OIl0sInJvbGUiOjEsInJvbGVfbmFtZSI6InN1cGVyYWRtaW4ifQ.4bHCHUEp2B9PSGlMuuslpI7NvPB2DGFl0vV7RQbWxko
+@mobileToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJidXNpbmVzc19uYW1lIjoiUFQgU2VtdWEgVGVtYW4iLCJlbWFpbCI6InRlc0B1bWttLmdvLmlkIiwiZXhwIjoxNzYzOTEyMDkxLCJpYXQiOjE3NjM2NTI4OTEsImlkIjoxMywia2FydHVfdHlwZSI6ImFmaXJtYXRpZiIsIm5hbWUiOiJBa2JhciBDaGFsYXkiLCJwaG9uZSI6Ijg5Njc2MzYwNTQ2In0.gH0Rrv-Bm3y7DkITAvL6TIack-T8eGgncp3YfRgLYhY
 
 ### ============================================
 ### AUTH - WEB DASHBOARD
@@ -559,22 +560,22 @@ Content-Type: application/json
 
 # Mobile App API Endpoints
 GET /v1/mobile/programs/training
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 
 GET /v1/mobile/programs/certification
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 
 GET /v1/mobile/programs/funding
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 
 GET /v1/mobile/programs/{id}
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 
 GET /v1/mobile/profile
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 
 PUT /v1/mobile/profile
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 Content-Type: application/json
 
 {
@@ -592,7 +593,7 @@ Content-Type: application/json
 }
 
 POST /v1/mobile/documents/nib
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 Content-Type: application/json
 
 {
@@ -600,7 +601,7 @@ Content-Type: application/json
 }
 
 POST /v1/mobile/documents/npwp
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 Content-Type: application/json
 
 {
@@ -608,7 +609,7 @@ Content-Type: application/json
 }
 
 POST /v1/mobile/documents/revenue-record
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 Content-Type: application/json
 
 {
@@ -616,7 +617,7 @@ Content-Type: application/json
 }
 
 POST /v1/mobile/documents/business-permit
-Authorization: Bearer {token}
+Authorization: Bearer {mobileToken}
 Content-Type: application/json
 
 {

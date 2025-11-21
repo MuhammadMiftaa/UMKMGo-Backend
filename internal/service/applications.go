@@ -2,20 +2,19 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
 
 	"UMKMGo-backend/internal/repository"
 	"UMKMGo-backend/internal/types/dto"
 	"UMKMGo-backend/internal/types/model"
+	"UMKMGo-backend/internal/utils/constant"
 )
 
 type ApplicationsService interface {
 	GetAllApplications(ctx context.Context, filterType string) ([]dto.Applications, error)
 	GetApplicationByID(ctx context.Context, id int) (dto.Applications, error)
-	// CreateApplication(ctx context.Context, userID int, application dto.Applications) (dto.Applications, error)
-	// UpdateApplication(ctx context.Context, id int, application dto.Applications) (dto.Applications, error)
-	// DeleteApplication(ctx context.Context, id int) (dto.Applications, error)
 
 	// Screening Decisions
 	ScreeningApprove(ctx context.Context, userID int, applicationID int) (dto.Applications, error)
@@ -28,14 +27,16 @@ type ApplicationsService interface {
 }
 
 type applicationsService struct {
-	applicationRepository repository.ApplicationsRepository
-	userRepository        repository.UsersRepository
+	applicationRepository  repository.ApplicationsRepository
+	userRepository         repository.UsersRepository
+	notificationRepository repository.NotificationRepository
 }
 
-func NewApplicationsService(applicationRepo repository.ApplicationsRepository, userRepo repository.UsersRepository) ApplicationsService {
+func NewApplicationsService(applicationRepo repository.ApplicationsRepository, userRepo repository.UsersRepository, notificationRepo repository.NotificationRepository) ApplicationsService {
 	return &applicationsService{
-		applicationRepository: applicationRepo,
-		userRepository:        userRepo,
+		applicationRepository:  applicationRepo,
+		userRepository:         userRepo,
+		notificationRepository: notificationRepo,
 	}
 }
 
@@ -130,7 +131,6 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 	if err != nil {
 		return dto.Applications{}, err
 	}
-	log.Println("Fetching application by ID:", application)
 
 	// Get documents
 	documents, _ := s.applicationRepository.GetApplicationDocuments(ctx, application.ID)
@@ -206,162 +206,6 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 	}, nil
 }
 
-// func (s *applicationsService) CreateApplication(ctx context.Context, userID int, application dto.Applications) (dto.Applications, error) {
-// 	// Validation
-// 	if application.ProgramID == 0 || len(application.Documents) == 0 {
-// 		return dto.Applications{}, errors.New("program_id and documents are required")
-// 	}
-
-// 	// Check if program exists and is active
-// 	program, err := s.applicationRepository.GetProgramByID(ctx, application.ProgramID)
-// 	if err != nil {
-// 		return dto.Applications{}, errors.New("program not found")
-// 	}
-
-// 	if !program.IsActive {
-// 		return dto.Applications{}, errors.New("program is not active")
-// 	}
-
-// 	// Get UMKM by user ID
-// 	umkm, err := s.applicationRepository.GetUMKMByUserID(ctx, userID)
-// 	if err != nil {
-// 		return dto.Applications{}, errors.New("UMKM data not found, please complete your profile first")
-// 	}
-
-// 	// Check if application already exists
-// 	if s.applicationRepository.IsApplicationExists(ctx, umkm.ID, application.ProgramID) {
-// 		return dto.Applications{}, errors.New("you have already applied for this program")
-// 	}
-
-// 	// Create application
-// 	newApplication := model.Applications{
-// 		UMKMID:    umkm.ID,
-// 		ProgramID: application.ProgramID,
-// 		Type:      program.Type,
-// 		Status:    "screening",
-// 	}
-
-// 	createdApplication, err := s.applicationRepository.CreateApplication(ctx, newApplication)
-// 	if err != nil {
-// 		return dto.Applications{}, err
-// 	}
-
-// 	// Create documents
-// 	if len(application.Documents) > 0 {
-// 		var documents []model.ApplicationDocuments
-// 		for _, doc := range application.Documents {
-// 			documents = append(documents, model.ApplicationDocuments{
-// 				ApplicationID: createdApplication.ID,
-// 				Type:          doc.Type,
-// 				File:          doc.File,
-// 			})
-// 		}
-// 		if err := s.applicationRepository.CreateApplicationDocuments(ctx, documents); err != nil {
-// 			return dto.Applications{}, err
-// 		}
-// 	}
-
-// 	// Create history - submit
-// 	history := model.ApplicationHistory{
-// 		ApplicationID: createdApplication.ID,
-// 		Status:        "submit",
-// 		Notes:         "Application submitted",
-// 		ActionedBy:    userID,
-// 	}
-// 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
-// 		return dto.Applications{}, err
-// 	}
-
-// 	return dto.Applications{
-// 		ID:        createdApplication.ID,
-// 		UMKMID:    createdApplication.UMKMID,
-// 		ProgramID: createdApplication.ProgramID,
-// 		Type:      createdApplication.Type,
-// 		Status:    createdApplication.Status,
-// 	}, nil
-// }
-
-// func (s *applicationsService) UpdateApplication(ctx context.Context, id int, application dto.Applications) (dto.Applications, error) {
-// 	// Get existing application
-// 	existingApplication, err := s.applicationRepository.GetApplicationByID(ctx, id)
-// 	if err != nil {
-// 		return dto.Applications{}, err
-// 	}
-
-// 	// Only allow update if status is 'revised'
-// 	if existingApplication.Status != "revised" {
-// 		return dto.Applications{}, errors.New("only applications with status 'revised' can be updated")
-// 	}
-
-// 	// Validation
-// 	if len(application.Documents) == 0 {
-// 		return dto.Applications{}, errors.New("documents are required")
-// 	}
-
-// 	// Update status back to screening
-// 	existingApplication.Status = "screening"
-
-// 	updatedApplication, err := s.applicationRepository.UpdateApplication(ctx, existingApplication)
-// 	if err != nil {
-// 		return dto.Applications{}, err
-// 	}
-
-// 	// Update documents
-// 	if len(application.Documents) > 0 {
-// 		// Delete old documents
-// 		_ = s.applicationRepository.DeleteApplicationDocuments(ctx, id)
-
-// 		// Create new documents
-// 		var documents []model.ApplicationDocuments
-// 		for _, doc := range application.Documents {
-// 			documents = append(documents, model.ApplicationDocuments{
-// 				ApplicationID: id,
-// 				Type:          doc.Type,
-// 				File:          doc.File,
-// 			})
-// 		}
-// 		if err := s.applicationRepository.CreateApplicationDocuments(ctx, documents); err != nil {
-// 			return dto.Applications{}, err
-// 		}
-// 	}
-
-// 	// Create history - resubmit
-// 	history := model.ApplicationHistory{
-// 		ApplicationID: updatedApplication.ID,
-// 		Status:        "submit",
-// 		Notes:         "Application resubmitted after revision",
-// 		ActionedBy:    existingApplication.UMKM.UserID,
-// 	}
-// 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
-// 		return dto.Applications{}, err
-// 	}
-
-// 	return dto.Applications{
-// 		ID:        updatedApplication.ID,
-// 		UMKMID:    updatedApplication.UMKMID,
-// 		ProgramID: updatedApplication.ProgramID,
-// 		Type:      updatedApplication.Type,
-// 		Status:    updatedApplication.Status,
-// 	}, nil
-// }
-
-// func (s *applicationsService) DeleteApplication(ctx context.Context, id int) (dto.Applications, error) {
-// 	application, err := s.applicationRepository.GetApplicationByID(ctx, id)
-// 	if err != nil {
-// 		return dto.Applications{}, err
-// 	}
-
-// 	deletedApplication, err := s.applicationRepository.DeleteApplication(ctx, application)
-// 	if err != nil {
-// 		return dto.Applications{}, err
-// 	}
-
-// 	return dto.Applications{
-// 		ID:     deletedApplication.ID,
-// 		Status: deletedApplication.Status,
-// 	}, nil
-// }
-
 func (s *applicationsService) ScreeningApprove(ctx context.Context, userID int, applicationID int) (dto.Applications, error) {
 	// Get application
 	application, err := s.applicationRepository.GetApplicationByID(ctx, applicationID)
@@ -389,6 +233,25 @@ func (s *applicationsService) ScreeningApprove(ctx context.Context, userID int, 
 		ActionedBy:    userID,
 	}
 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
+		return dto.Applications{}, err
+	}
+
+	// Create notification
+	metadata, err := json.Marshal(map[string]any{})
+	if err != nil {
+		return dto.Applications{}, err
+	}
+
+	notification := model.Notification{
+		UMKMID:        application.UMKMID,
+		Title:         constant.NotificationTitleApproved,
+		Message:       constant.NotificationMessageApproved,
+		IsRead:        false,
+		ApplicationID: &updatedApplication.ID,
+		Type:          constant.NotificationApproved,
+		Metadata:      string(metadata),
+	}
+	if err := s.notificationRepository.CreateNotification(ctx, notification); err != nil {
 		return dto.Applications{}, err
 	}
 
@@ -433,6 +296,25 @@ func (s *applicationsService) ScreeningReject(ctx context.Context, userID int, d
 		return dto.Applications{}, err
 	}
 
+	// Create notification
+	metadata, err := json.Marshal(map[string]any{})
+	if err != nil {
+		return dto.Applications{}, err
+	}
+
+	notification := model.Notification{
+		UMKMID:        application.UMKMID,
+		Title:         constant.NotificationTitleRejected,
+		Message:       fmt.Sprintf(constant.NotificationMessageRejected, decision.Notes),
+		IsRead:        false,
+		ApplicationID: &updatedApplication.ID,
+		Type:          constant.NotificationRejected,
+		Metadata:      string(metadata),
+	}
+	if err := s.notificationRepository.CreateNotification(ctx, notification); err != nil {
+		return dto.Applications{}, err
+	}
+
 	return dto.Applications{
 		ID:     updatedApplication.ID,
 		Status: updatedApplication.Status,
@@ -474,6 +356,25 @@ func (s *applicationsService) ScreeningRevise(ctx context.Context, userID int, d
 		return dto.Applications{}, err
 	}
 
+	// Create notification
+	metadata, err := json.Marshal(map[string]any{})
+	if err != nil {
+		return dto.Applications{}, err
+	}
+
+	notification := model.Notification{
+		UMKMID:        application.UMKMID,
+		Title:         constant.NotificationTitleRevised,
+		Message:       fmt.Sprintf(constant.NotificationMessageRevised, decision.Notes),
+		IsRead:        false,
+		ApplicationID: &updatedApplication.ID,
+		Type:          constant.NotificationRevised,
+		Metadata:      string(metadata),
+	}
+	if err := s.notificationRepository.CreateNotification(ctx, notification); err != nil {
+		return dto.Applications{}, err
+	}
+
 	return dto.Applications{
 		ID:     updatedApplication.ID,
 		Status: updatedApplication.Status,
@@ -507,6 +408,25 @@ func (s *applicationsService) FinalApprove(ctx context.Context, userID int, appl
 		ActionedBy:    userID,
 	}
 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
+		return dto.Applications{}, err
+	}
+
+	// Create notification
+	metadata, err := json.Marshal(map[string]any{})
+	if err != nil {
+		return dto.Applications{}, err
+	}
+
+	notification := model.Notification{
+		UMKMID:        application.UMKMID,
+		Title:         constant.NotificationTitleApproved,
+		Message:       constant.NotificationMessageApproved,
+		IsRead:        false,
+		ApplicationID: &updatedApplication.ID,
+		Type:          constant.NotificationFinalApproved,
+		Metadata:      string(metadata),
+	}
+	if err := s.notificationRepository.CreateNotification(ctx, notification); err != nil {
 		return dto.Applications{}, err
 	}
 
@@ -548,6 +468,25 @@ func (s *applicationsService) FinalReject(ctx context.Context, userID int, decis
 		ActionedBy:    userID,
 	}
 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
+		return dto.Applications{}, err
+	}
+
+	// Create notification
+	metadata, err := json.Marshal(map[string]any{})
+	if err != nil {
+		return dto.Applications{}, err
+	}
+
+	notification := model.Notification{
+		UMKMID:        application.UMKMID,
+		Title:         constant.NotificationTitleRejected,
+		Message:       fmt.Sprintf(constant.NotificationMessageRejected, decision.Notes),
+		IsRead:        false,
+		ApplicationID: &updatedApplication.ID,
+		Type:          constant.NotificationFinalRejected,
+		Metadata:      string(metadata),
+	}
+	if err := s.notificationRepository.CreateNotification(ctx, notification); err != nil {
 		return dto.Applications{}, err
 	}
 

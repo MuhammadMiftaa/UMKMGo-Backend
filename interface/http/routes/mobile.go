@@ -15,15 +15,16 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 	// Repository initialization
 	mobileRepo := repository.NewMobileRepository(db)
 	programRepo := repository.NewProgramsRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
 
 	// Service initialization
-	mobileService := service.NewMobileService(mobileRepo, programRepo, minio)
+	mobileService := service.NewMobileService(mobileRepo, programRepo, notificationRepo, minio)
 
 	// Handler initialization
 	mobileHandler := handler.NewMobileHandler(mobileService)
 
 	// Apply auth middleware for all mobile routes
-	version.Use(middleware.AuthMiddleware(), middleware.ContextMiddleware())
+	version.Use(middleware.MobileAuthMiddleware(), middleware.ContextMiddleware())
 
 	mobile := version.Group("/mobile")
 	{
@@ -60,6 +61,15 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 			applications.Post("/funding", mobileHandler.CreateFundingApplication)
 			applications.Get("/", mobileHandler.GetApplicationList)
 			applications.Get("/:id", mobileHandler.GetApplicationDetail)
+		}
+
+		// Notifications
+		notifications := mobile.Group("/notifications")
+		{
+			notifications.Get("/", mobileHandler.GetNotificationsByUMKMID)
+			notifications.Get("/unread-count", mobileHandler.GetUnreadCount)
+			notifications.Put("/mark-as-read", mobileHandler.MarkNotificationsAsRead)
+			notifications.Put("/mark-all-as-read", mobileHandler.MarkAllNotificationsAsRead)
 		}
 	}
 }

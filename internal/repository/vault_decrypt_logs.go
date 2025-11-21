@@ -10,6 +10,7 @@ import (
 
 type VaultDecryptLogRepository interface {
 	LogDecrypt(ctx context.Context, log model.VaultDecryptLog) error
+	GetLogs(ctx context.Context, limit, offset int) ([]model.VaultDecryptLog, error)
 	GetLogsByUserID(ctx context.Context, userID int, limit, offset int) ([]model.VaultDecryptLog, error)
 	GetLogsByUMKMID(ctx context.Context, umkmID int, limit, offset int) ([]model.VaultDecryptLog, error)
 }
@@ -24,6 +25,16 @@ func NewVaultDecryptLogRepository(db *gorm.DB) VaultDecryptLogRepository {
 
 func (r *vaultDecryptLogRepository) LogDecrypt(ctx context.Context, log model.VaultDecryptLog) error {
 	return r.db.WithContext(ctx).Create(&log).Error
+}
+
+func (r *vaultDecryptLogRepository) GetLogs(ctx context.Context, limit, offset int) ([]model.VaultDecryptLog, error) {
+	var logs []model.VaultDecryptLog
+	err := r.db.WithContext(ctx).
+		Order("decrypted_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&logs).Error
+	return logs, err
 }
 
 func (r *vaultDecryptLogRepository) GetLogsByUserID(ctx context.Context, userID int, limit, offset int) ([]model.VaultDecryptLog, error) {

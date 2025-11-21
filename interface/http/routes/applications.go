@@ -15,9 +15,10 @@ func ApplicationRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepos
 	// Repository initialization
 	applicationRepo := repository.NewApplicationsRepository(db)
 	userRepo := repository.NewUsersRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
 
 	// Service initialization
-	applicationService := service.NewApplicationsService(applicationRepo, userRepo)
+	applicationService := service.NewApplicationsService(applicationRepo, userRepo, notificationRepo)
 
 	// Handler initialization
 	applicationHandler := handler.NewApplicationsHandler(applicationService)
@@ -29,9 +30,6 @@ func ApplicationRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepos
 	{
 		applications.Get("/", applicationHandler.GetAllApplications)
 		applications.Get("/:id", applicationHandler.GetApplicationByID)
-		// applications.Post("/", applicationHandler.CreateApplication)
-		// applications.Put("/:id", applicationHandler.UpdateApplication)
-		// applications.Delete("/:id", applicationHandler.DeleteApplication)
 
 		// Screening decisions
 		applications.Put("/screening-approve/:id", applicationHandler.ScreeningApprove)

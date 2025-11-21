@@ -12,8 +12,11 @@ type Application struct {
 	ExpiredAt   time.Time `json:"expired_at" gorm:"not null"`
 	Base
 
-	Documents []ApplicationDocument `json:"documents" gorm:"foreignKey:ApplicationID"`
-	Histories []ApplicationHistory  `json:"histories" gorm:"foreignKey:ApplicationID"`
-	Program   Program               `json:"program" gorm:"foreignKey:ProgramID"`
-	UMKM      UMKM                  `json:"umkm" gorm:"foreignKey:UMKMID"`
+	Documents                []ApplicationDocument     `json:"documents" gorm:"foreignKey:ApplicationID"`
+	Histories                []ApplicationHistory      `json:"histories" gorm:"foreignKey:ApplicationID"`
+	Program                  Program                   `json:"program" gorm:"foreignKey:ProgramID"`
+	UMKM                     UMKM                      `json:"umkm" gorm:"foreignKey:UMKMID"`
+	TrainingApplication      *TrainingApplication      `json:"training_application,omitempty" gorm:"foreignKey:ApplicationID"`
+	CertificationApplication *CertificationApplication `json:"certification_application,omitempty" gorm:"foreignKey:ApplicationID"`
+	FundingApplication       *FundingApplication       `json:"funding_application,omitempty" gorm:"foreignKey:ApplicationID"`
 }

@@ -16,9 +16,10 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 	mobileRepo := repository.NewMobileRepository(db)
 	programRepo := repository.NewProgramsRepository(db)
 	notificationRepo := repository.NewNotificationRepository(db)
+	vaultDecryptLogRepo := repository.NewVaultDecryptLogRepository(db)
 
 	// Service initialization
-	mobileService := service.NewMobileService(mobileRepo, programRepo, notificationRepo, minio)
+	mobileService := service.NewMobileService(mobileRepo, programRepo, notificationRepo, vaultDecryptLogRepo, minio)
 
 	// Handler initialization
 	mobileHandler := handler.NewMobileHandler(mobileService)

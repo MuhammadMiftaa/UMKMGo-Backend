@@ -13,21 +13,24 @@ type MobileRepository interface {
 	// Programs
 	GetProgramsByType(ctx context.Context, programType string) ([]model.Program, error)
 	GetProgramDetailByID(ctx context.Context, id int) (model.Program, error)
-	
+
 	// UMKM Profile
 	GetUMKMProfileByUserID(ctx context.Context, userID int) (model.UMKM, error)
 	UpdateUMKMProfile(ctx context.Context, umkm model.UMKM) (model.UMKM, error)
-	
+
 	// Documents
 	UpdateUMKMDocument(ctx context.Context, umkmID int, field, value string) error
-	
+
 	// Applications
 	CreateApplication(ctx context.Context, application model.Application) (model.Application, error)
 	CreateApplicationDocuments(ctx context.Context, documents []model.ApplicationDocument) error
 	CreateApplicationHistory(ctx context.Context, history model.ApplicationHistory) error
+	CreateTrainingApplication(ctx context.Context, training model.TrainingApplication) error
+	CreateCertificationApplication(ctx context.Context, certification model.CertificationApplication) error
+	CreateFundingApplication(ctx context.Context, funding model.FundingApplication) error
 	GetApplicationsByUMKMID(ctx context.Context, umkmID int) ([]model.Application, error)
 	GetApplicationDetailByID(ctx context.Context, id int) (model.Application, error)
-	
+
 	// Validations
 	GetProgramByID(ctx context.Context, id int) (model.Program, error)
 	GetProgramRequirements(ctx context.Context, programID int) ([]model.ProgramRequirement, error)
@@ -130,10 +133,37 @@ func (r *mobileRepository) CreateApplicationHistory(ctx context.Context, history
 	return nil
 }
 
+func (r *mobileRepository) CreateTrainingApplication(ctx context.Context, training model.TrainingApplication) error {
+	err := r.db.WithContext(ctx).Create(&training).Error
+	if err != nil {
+		return errors.New("failed to create training application")
+	}
+	return nil
+}
+
+func (r *mobileRepository) CreateCertificationApplication(ctx context.Context, certification model.CertificationApplication) error {
+	err := r.db.WithContext(ctx).Create(&certification).Error
+	if err != nil {
+		return errors.New("failed to create certification application")
+	}
+	return nil
+}
+
+func (r *mobileRepository) CreateFundingApplication(ctx context.Context, funding model.FundingApplication) error {
+	err := r.db.WithContext(ctx).Create(&funding).Error
+	if err != nil {
+		return errors.New("failed to create funding application")
+	}
+	return nil
+}
+
 func (r *mobileRepository) GetApplicationsByUMKMID(ctx context.Context, umkmID int) ([]model.Application, error) {
 	var applications []model.Application
 	err := r.db.WithContext(ctx).
 		Preload("Program").
+		Preload("TrainingApplication").
+		Preload("CertificationApplication").
+		Preload("FundingApplication").
 		Where("umkm_id = ? AND deleted_at IS NULL", umkmID).
 		Order("submitted_at DESC").
 		Find(&applications).Error
@@ -149,6 +179,9 @@ func (r *mobileRepository) GetApplicationDetailByID(ctx context.Context, id int)
 		Preload("Program").
 		Preload("Documents").
 		Preload("Histories.User").
+		Preload("TrainingApplication").
+		Preload("CertificationApplication").
+		Preload("FundingApplication").
 		Where("id = ? AND deleted_at IS NULL", id).
 		First(&application).Error
 	if err != nil {

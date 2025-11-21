@@ -16,9 +16,10 @@ func ApplicationRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepos
 	applicationRepo := repository.NewApplicationsRepository(db)
 	userRepo := repository.NewUsersRepository(db)
 	notificationRepo := repository.NewNotificationRepository(db)
+	vaultDecryptLogRepo := repository.NewVaultDecryptLogRepository(db)
 
 	// Service initialization
-	applicationService := service.NewApplicationsService(applicationRepo, userRepo, notificationRepo)
+	applicationService := service.NewApplicationsService(applicationRepo, userRepo, notificationRepo, vaultDecryptLogRepo)
 
 	// Handler initialization
 	applicationHandler := handler.NewApplicationsHandler(applicationService)

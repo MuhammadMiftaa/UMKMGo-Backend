@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"UMKMGo-backend/config/vault"
 	"UMKMGo-backend/internal/repository"
 	"UMKMGo-backend/internal/types/dto"
 	"UMKMGo-backend/internal/types/model"
@@ -30,13 +31,15 @@ type applicationsService struct {
 	applicationRepository  repository.ApplicationsRepository
 	userRepository         repository.UsersRepository
 	notificationRepository repository.NotificationRepository
+	vaultDecryptLogRepo    repository.VaultDecryptLogRepository
 }
 
-func NewApplicationsService(applicationRepo repository.ApplicationsRepository, userRepo repository.UsersRepository, notificationRepo repository.NotificationRepository) ApplicationsService {
+func NewApplicationsService(applicationRepo repository.ApplicationsRepository, userRepo repository.UsersRepository, notificationRepo repository.NotificationRepository, vaultDecryptLogRepo repository.VaultDecryptLogRepository) ApplicationsService {
 	return &applicationsService{
 		applicationRepository:  applicationRepo,
 		userRepository:         userRepo,
 		notificationRepository: notificationRepo,
+		vaultDecryptLogRepo:    vaultDecryptLogRepo,
 	}
 }
 
@@ -46,8 +49,28 @@ func (s *applicationsService) GetAllApplications(ctx context.Context, filterType
 		return nil, err
 	}
 
+	// Get user ID from context for logging
+	userID := 0
+	if val := ctx.Value("userID"); val != nil {
+		if uid, ok := val.(int); ok {
+			userID = uid
+		}
+	}
+
 	var applicationsDTO []dto.Applications
 	for _, app := range applications {
+		// Decrypt NIK with logging
+		decryptedNIK, err := s.decryptUMKMData(ctx, app.UMKM.ID, app.UMKM.NIK, "nik", userID, "application_review")
+		if err == nil {
+			app.UMKM.NIK = decryptedNIK
+		}
+
+		// Decrypt Kartu Number with logging
+		decryptedKartu, err := s.decryptUMKMData(ctx, app.UMKM.ID, app.UMKM.KartuNumber, "kartu_number", userID, "application_review")
+		if err == nil {
+			app.UMKM.KartuNumber = decryptedKartu
+		}
+
 		// Get documents
 		documents, _ := s.applicationRepository.GetApplicationDocuments(ctx, app.ID)
 		var documentsDTO []dto.ApplicationDocuments
@@ -102,6 +125,7 @@ func (s *applicationsService) GetAllApplications(ctx context.Context, filterType
 				ID:           app.UMKM.ID,
 				BusinessName: app.UMKM.BusinessName,
 				NIK:          app.UMKM.NIK,
+				KartuNumber:  app.UMKM.KartuNumber,
 				Address:      app.UMKM.Address,
 				District:     app.UMKM.District,
 				Subdistrict:  app.UMKM.Subdistrict,
@@ -132,7 +156,28 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 		return dto.Applications{}, err
 	}
 
-	// Get documents
+	// Get user ID from context for logging
+	userID := 0
+	if val := ctx.Value("userID"); val != nil {
+		if uid, ok := val.(int); ok {
+			userID = uid
+		}
+	}
+
+	// Decrypt NIK with logging
+	decryptedNIK, err := s.decryptUMKMData(ctx, application.UMKM.ID, application.UMKM.NIK, "nik", userID, "application_review")
+	if err == nil {
+		application.UMKM.NIK = decryptedNIK
+	}
+
+	// Decrypt Kartu Number with logging
+	decryptedKartu, err := s.decryptUMKMData(ctx, application.UMKM.ID, application.UMKM.KartuNumber, "kartu_number", userID, "application_review")
+	if err == nil {
+		application.UMKM.KartuNumber = decryptedKartu
+	}
+
+	// ... rest of the mapping logic similar to GetAllApplications ...
+
 	documents, _ := s.applicationRepository.GetApplicationDocuments(ctx, application.ID)
 	var documentsDTO []dto.ApplicationDocuments
 	for _, doc := range documents {
@@ -146,7 +191,6 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 		})
 	}
 
-	// Get histories
 	histories, _ := s.applicationRepository.GetApplicationHistories(ctx, application.ID)
 	var historiesDTO []dto.ApplicationHistories
 	for _, hist := range histories {
@@ -186,6 +230,7 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (d
 			ID:           application.UMKM.ID,
 			BusinessName: application.UMKM.BusinessName,
 			NIK:          application.UMKM.NIK,
+			KartuNumber:  application.UMKM.KartuNumber,
 			Address:      application.UMKM.Address,
 			District:     application.UMKM.District,
 			Subdistrict:  application.UMKM.Subdistrict,
@@ -494,4 +539,44 @@ func (s *applicationsService) FinalReject(ctx context.Context, userID int, decis
 		ID:     updatedApplication.ID,
 		Status: updatedApplication.Status,
 	}, nil
+}
+
+// Helper function
+func (s *applicationsService) decryptUMKMData(ctx context.Context, umkmID int, ciphertext, fieldName string, userID int, purpose string) (string, error) {
+	if ciphertext == "" {
+		return "", errors.New("ciphertext is empty")
+	}
+
+	// Get context info for logging
+	ipAddress, userAgent, requestID := vault.GetContextInfo(ctx)
+
+	decryptParams := vault.DecryptParams{
+		UserID:    userID,
+		UMKMID:    &umkmID,
+		FieldName: fieldName,
+		TableName: "umkms",
+		RecordID:  umkmID,
+		Purpose:   purpose,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		RequestID: requestID,
+	}
+
+	var plaintext []byte
+	var err error
+
+	// Choose the appropriate encryption key based on field name
+	if fieldName == "nik" {
+		plaintext, err = vault.DecryptNIKWithLog(ctx, ciphertext, decryptParams, s.vaultDecryptLogRepo)
+	} else if fieldName == "kartu_number" {
+		plaintext, err = vault.DecryptKartuNumberWithLog(ctx, ciphertext, decryptParams, s.vaultDecryptLogRepo)
+	} else {
+		return "", errors.New("unsupported field name for decryption")
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(plaintext), nil
 }

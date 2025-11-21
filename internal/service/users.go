@@ -32,11 +32,11 @@ type UsersService interface {
 	DeleteUser(ctx context.Context, id int) (dto.Users, error)
 
 	MetaCityAndProvince(ctx context.Context) ([]dto.MetaCityAndProvince, error)
-	RegisterMobile(ctx context.Context, email, phone string) (string, error)
+	RegisterMobile(ctx context.Context, email, phone string) error
 	VerifyOTP(ctx context.Context, phone, code string) (*string, error)
 	RegisterMobileProfile(ctx context.Context, user dto.UMKMMobile, tempToken string) (*string, error)
 	LoginMobile(ctx context.Context, user dto.UMKMMobile) (*string, error)
-	ForgotPassword(ctx context.Context, phone string) (string, error)
+	ForgotPassword(ctx context.Context, phone string) error
 	ResetPassword(ctx context.Context, user dto.ResetPasswordMobile, tempToken string) error
 
 	GetListPermissions(ctx context.Context) ([]dto.Permissions, error)
@@ -477,27 +477,27 @@ func (user_serv *usersService) MetaCityAndProvince(ctx context.Context) ([]dto.M
 	return result, nil
 }
 
-func (user_serv *usersService) RegisterMobile(ctx context.Context, email, phone string) (string, error) {
+func (user_serv *usersService) RegisterMobile(ctx context.Context, email, phone string) error {
 	// VALIDASI APAKAH EMAIL DAN PHONE KOSONG
 	if email == "" || phone == "" {
-		return "", errors.New("email and phone cannot be blank")
+		return errors.New("email and phone cannot be blank")
 	}
 
 	// VALIDASI UNTUK FORMAT EMAIL SUDAH BENAR
 	if isValid := utils.EmailValidator(email); !isValid {
-		return "", errors.New("please enter a valid email address")
+		return errors.New("please enter a valid email address")
 	}
 
 	// VALIDASI NOMOR TELEPON
 	validPhone, err := utils.NormalizePhone(phone)
 	if err != nil {
-		return "", errors.New("please enter a valid phone number")
+		return errors.New("please enter a valid phone number")
 	}
 
 	// MENGECEK APAKAH USER SUDAH TERDAFTAR
 	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, email)
 	if err == nil && (userExist.Email != "") {
-		return "", errors.New("email already exists")
+		return errors.New("email already exists")
 	}
 
 	otpCode := utils.GenerateOTP()
@@ -510,19 +510,19 @@ func (user_serv *usersService) RegisterMobile(ctx context.Context, email, phone 
 	}
 
 	if err := user_serv.otpRepository.CreateOTP(ctx, OTP); err != nil {
-		return "", errors.New("failed to create OTP")
+		return errors.New("failed to create OTP")
 	}
 
 	vendor, err := otp.InitVendor(otp.VENDOR_FONNTE, env.Cfg.Fonnte.Token, "", "")
 	if err != nil {
-		return "", errors.New("failed to initialize OTP vendor")
+		return errors.New("failed to initialize OTP vendor")
 	}
 
 	if _, err := otp.SendOTP(vendor, validPhone, otpCode); err != nil {
-		return "", errors.New("failed to send OTP")
+		return errors.New("failed to send OTP")
 	}
 
-	return otpCode, nil
+	return nil
 }
 
 func (user_serv *usersService) VerifyOTP(ctx context.Context, phone, code string) (*string, error) {
@@ -725,22 +725,22 @@ func (user_serv *usersService) LoginMobile(ctx context.Context, user dto.UMKMMob
 	return &token, nil
 }
 
-func (user_serv *usersService) ForgotPassword(ctx context.Context, phone string) (string, error) {
+func (user_serv *usersService) ForgotPassword(ctx context.Context, phone string) error {
 	// VALIDASI APAKAH PHONE KOSONG
 	if phone == "" {
-		return "", errors.New("phone cannot be blank")
+		return errors.New("phone cannot be blank")
 	}
 
 	// VALIDASI NOMOR TELEPON
 	validPhone, err := utils.NormalizePhone(phone)
 	if err != nil {
-		return "", errors.New("please enter a valid phone number")
+		return errors.New("please enter a valid phone number")
 	}
 
 	// MENGECEK APAKAH USER SUDAH TERDAFTAR
 	userExist, err := user_serv.userRepository.GetUMKMByPhone(ctx, validPhone)
 	if err != nil {
-		return "", errors.New("user not found")
+		return errors.New("user not found")
 	}
 
 	otpCode := utils.GenerateOTP()
@@ -753,19 +753,19 @@ func (user_serv *usersService) ForgotPassword(ctx context.Context, phone string)
 	}
 
 	if err := user_serv.otpRepository.CreateOTP(ctx, OTP); err != nil {
-		return "", errors.New("failed to create OTP")
+		return errors.New("failed to create OTP")
 	}
 
 	vendor, err := otp.InitVendor(otp.VENDOR_FONNTE, env.Cfg.Fonnte.Token, "", "")
 	if err != nil {
-		return "", errors.New("failed to initialize OTP vendor")
+		return errors.New("failed to initialize OTP vendor")
 	}
 
 	if _, err := otp.SendOTP(vendor, validPhone, otpCode); err != nil {
-		return "", errors.New("failed to send OTP")
+		return errors.New("failed to send OTP")
 	}
 
-	return otpCode, nil
+	return nil
 }
 
 func (user_serv *usersService) ResetPassword(ctx context.Context, user dto.ResetPasswordMobile, tempToken string) error {

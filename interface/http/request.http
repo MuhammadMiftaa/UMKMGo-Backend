@@ -554,72 +554,273 @@ Content-Type: application/json
 }
 
 
-# ============================================
-# MOBILE APP API
-# ============================================
+#  ~ ============================================
+# $ MOBILE APP API
+# ~ ============================================
 
-# Mobile App API Endpoints
-GET /v1/mobile/programs/training
-Authorization: Bearer {mobileToken}
+### ============================================
+### MOBILE AUTH ENDPOINTS
+### ============================================
 
-GET /v1/mobile/programs/certification
-Authorization: Bearer {mobileToken}
+### Get Meta (Provinces & Cities)
+GET {{baseUrl}}/v1/mobileauth/meta
+Content-Type: application/json
 
-GET /v1/mobile/programs/funding
-Authorization: Bearer {mobileToken}
-
-GET /v1/mobile/programs/{id}
-Authorization: Bearer {mobileToken}
-
-GET /v1/mobile/profile
-Authorization: Bearer {mobileToken}
-
-PUT /v1/mobile/profile
-Authorization: Bearer {mobileToken}
+### Register Mobile - Step 1 (Send OTP)
+POST {{baseUrl}}/v1/mobileauth/register
 Content-Type: application/json
 
 {
-  "business_name": "Warung Makan Berkah Updated",
-  "gender": "male",
-  "birth_date": "1985-05-15",
-  "phone": "81234567890",
-  "address": "Jl. Sudirman No. 123",
-  "province_id": 32,
-  "city_id": 3273,
-  "district": "Karang Pilang",
-  "subdistrict": "Kedurus",
-  "postal_code": "40123",
-  "kartu_type": "produktif"
+    "email": "user@example.com",
+    "phone": "081234567890"
 }
 
-POST /v1/mobile/documents/nib
-Authorization: Bearer {mobileToken}
+### Verify OTP - Step 2
+POST {{baseUrl}}/v1/mobileauth/verify/otp
 Content-Type: application/json
 
 {
-  "document": "data:application/pdf;base64,JVBERi0xLjQKJeLj..."
+    "phone": "081234567890",
+    "otp_code": "123456"
 }
 
-POST /v1/mobile/documents/npwp
-Authorization: Bearer {mobileToken}
+### Register Mobile Profile - Step 3
+POST {{baseUrl}}/v1/mobileauth/register/profile?temp_token=tempToken
 Content-Type: application/json
 
 {
-  "document": "data:application/pdf;base64,JVBERi0xLjQKJeLj..."
+    "fullname": "John Doe",
+    "business_name": "Toko Maju Jaya",
+    "nik": "3201234567890001",
+    "gender": "male",
+    "birth_date": "1990-05-15",
+    "password": "Password123",
+    "address": "Jl. Sudirman No. 123",
+    "province_id": 32,
+    "city_id": 3273,
+    "district": "Coblong",
+    "subdistrict": "Dago",
+    "postal_code": "40135",
+    "kartu_type": "produktif",
+    "kartu_number": "KUR001234567"
 }
 
-POST /v1/mobile/documents/revenue-record
-Authorization: Bearer {mobileToken}
+### Login Mobile
+POST {{baseUrl}}/v1/mobileauth/login
 Content-Type: application/json
 
 {
-  "document": "data:application/pdf;base64,JVBERi0xLjQKJeLj..."
+    "phone": "081234567890",
+    "password": "Password123"
 }
 
-POST /v1/mobile/documents/business-permit
-Authorization: Bearer {mobileToken}
+### Forgot Password - Step 1 (Send OTP)
+POST {{baseUrl}}/v1/mobileauth/forgot-password
 Content-Type: application/json
 
 {
-  "document": "data:application/pdf;base64,JVBERi0xLjQKJeLj..."
+    "phone": "081234567890"
 }
+
+### Reset Password - Step 2
+POST {{baseUrl}}/v1/mobileauth/reset-password?temp_token=tempToken
+Content-Type: application/json
+
+{
+    "password": "NewPassword123",
+    "confirm_password": "NewPassword123"
+}
+
+### ============================================
+### MOBILE PROGRAMS ENDPOINTS
+### ============================================
+
+### Get Training Programs
+GET {{baseUrl}}/v1/mobile/programs/training
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Certification Programs
+GET {{baseUrl}}/v1/mobile/programs/certification
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Funding Programs
+GET {{baseUrl}}/v1/mobile/programs/funding
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Program Detail
+GET {{baseUrl}}/v1/mobile/programs/1
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### ============================================
+### MOBILE PROFILE ENDPOINTS
+### ============================================
+
+### Get UMKM Profile
+GET {{baseUrl}}/v1/mobile/profile
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Update UMKM Profile
+PUT {{baseUrl}}/v1/mobile/profile
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "business_name": "Toko Maju Sejahtera",
+    "gender": "male",
+    "birth_date": "1990-05-15",
+    "phone": "081234567890",
+    "address": "Jl. Asia Afrika No. 456",
+    "province_id": 32,
+    "city_id": 3273,
+    "district": "Sukajadi",
+    "subdistrict": "Cipedes",
+    "postal_code": "40162",
+    "kartu_type": "produktif"
+}
+
+### ============================================
+### MOBILE DOCUMENTS ENDPOINTS
+### ============================================
+
+### Upload NIB Document
+POST {{baseUrl}}/v1/mobile/documents/nib
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "document": "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKNCAwIG9iago..."
+}
+
+### Upload NPWP Document
+POST {{baseUrl}}/v1/mobile/documents/npwp
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "document": "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKNCAwIG9iago..."
+}
+
+### Upload Revenue Record Document
+POST {{baseUrl}}/v1/mobile/documents/revenue-record
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "document": "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKNCAwIG9iago..."
+}
+
+### Upload Business Permit Document
+POST {{baseUrl}}/v1/mobile/documents/business-permit
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "document": "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKNCAwIG9iago..."
+}
+
+### ============================================
+### MOBILE APPLICATIONS ENDPOINTS
+### ============================================
+
+### Create Training Application
+POST {{baseUrl}}/v1/mobile/applications/training
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "program_id": 1,
+    "motivation": "Saya ingin meningkatkan kemampuan digital marketing untuk mengembangkan bisnis saya",
+    "business_experience": "Sudah menjalankan usaha selama 3 tahun",
+    "learning_objectives": "Memahami strategi digital marketing dan social media marketing",
+    "availability_notes": "Tersedia untuk mengikuti pelatihan pada weekday",
+    "documents": {
+        "ktp": "data:application/pdf;base64,JVBERi0xLjQKJe...",
+        "proposal": "data:application/pdf;base64,JVBERi0xLjQKJe..."
+    }
+}
+
+### Create Certification Application
+POST {{baseUrl}}/v1/mobile/applications/certification
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "program_id": 11,
+    "business_sector": "Food & Beverage",
+    "product_or_service": "Produk makanan ringan tradisional",
+    "business_description": "Memproduksi dan menjual makanan ringan khas daerah",
+    "years_operating": 3,
+    "current_standards": "Sudah memiliki PIRT",
+    "certification_goals": "Mendapatkan sertifikat halal untuk ekspansi pasar",
+    "documents": {
+        "ktp": "data:application/pdf;base64,JVBERi0xLjQKJe...",
+        "portfolio": "data:application/pdf;base64,JVBERi0xLjQKJe..."
+    }
+}
+
+### Create Funding Application
+POST {{baseUrl}}/v1/mobile/applications/funding
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "program_id": 21,
+    "business_sector": "Retail",
+    "business_description": "Toko kelontong yang melayani kebutuhan sehari-hari masyarakat",
+    "years_operating": 2,
+    "requested_amount": 25000000,
+    "fund_purpose": "Menambah modal untuk ekspansi usaha dan penambahan stok barang",
+    "business_plan": "Membuka cabang baru di lokasi strategis",
+    "revenue_projection": 50000000,
+    "monthly_revenue": 15000000,
+    "requested_tenure_months": 24,
+    "collateral_description": "Sertifikat tanah",
+    "documents": {
+        "ktp": "data:application/pdf;base64,JVBERi0xLjQKJe...",
+        "rekening": "data:application/pdf;base64,JVBERi0xLjQKJe...",
+        "proposal": "data:application/pdf;base64,JVBERi0xLjQKJe..."
+    }
+}
+
+### Get Application List
+GET {{baseUrl}}/v1/mobile/applications
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Application Detail
+GET {{baseUrl}}/v1/mobile/applications/1
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### ============================================
+### MOBILE NOTIFICATIONS ENDPOINTS
+### ============================================
+
+### Get Notifications by UMKM ID
+GET {{baseUrl}}/v1/mobile/notifications
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Unread Notification Count
+GET {{baseUrl}}/v1/mobile/notifications/unread-count
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Mark Notifications as Read
+PUT {{baseUrl}}/v1/mobile/notifications/mark-as-read
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "notification_ids": [1, 2, 3]
+}
+
+### Mark All Notifications as Read
+PUT {{baseUrl}}/v1/mobile/notifications/mark-all-as-read
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json

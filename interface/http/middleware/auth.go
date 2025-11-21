@@ -50,6 +50,8 @@ func authenticate(c *fiber.Ctx) (*dto.UserData, error) {
 	c.Locals("user_data", userData)
 	c.Locals("userID", userData.ID)
 	c.Locals("requestID", requestID)
+	c.Locals("ipAddress", c.IP())
+	c.Locals("userAgent", c.Get("User-Agent"))
 
 	return &userData, nil
 }

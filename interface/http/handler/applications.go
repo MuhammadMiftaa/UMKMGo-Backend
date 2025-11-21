@@ -22,8 +22,15 @@ func NewApplicationsHandler(applicationsService service.ApplicationsService) *ap
 
 func (h *applicationsHandler) GetAllApplications(c *fiber.Ctx) error {
 	filterType := c.Query("type", "")
+	userIDVal := c.Locals("userID")
+	var userID int
+	if userIDVal != nil {
+		if id, ok := userIDVal.(float64); ok {
+			userID = int(id)
+		}
+	}
 
-	applications, err := h.applicationsService.GetAllApplications(c.Context(), filterType)
+	applications, err := h.applicationsService.GetAllApplications(c.Context(), userID, filterType)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -42,6 +49,14 @@ func (h *applicationsHandler) GetAllApplications(c *fiber.Ctx) error {
 
 func (h *applicationsHandler) GetApplicationByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+	userIDVal := c.Locals("userID")
+	var userID int
+	if userIDVal != nil {
+		if id, ok := userIDVal.(float64); ok {
+			userID = int(id)
+		}
+	}
+
 	intID, err := strconv.Atoi(id)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -51,7 +66,7 @@ func (h *applicationsHandler) GetApplicationByID(c *fiber.Ctx) error {
 		})
 	}
 
-	application, err := h.applicationsService.GetApplicationByID(c.Context(), intID)
+	application, err := h.applicationsService.GetApplicationByID(c.Context(), userID, intID)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,

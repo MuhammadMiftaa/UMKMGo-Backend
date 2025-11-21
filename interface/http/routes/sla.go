@@ -17,7 +17,7 @@ func SLARoutes(version fiber.Router, db *gorm.DB) {
 
 	slaHandler := handler.NewSLAHandler(slaService)
 
-	version.Use(middleware.AuthMiddleware(), middleware.ContextMiddleware())
+	version.Use(middleware.AuthMiddleware())
 
 	sla := version.Group("/sla")
 	{

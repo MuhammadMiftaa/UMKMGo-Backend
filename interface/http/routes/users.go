@@ -36,7 +36,7 @@ func UserRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository) 
 		mobileAuth.Post("verify/otp", User_handler.VerifyOTP)
 	}
 
-	version.Use(middleware.AuthMiddleware(), middleware.ContextMiddleware())
+	version.Use(middleware.AuthMiddleware())
 
 	users := version.Group("/users")
 	{

@@ -17,7 +17,7 @@ func DashboardRoutes(version fiber.Router, db *gorm.DB) {
 
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 
-	version.Use(middleware.AuthMiddleware(), middleware.ContextMiddleware())
+	version.Use(middleware.AuthMiddleware())
 
 	dashboard := version.Group("/dashboard")
 	{

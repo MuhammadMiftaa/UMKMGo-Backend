@@ -14,8 +14,8 @@ import (
 )
 
 type ApplicationsService interface {
-	GetAllApplications(ctx context.Context, filterType string) ([]dto.Applications, error)
-	GetApplicationByID(ctx context.Context, id int) (dto.Applications, error)
+	GetAllApplications(ctx context.Context, userID int, filterType string) ([]dto.Applications, error)
+	GetApplicationByID(ctx context.Context, userID, id int) (dto.Applications, error)
 
 	// Screening Decisions
 	ScreeningApprove(ctx context.Context, userID int, applicationID int) (dto.Applications, error)
@@ -43,18 +43,10 @@ func NewApplicationsService(applicationRepo repository.ApplicationsRepository, u
 	}
 }
 
-func (s *applicationsService) GetAllApplications(ctx context.Context, filterType string) ([]dto.Applications, error) {
+func (s *applicationsService) GetAllApplications(ctx context.Context, userID int, filterType string) ([]dto.Applications, error) {
 	applications, err := s.applicationRepository.GetAllApplications(ctx, filterType)
 	if err != nil {
 		return nil, err
-	}
-
-	// Get user ID from context for logging
-	userID := 0
-	if val := ctx.Value("userID"); val != nil {
-		if uid, ok := val.(int); ok {
-			userID = uid
-		}
 	}
 
 	var applicationsDTO []dto.Applications
@@ -150,18 +142,10 @@ func (s *applicationsService) GetAllApplications(ctx context.Context, filterType
 	return applicationsDTO, nil
 }
 
-func (s *applicationsService) GetApplicationByID(ctx context.Context, id int) (dto.Applications, error) {
+func (s *applicationsService) GetApplicationByID(ctx context.Context, userID, id int) (dto.Applications, error) {
 	application, err := s.applicationRepository.GetApplicationByID(ctx, id)
 	if err != nil {
 		return dto.Applications{}, err
-	}
-
-	// Get user ID from context for logging
-	userID := 0
-	if val := ctx.Value("userID"); val != nil {
-		if uid, ok := val.(int); ok {
-			userID = uid
-		}
 	}
 
 	// Decrypt NIK with logging
@@ -562,7 +546,7 @@ func (s *applicationsService) decryptUMKMData(ctx context.Context, umkmID int, c
 		RequestID: requestID,
 	}
 
-	var plaintext []byte
+	var plaintext string
 	var err error
 
 	// Choose the appropriate encryption key based on field name
@@ -578,5 +562,5 @@ func (s *applicationsService) decryptUMKMData(ctx context.Context, umkmID int, c
 		return "", err
 	}
 
-	return string(plaintext), nil
+	return plaintext, nil
 }

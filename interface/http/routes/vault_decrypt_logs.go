@@ -21,12 +21,12 @@ func VaultDecryptLogRoutes(version fiber.Router, db *gorm.DB) {
 	vaultDecryptLogHandler := handler.NewVaultDecryptLogHandler(vaultDecryptLogService)
 
 	// Apply auth middleware for all vault decrypt log routes
-	version.Use(middleware.AuthMiddleware(), middleware.ContextMiddleware())
+	version.Use(middleware.AuthMiddleware())
 
 	vaultDecrypt := version.Group("/vault-decrypt-logs")
 	{
-		vaultDecrypt.Get("/", vaultDecryptLogHandler.GetLogs)             // Get all logs with pagination
-		vaultDecrypt.Get("/user", vaultDecryptLogHandler.GetLogsByUserID) // Get logs by user ID with pagination
+		vaultDecrypt.Get("/", vaultDecryptLogHandler.GetLogs)                      // Get all logs with pagination
+		vaultDecrypt.Get("/user", vaultDecryptLogHandler.GetLogsByUserID)          // Get logs by user ID with pagination
 		vaultDecrypt.Get("/umkm/:umkm_id", vaultDecryptLogHandler.GetLogsByUMKMID) // Get logs by UMKM ID with pagination
 	}
 }

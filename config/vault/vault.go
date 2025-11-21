@@ -11,6 +11,7 @@ import (
 
 	"UMKMGo-backend/internal/repository"
 	"UMKMGo-backend/internal/types/model"
+	"UMKMGo-backend/internal/utils"
 
 	vault "github.com/hashicorp/vault/api"
 )
@@ -144,7 +145,7 @@ func DecryptWithLog(
 	encryptionKey string,
 	params DecryptParams,
 	vaultLogRepo repository.VaultDecryptLogRepository,
-) ([]byte, error) {
+) (string, error) {
 	// Perform decryption
 	plaintext, err := DecryptTransit(
 		ctx,
@@ -176,7 +177,7 @@ func DecryptWithLog(
 		log.Log.Errorf("failed to log decrypt operation: %v", logErr)
 	}
 
-	return plaintext, err
+	return utils.MaskMiddle(string(plaintext)), err
 }
 
 // DecryptNIKWithLog is a helper for NIK decryption
@@ -185,7 +186,7 @@ func DecryptNIKWithLog(
 	ciphertext string,
 	params DecryptParams,
 	vaultLogRepo repository.VaultDecryptLogRepository,
-) ([]byte, error) {
+) (string, error) {
 	params.FieldName = "nik"
 	params.TableName = "umkms"
 	return DecryptWithLog(ctx, ciphertext, env.Cfg.Vault.NIKEncryptionKey, params, vaultLogRepo)
@@ -197,7 +198,7 @@ func DecryptKartuNumberWithLog(
 	ciphertext string,
 	params DecryptParams,
 	vaultLogRepo repository.VaultDecryptLogRepository,
-) ([]byte, error) {
+) (string, error) {
 	params.FieldName = "kartu_number"
 	params.TableName = "umkms"
 	return DecryptWithLog(ctx, ciphertext, env.Cfg.Vault.KartuEncryptionKey, params, vaultLogRepo)

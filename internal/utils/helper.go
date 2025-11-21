@@ -290,3 +290,26 @@ func RandomString(size int) string {
 
 	return fmt.Sprintf("%x", b)[:size]
 }
+
+// ~ MaskMiddle masks the middle part of a string with "XXXXXX"
+func MaskMiddle(s string) string {
+    mask := "XXXXXXXX"
+    n := len(s)
+
+    // Jika terlalu pendek atau hampir pendek
+    if n <= len(mask) {
+        return mask
+    }
+
+    // Tentukan posisi potong secara dinamis
+    start := n / 3
+    end := n - (n / 3)
+
+    // Hindari overlap
+    if start >= end {
+        start = n / 3
+        end = start + 1
+    }
+
+    return s[:start] + mask + s[end:]
+}

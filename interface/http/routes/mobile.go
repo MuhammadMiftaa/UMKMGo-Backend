@@ -25,7 +25,7 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 	mobileHandler := handler.NewMobileHandler(mobileService)
 
 	// Apply auth middleware for all mobile routes
-	version.Use(middleware.MobileAuthMiddleware(), middleware.ContextMiddleware())
+	version.Use(middleware.MobileAuthMiddleware())
 
 	mobile := version.Group("/mobile")
 	{

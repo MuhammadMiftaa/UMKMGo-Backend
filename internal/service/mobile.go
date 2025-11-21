@@ -786,7 +786,7 @@ func (s *mobileService) getUMKMWithDecryption(ctx context.Context, userID int, p
 
 	// Decrypt NIK with logging
 	decryptParams := vault.DecryptParams{
-		UserID:    userID,
+		UserID:    umkm.User.ID,
 		UMKMID:    &umkm.ID,
 		RecordID:  umkm.ID,
 		Purpose:   purpose,
@@ -795,19 +795,16 @@ func (s *mobileService) getUMKMWithDecryption(ctx context.Context, userID int, p
 		RequestID: requestID,
 	}
 
-	decryptedNIK, err := vault.DecryptNIKWithLog(ctx, umkm.NIK, decryptParams, s.vaultLogRepo)
+	umkm.NIK, err = vault.DecryptNIKWithLog(ctx, umkm.NIK, decryptParams, s.vaultLogRepo)
 	if err != nil {
 		return model.UMKM{}, errors.New("failed to decrypt NIK")
 	}
 
 	// Decrypt Kartu Number with logging
-	decryptedKartu, err := vault.DecryptKartuNumberWithLog(ctx, umkm.KartuNumber, decryptParams, s.vaultLogRepo)
+	umkm.KartuNumber, err = vault.DecryptKartuNumberWithLog(ctx, umkm.KartuNumber, decryptParams, s.vaultLogRepo)
 	if err != nil {
 		return model.UMKM{}, errors.New("failed to decrypt Kartu Number")
 	}
-
-	umkm.NIK = string(decryptedNIK)
-	umkm.KartuNumber = string(decryptedKartu)
 
 	return umkm, nil
 }

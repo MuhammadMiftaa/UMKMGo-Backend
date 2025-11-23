@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"image/png"
 	"math/rand"
 	"regexp"
 	"strconv"
@@ -14,6 +17,7 @@ import (
 	"UMKMGo-backend/internal/types/dto"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -293,23 +297,49 @@ func RandomString(size int) string {
 
 // ~ MaskMiddle masks the middle part of a string with "XXXXXX"
 func MaskMiddle(s string) string {
-    mask := "XXXXXXXX"
-    n := len(s)
+	mask := "XXXXXXXX"
+	n := len(s)
 
-    // Jika terlalu pendek atau hampir pendek
-    if n <= len(mask) {
-        return mask
-    }
+	// Jika terlalu pendek atau hampir pendek
+	if n <= len(mask) {
+		return mask
+	}
 
-    // Tentukan posisi potong secara dinamis
-    start := n / 3
-    end := n - (n / 3)
+	// Tentukan posisi potong secara dinamis
+	start := n / 3
+	end := n - (n / 3)
 
-    // Hindari overlap
-    if start >= end {
-        start = n / 3
-        end = start + 1
-    }
+	// Hindari overlap
+	if start >= end {
+		start = n / 3
+		end = start + 1
+	}
 
-    return s[:start] + mask + s[end:]
+	return s[:start] + mask + s[end:]
+}
+
+// ~ GenerateQRCode generates a QR code in base64 format from the provided data string
+func GenerateQRCode(data string, size int) (string, error) {
+	// Generate QR code
+	qr, err := qrcode.New(data, qrcode.Medium)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate QR code: %w", err)
+	}
+
+	// Set size (default 256 if not specified)
+	if size <= 0 {
+		size = 256
+	}
+
+	// Encode to PNG
+	img := qr.Image(size)
+
+	// Convert to base64
+	buf := new(bytes.Buffer)
+	if err := png.Encode(buf, img); err != nil {
+		return "", fmt.Errorf("failed to encode QR code: %w", err)
+	}
+
+	base64Str := base64.StdEncoding.EncodeToString(buf.Bytes())
+	return base64Str, nil
 }

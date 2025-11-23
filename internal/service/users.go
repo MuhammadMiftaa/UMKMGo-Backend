@@ -8,6 +8,7 @@ import (
 	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/config/log"
 	"UMKMGo-backend/config/redis"
+	"UMKMGo-backend/config/storage"
 	"UMKMGo-backend/config/vault"
 	"UMKMGo-backend/internal/repository"
 	"UMKMGo-backend/internal/types/dto"
@@ -48,10 +49,11 @@ type usersService struct {
 	userRepository  repository.UsersRepository
 	otpRepository   repository.OTPRepository
 	redisRepository redis.RedisRepository
+	minio           *storage.MinIOManager
 }
 
-func NewUsersService(usersRepository repository.UsersRepository, otpRepository repository.OTPRepository, redisRepository redis.RedisRepository) UsersService {
-	return &usersService{usersRepository, otpRepository, redisRepository}
+func NewUsersService(usersRepository repository.UsersRepository, otpRepository repository.OTPRepository, redisRepository redis.RedisRepository, minio *storage.MinIOManager) UsersService {
+	return &usersService{usersRepository, otpRepository, redisRepository, minio}
 }
 
 func (user_serv *usersService) Register(ctx context.Context, user dto.Users) (dto.Users, error) {
@@ -647,6 +649,22 @@ func (user_serv *usersService) RegisterMobileProfile(ctx context.Context, user d
 		return nil, errors.New("failed to encrypt Kartu Number - " + err.Error())
 	}
 
+	// Generate QR Code from Kartu Number
+	qrCodeBase64, err := utils.GenerateQRCode(string(user.KartuNumber), 256)
+	if err != nil {
+		return nil, errors.New("failed to generate QR code: " + err.Error())
+	}
+
+	// Upload QR Code to MinIO
+	qrCode, err := user_serv.minio.UploadFile(ctx, storage.UploadRequest{
+		Base64Data: qrCodeBase64,
+		BucketName: storage.UMKMBucket,
+		Prefix:     utils.GenerateFileName(user.Fullname, "qrcode_"),
+	})
+	if err != nil {
+		return nil, errors.New("failed to upload QR code: " + err.Error())
+	}
+
 	res, err := user_serv.userRepository.CreateUMKM(ctx,
 		model.UMKM{
 			BusinessName: user.BusinessName,
@@ -661,6 +679,7 @@ func (user_serv *usersService) RegisterMobileProfile(ctx context.Context, user d
 			PostalCode:   user.PostalCode,
 			KartuType:    user.KartuType,
 			KartuNumber:  ciphertextKartuNumber,
+			QRCode:       qrCode.URL,
 		},
 		model.User{
 			Name:        user.Fullname,

@@ -16,10 +16,11 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 	mobileRepo := repository.NewMobileRepository(db)
 	programRepo := repository.NewProgramsRepository(db)
 	notificationRepo := repository.NewNotificationRepository(db)
+	applicationRepo := repository.NewApplicationsRepository(db)
 	vaultDecryptLogRepo := repository.NewVaultDecryptLogRepository(db)
 
 	// Service initialization
-	mobileService := service.NewMobileService(mobileRepo, programRepo, notificationRepo, vaultDecryptLogRepo, minio)
+	mobileService := service.NewMobileService(mobileRepo, programRepo, notificationRepo, vaultDecryptLogRepo, applicationRepo, minio)
 
 	// Handler initialization
 	mobileHandler := handler.NewMobileHandler(mobileService)
@@ -29,6 +30,8 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 
 	mobile := version.Group("/mobile")
 	{
+		mobile.Get("/dashboard", mobileHandler.GetDashboard)
+
 		// Programs
 		programs := mobile.Group("/programs")
 		{
@@ -69,7 +72,7 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 		{
 			notifications.Get("/", mobileHandler.GetNotificationsByUMKMID)
 			notifications.Get("/unread-count", mobileHandler.GetUnreadCount)
-			notifications.Put("/mark-as-read", mobileHandler.MarkNotificationsAsRead)
+			notifications.Put("/mark-as-read/:id", mobileHandler.MarkNotificationsAsRead)
 			notifications.Put("/mark-all-as-read", mobileHandler.MarkAllNotificationsAsRead)
 		}
 	}

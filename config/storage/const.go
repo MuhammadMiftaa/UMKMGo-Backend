@@ -1,5 +1,7 @@
 package storage
 
 const (
-	ProgramBucket = "umkmgo-programs"
+	ProgramBucket     = "umkmgo-programs"
+	UMKMBucket        = "umkmgo-umkms"
+	ApplicationBucket = "umkmgo-applications"
 )

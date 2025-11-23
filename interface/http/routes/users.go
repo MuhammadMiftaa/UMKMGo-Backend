@@ -2,6 +2,7 @@ package routes
 
 import (
 	"UMKMGo-backend/config/redis"
+	"UMKMGo-backend/config/storage"
 	"UMKMGo-backend/interface/http/handler"
 	"UMKMGo-backend/interface/http/middleware"
 	"UMKMGo-backend/internal/repository"
@@ -11,10 +12,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func UserRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository) {
+func UserRoutes(version fiber.Router, db *gorm.DB, redis redis.RedisRepository, minio *storage.MinIOManager) {
 	User_repo := repository.NewUsersRepository(db)
 	OTP_repo := repository.NewOTPRepository(db)
-	User_serv := service.NewUsersService(User_repo, OTP_repo, redis)
+	User_serv := service.NewUsersService(User_repo, OTP_repo, redis, minio)
 
 	User_handler := handler.NewUsersHandler(User_serv)
 

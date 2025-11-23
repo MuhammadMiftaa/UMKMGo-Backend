@@ -259,7 +259,7 @@ func (s *applicationsService) ScreeningApprove(ctx context.Context, userID int, 
 		ApplicationID: applicationID,
 		Status:        "approve_by_admin_screening",
 		Notes:         "Approved by admin screening",
-		ActionedBy:    userID,
+		ActionedBy:    &userID,
 	}
 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
 		return dto.Applications{}, err
@@ -319,7 +319,7 @@ func (s *applicationsService) ScreeningReject(ctx context.Context, userID int, d
 		ApplicationID: decision.ApplicationID,
 		Status:        "reject_by_admin_screening",
 		Notes:         decision.Notes,
-		ActionedBy:    userID,
+		ActionedBy:    &userID,
 	}
 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
 		return dto.Applications{}, err
@@ -379,7 +379,7 @@ func (s *applicationsService) ScreeningRevise(ctx context.Context, userID int, d
 		ApplicationID: decision.ApplicationID,
 		Status:        "revise",
 		Notes:         decision.Notes,
-		ActionedBy:    userID,
+		ActionedBy:    &userID,
 	}
 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
 		return dto.Applications{}, err
@@ -434,7 +434,7 @@ func (s *applicationsService) FinalApprove(ctx context.Context, userID int, appl
 		ApplicationID: applicationID,
 		Status:        "approve_by_admin_vendor",
 		Notes:         "Approved by admin vendor",
-		ActionedBy:    userID,
+		ActionedBy:    &userID,
 	}
 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
 		return dto.Applications{}, err
@@ -494,7 +494,7 @@ func (s *applicationsService) FinalReject(ctx context.Context, userID int, decis
 		ApplicationID: decision.ApplicationID,
 		Status:        "reject_by_admin_vendor",
 		Notes:         decision.Notes,
-		ActionedBy:    userID,
+		ActionedBy:    &userID,
 	}
 	if err := s.applicationRepository.CreateApplicationHistory(ctx, history); err != nil {
 		return dto.Applications{}, err

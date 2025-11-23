@@ -12,7 +12,7 @@ type NotificationRepository interface {
 	CreateNotification(ctx context.Context, notification model.Notification) error
 	GetNotificationsByUMKMID(ctx context.Context, umkmID int, limit, offset int) ([]model.Notification, error)
 	GetUnreadCount(ctx context.Context, umkmID int) (int64, error)
-	MarkAsRead(ctx context.Context, notificationIDs []int, umkmID int) error
+	MarkAsRead(ctx context.Context, notificationIDs int, umkmID int) error
 	MarkAllAsRead(ctx context.Context, umkmID int) error
 }
 
@@ -51,10 +51,10 @@ func (r *notificationRepository) GetUnreadCount(ctx context.Context, umkmID int)
 	return count, err
 }
 
-func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationIDs []int, umkmID int) error {
+func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationIDs int, umkmID int) error {
 	return r.db.WithContext(ctx).
 		Model(&model.Notification{}).
-		Where("id IN ? AND umkm_id = ?", notificationIDs, umkmID).
+		Where("id = ? AND umkm_id = ?", notificationIDs, umkmID).
 		Updates(map[string]interface{}{
 			"is_read": true,
 			"read_at": "NOW()",

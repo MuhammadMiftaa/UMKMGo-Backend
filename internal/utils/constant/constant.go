@@ -17,6 +17,12 @@ const (
 	OTPStatusActive = "active"
 	OTPStatusUsed   = "used"
 
+	ApplicationStatusScreening = "screening"
+	ApplicationStatusRevised   = "revised"
+	ApplicationStatusFinal     = "final"
+	ApplicationStatusApproved  = "approved"
+	ApplicationStatusRejected  = "rejected"
+
 	NotificationSubmitted        = "application_submitted"
 	NotificationApproved         = "screening_approved"
 	NotificationRejected         = "screening_rejected"

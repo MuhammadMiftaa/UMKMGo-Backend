@@ -22,6 +22,8 @@ type UMKM struct {
 	BusinessPermit string    `json:"business_permit" gorm:"type:text"`
 	KartuType      string    `json:"kartu_type" gorm:"type:card_type"`
 	KartuNumber    string    `json:"kartu_number" gorm:"type:text"`
+	Photo          string    `json:"photo" gorm:"type:text"`
+	QRCode         string    `json:"qr_code" gorm:"type:text"`
 	Base
 
 	User         User          `json:"user" gorm:"foreignKey:UserID"`

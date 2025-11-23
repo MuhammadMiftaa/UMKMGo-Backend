@@ -20,6 +20,33 @@ func NewMobileHandler(mobileService service.MobileService) *MobileHandler {
 	}
 }
 
+func (h *MobileHandler) GetDashboard(c *fiber.Ctx) error {
+	userData, ok := c.Locals("user_data").(dto.UserData)
+	if !ok {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"statusCode": 401,
+			"status":     false,
+			"message":    "Unauthorized",
+		})
+	}
+
+	data, err := h.mobileService.GetDashboard(c.Context(), int(userData.ID))
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"statusCode": 500,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Get user data",
+		"data":       data,
+	})
+}
+
 // Programs - Training
 func (h *MobileHandler) GetTrainingPrograms(c *fiber.Ctx) error {
 	programs, err := h.mobileService.GetTrainingPrograms(c.Context())
@@ -327,8 +354,7 @@ func (h *MobileHandler) CreateTrainingApplication(c *fiber.Ctx) error {
 		})
 	}
 
-	application, err := h.mobileService.CreateTrainingApplication(c.Context(), int(userData.ID), request)
-	if err != nil {
+	if err := h.mobileService.CreateTrainingApplication(c.Context(), int(userData.ID), request); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
 			"status":     false,
@@ -340,7 +366,6 @@ func (h *MobileHandler) CreateTrainingApplication(c *fiber.Ctx) error {
 		"statusCode": 201,
 		"status":     true,
 		"message":    "Training application created successfully",
-		"data":       application,
 	})
 }
 
@@ -363,8 +388,7 @@ func (h *MobileHandler) CreateCertificationApplication(c *fiber.Ctx) error {
 		})
 	}
 
-	application, err := h.mobileService.CreateCertificationApplication(c.Context(), int(userData.ID), request)
-	if err != nil {
+	if err := h.mobileService.CreateCertificationApplication(c.Context(), int(userData.ID), request); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
 			"status":     false,
@@ -376,7 +400,6 @@ func (h *MobileHandler) CreateCertificationApplication(c *fiber.Ctx) error {
 		"statusCode": 201,
 		"status":     true,
 		"message":    "Certification application created successfully",
-		"data":       application,
 	})
 }
 
@@ -399,8 +422,7 @@ func (h *MobileHandler) CreateFundingApplication(c *fiber.Ctx) error {
 		})
 	}
 
-	application, err := h.mobileService.CreateFundingApplication(c.Context(), int(userData.ID), request)
-	if err != nil {
+	if err := h.mobileService.CreateFundingApplication(c.Context(), int(userData.ID), request); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
 			"status":     false,
@@ -412,7 +434,6 @@ func (h *MobileHandler) CreateFundingApplication(c *fiber.Ctx) error {
 		"statusCode": 201,
 		"status":     true,
 		"message":    "Funding application created successfully",
-		"data":       application,
 	})
 }
 
@@ -473,12 +494,12 @@ func (h *MobileHandler) GetApplicationDetail(c *fiber.Ctx) error {
 
 // GetNotificationsByUMKMID retrieves notifications for a specific UMKM ID.
 func (h *MobileHandler) GetNotificationsByUMKMID(c *fiber.Ctx) error {
-	umkmID, ok := c.Locals("userID").(int)
+	umkmID, ok := c.Locals("userID").(float64)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
 	}
 
-	notifications, err := h.mobileService.GetNotificationsByUMKMID(c.Context(), umkmID)
+	notifications, err := h.mobileService.GetNotificationsByUMKMID(c.Context(), int(umkmID))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve notifications"})
 	}
@@ -488,11 +509,11 @@ func (h *MobileHandler) GetNotificationsByUMKMID(c *fiber.Ctx) error {
 
 // GetUnreadCount retrieves the count of unread notifications for a specific UMKM ID.
 func (h *MobileHandler) GetUnreadCount(c *fiber.Ctx) error {
-	umkmID, ok := c.Locals("userID").(int)
+	umkmID, ok := c.Locals("userID").(float64)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
 	}
-	count, err := h.mobileService.GetUnreadCount(c.Context(), umkmID)
+	count, err := h.mobileService.GetUnreadCount(c.Context(), int(umkmID))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve unread count"})
 	}
@@ -502,14 +523,16 @@ func (h *MobileHandler) GetUnreadCount(c *fiber.Ctx) error {
 
 // MarkNotificationsAsRead marks specified notifications as read for a specific UMKM ID.
 func (h *MobileHandler) MarkNotificationsAsRead(c *fiber.Ctx) error {
-	var request struct {
-		NotificationIDs []int `json:"notification_ids"`
-	}
-	umkmID, ok := c.Locals("userID").(int)
+	umkmID, ok := c.Locals("userID").(float64)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
 	}
-	if err := h.mobileService.MarkNotificationsAsRead(c.Context(), umkmID, request.NotificationIDs); err != nil {
+	notificationID := c.Params("id")
+	notificationIDInt, err := strconv.Atoi(notificationID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid notification ID"})
+	}
+	if err := h.mobileService.MarkNotificationsAsRead(c.Context(), int(umkmID), notificationIDInt); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to mark notifications as read"})
 	}
 
@@ -518,12 +541,12 @@ func (h *MobileHandler) MarkNotificationsAsRead(c *fiber.Ctx) error {
 
 // MarkAllNotificationsAsRead marks all notifications as read for a specific UMKM ID.
 func (h *MobileHandler) MarkAllNotificationsAsRead(c *fiber.Ctx) error {
-	umkmID, ok := c.Locals("userID").(int)
+	umkmID, ok := c.Locals("userID").(float64)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
 	}
 
-	if err := h.mobileService.MarkAllNotificationsAsRead(c.Context(), umkmID); err != nil {
+	if err := h.mobileService.MarkAllNotificationsAsRead(c.Context(), int(umkmID)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to mark all notifications as read"})
 	}
 

@@ -31,7 +31,7 @@ type ApplicationHistories struct {
 	Status         string `json:"status" validate:"required"`
 	Notes          string `json:"notes,omitempty"`
 	ActionedAt     string `json:"actioned_at,omitempty"`
-	ActionedBy     int    `json:"actioned_by,omitempty"`
+	ActionedBy     *int   `json:"actioned_by,omitempty"`
 	ActionedByName string `json:"actioned_by_name,omitempty"`
 	CreatedAt      string `json:"created_at,omitempty"`
 	UpdatedAt      string `json:"updated_at,omitempty"`

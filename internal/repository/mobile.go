@@ -15,7 +15,7 @@ type MobileRepository interface {
 	GetProgramDetailByID(ctx context.Context, id int) (model.Program, error)
 
 	// UMKM Profile
-	GetUMKMProfileByUserID(ctx context.Context, userID int) (model.UMKM, error)
+	GetUMKMProfileByID(ctx context.Context, userID int) (model.UMKM, error)
 	UpdateUMKMProfile(ctx context.Context, umkm model.UMKM) (model.UMKM, error)
 
 	// Documents
@@ -71,13 +71,13 @@ func (r *mobileRepository) GetProgramDetailByID(ctx context.Context, id int) (mo
 }
 
 // UMKM Profile
-func (r *mobileRepository) GetUMKMProfileByUserID(ctx context.Context, userID int) (model.UMKM, error) {
+func (r *mobileRepository) GetUMKMProfileByID(ctx context.Context, userID int) (model.UMKM, error) {
 	var umkm model.UMKM
 	err := r.db.WithContext(ctx).
 		Preload("User").
 		Preload("Province").
 		Preload("City").
-		Where("user_id = ? AND deleted_at IS NULL", userID).
+		Where("id = ? AND deleted_at IS NULL", userID).
 		First(&umkm).Error
 	if err != nil {
 		return model.UMKM{}, errors.New("UMKM profile not found")
@@ -86,7 +86,20 @@ func (r *mobileRepository) GetUMKMProfileByUserID(ctx context.Context, userID in
 }
 
 func (r *mobileRepository) UpdateUMKMProfile(ctx context.Context, umkm model.UMKM) (model.UMKM, error) {
-	err := r.db.WithContext(ctx).Save(&umkm).Error
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Save(&umkm).Error; err != nil {
+			return errors.New("failed to update UMKM profile")
+		}
+
+		// Update user name if provided
+		if umkm.User.Name != "" {
+			if err := tx.Model(&umkm.User).Where("id = ?", umkm.User.ID).Update("name", umkm.User.Name).Error; err != nil {
+				return errors.New("failed to update user name")
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		return model.UMKM{}, errors.New("failed to update UMKM profile")
 	}

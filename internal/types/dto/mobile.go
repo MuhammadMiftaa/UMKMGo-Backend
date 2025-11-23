@@ -50,6 +50,7 @@ type UMKMProfile struct {
 	BusinessPermit string   `json:"business_permit,omitempty"`
 	KartuType      string   `json:"kartu_type"`
 	KartuNumber    string   `json:"kartu_number"`
+	Photo          string   `json:"photo"`
 	Province       Province `json:"province"`
 	City           City     `json:"city"`
 	User           User     `json:"user"`
@@ -60,14 +61,13 @@ type UpdateUMKMProfile struct {
 	BusinessName string `json:"business_name" validate:"required"`
 	Gender       string `json:"gender" validate:"required,oneof=male female other"`
 	BirthDate    string `json:"birth_date" validate:"required"`
-	Phone        string `json:"phone" validate:"required"`
 	Address      string `json:"address" validate:"required"`
 	ProvinceID   int    `json:"province_id" validate:"required"`
 	CityID       int    `json:"city_id" validate:"required"`
 	District     string `json:"district" validate:"required"`
-	Subdistrict  string `json:"subdistrict" validate:"required"`
 	PostalCode   string `json:"postal_code" validate:"required"`
-	KartuType    string `json:"kartu_type" validate:"required,oneof=produktif afirmatif"`
+	Name         string `json:"name" validate:"required"`
+	Photo        string `json:"photo,omitempty"`
 }
 
 // Upload Document Request
@@ -189,4 +189,14 @@ type NotificationResponse struct {
 // Notification Mark as Read Request
 type MarkNotificationReadRequest struct {
 	NotificationIDs []int `json:"notification_ids" validate:"required"`
+}
+
+type DashboardData struct {
+	Name                 string `json:"name"`
+	KartuType            string `json:"kartu_type"`
+	KartuNumber          string `json:"kartu_number"`
+	QRCode               string `json:"qrcode"`
+	NotificationsCount   int    `json:"notifications_count"`
+	TotalApplications    int    `json:"total_applications"`
+	ApprovedApplications int    `json:"approved_applications"`
 }

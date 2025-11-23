@@ -14,6 +14,7 @@ import (
 type ApplicationsRepository interface {
 	GetAllApplications(ctx context.Context, filterType string) ([]model.Application, error)
 	GetApplicationByID(ctx context.Context, id int) (model.Application, error)
+	GetApplicationsByUMKMID(ctx context.Context, umkmID int) ([]model.Application, error)
 	CreateApplication(ctx context.Context, application model.Application) (model.Application, error)
 	UpdateApplication(ctx context.Context, application model.Application) (model.Application, error)
 	DeleteApplication(ctx context.Context, application model.Application) (model.Application, error)
@@ -78,6 +79,23 @@ func (repo *applicationsRepository) GetApplicationByID(ctx context.Context, id i
 		return model.Application{}, errors.New("application not found")
 	}
 	return application, nil
+}
+
+func (repo *applicationsRepository) GetApplicationsByUMKMID(ctx context.Context, umkmID int) ([]model.Application, error) {
+	var applications []model.Application
+	err := repo.db.WithContext(ctx).
+		Debug().
+		Preload("Program").
+		Preload("UMKM.User").
+		Preload("UMKM.City.Province").
+		Preload("Documents").
+		Preload("Histories.User").
+		Where("umkm_id = ? AND deleted_at IS NULL", umkmID).
+		Find(&applications).Error
+	if err != nil {
+		return nil, err
+	}
+	return applications, nil
 }
 
 func (repo *applicationsRepository) CreateApplication(ctx context.Context, application model.Application) (model.Application, error) {

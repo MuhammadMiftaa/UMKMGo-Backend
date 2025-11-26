@@ -577,6 +577,7 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 		return errors.New("you have already applied for this program")
 	}
 
+	// Get screening SLA
 	screeningExpiredAt, err := s.slaRepo.GetSLAByStatus(ctx, "screening")
 	if err != nil {
 		return err

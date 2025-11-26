@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
 
 	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/config/log"
@@ -29,13 +30,14 @@ type DecryptParams struct {
 }
 
 var VaultClient *vault.Client
+var vaultConfig env.Vault
 
 // ~ NewVaultClientWithAppRole membuat Vault client dan login AppRole.
-// ~ vaultAddr contoh: "https://vault.example.com:8200"
 func SetupVault(vaultCfg env.Vault) {
+	vaultConfig = vaultCfg
+	
 	cfg := vault.DefaultConfig()
 	cfg.Address = vaultCfg.Addr
-	// Jika perlu custom TLS config, set cfg.HttpClient.Transport etc.
 
 	client, err := vault.NewClient(cfg)
 	if err != nil {
@@ -43,22 +45,58 @@ func SetupVault(vaultCfg env.Vault) {
 	}
 
 	// Login AppRole
-	data := map[string]any{
-		"role_id":   vaultCfg.RoleID,
-		"secret_id": vaultCfg.SecretID,
-	}
-	// auth/approle/login
-	secret, err := client.Logical().Write("auth/approle/login", data)
-	if err != nil {
+	if err := loginAppRole(client); err != nil {
 		log.Log.Fatalf("approle login failed: %v", err)
 	}
+
+	VaultClient = client
+
+	// Start auto renewal
+	go autoRenewToken()
+	
+	log.Log.Info("Vault client initialized with auto-renewal")
+}
+
+// ~ loginAppRole melakukan login ke Vault menggunakan AppRole.
+func loginAppRole(client *vault.Client) error {
+	data := map[string]interface{}{
+		"role_id":   vaultConfig.RoleID,
+		"secret_id": vaultConfig.SecretID,
+	}
+
+	secret, err := client.Logical().Write("auth/approle/login", data)
+	if err != nil {
+		return err
+	}
 	if secret == nil || secret.Auth == nil || secret.Auth.ClientToken == "" {
-		log.Log.Fatalf("no token returned from approle login")
+		return errors.New("no token returned from approle login")
 	}
 
 	client.SetToken(secret.Auth.ClientToken)
-	// optional: you may want to set token accessor for renew or background renew
-	VaultClient = client
+	log.Log.Infof("Vault login successful, token TTL: %d seconds", secret.Auth.LeaseDuration)
+	return nil
+}
+
+// ~ autoRenewToken secara otomatis memperbarui token Vault setiap 30 menit.
+func autoRenewToken() {
+	ticker := time.NewTicker(30 * time.Minute) // Renew setiap 30 menit
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// Coba renew token
+		_, err := VaultClient.Auth().Token().RenewSelf(3600)
+		if err != nil {
+			log.Log.Warnf("Token renewal failed: %v, re-authenticating...", err)
+			// Jika gagal, login ulang
+			if err := loginAppRole(VaultClient); err != nil {
+				log.Log.Errorf("Re-authentication failed: %v", err)
+			} else {
+				log.Log.Info("Re-authentication successful")
+			}
+		} else {
+			log.Log.Debug("Token renewed successfully")
+		}
+	}
 }
 
 // ~ EncryptTransit encrypts plaintext using Transit key.

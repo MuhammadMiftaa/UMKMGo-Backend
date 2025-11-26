@@ -31,14 +31,16 @@ type applicationsService struct {
 	applicationRepository  repository.ApplicationsRepository
 	userRepository         repository.UsersRepository
 	notificationRepository repository.NotificationRepository
+	slaRepo                repository.SLARepository
 	vaultDecryptLogRepo    repository.VaultDecryptLogRepository
 }
 
-func NewApplicationsService(applicationRepo repository.ApplicationsRepository, userRepo repository.UsersRepository, notificationRepo repository.NotificationRepository, vaultDecryptLogRepo repository.VaultDecryptLogRepository) ApplicationsService {
+func NewApplicationsService(applicationRepo repository.ApplicationsRepository, userRepo repository.UsersRepository, notificationRepo repository.NotificationRepository, slaRepo repository.SLARepository, vaultDecryptLogRepo repository.VaultDecryptLogRepository) ApplicationsService {
 	return &applicationsService{
 		applicationRepository:  applicationRepo,
 		userRepository:         userRepo,
 		notificationRepository: notificationRepo,
+		slaRepo:                slaRepo,
 		vaultDecryptLogRepo:    vaultDecryptLogRepo,
 	}
 }
@@ -51,18 +53,6 @@ func (s *applicationsService) GetAllApplications(ctx context.Context, userID int
 
 	var applicationsDTO []dto.Applications
 	for _, app := range applications {
-		// Decrypt NIK with logging
-		decryptedNIK, err := s.decryptUMKMData(ctx, app.UMKM.ID, app.UMKM.NIK, "nik", userID, "application_review")
-		if err == nil {
-			app.UMKM.NIK = decryptedNIK
-		}
-
-		// Decrypt Kartu Number with logging
-		decryptedKartu, err := s.decryptUMKMData(ctx, app.UMKM.ID, app.UMKM.KartuNumber, "kartu_number", userID, "application_review")
-		if err == nil {
-			app.UMKM.KartuNumber = decryptedKartu
-		}
-
 		// Get documents
 		documents, _ := s.applicationRepository.GetApplicationDocuments(ctx, app.ID)
 		var documentsDTO []dto.ApplicationDocuments
@@ -112,12 +102,11 @@ func (s *applicationsService) GetAllApplications(ctx context.Context, userID int
 				Type:                app.Program.Type,
 				Location:            app.Program.Location,
 				ApplicationDeadline: app.Program.ApplicationDeadline,
+				Provider:            app.Program.Provider,
 			},
 			UMKM: &dto.UMKMWeb{
 				ID:           app.UMKM.ID,
 				BusinessName: app.UMKM.BusinessName,
-				NIK:          app.UMKM.NIK,
-				KartuNumber:  app.UMKM.KartuNumber,
 				Address:      app.UMKM.Address,
 				District:     app.UMKM.District,
 				Subdistrict:  app.UMKM.Subdistrict,
@@ -247,8 +236,15 @@ func (s *applicationsService) ScreeningApprove(ctx context.Context, userID int, 
 		return dto.Applications{}, errors.New("application must be in screening status")
 	}
 
+	// Update expired date based on SLA
+	finalExpiredAt, err := s.slaRepo.GetSLAByStatus(ctx, "final")
+	if err != nil {
+		return dto.Applications{}, err
+	}
+
 	// Update status to final
 	application.Status = "final"
+	application.ExpiredAt = application.SubmittedAt.AddDate(0, 0, finalExpiredAt.MaxDays)
 	updatedApplication, err := s.applicationRepository.UpdateApplication(ctx, application)
 	if err != nil {
 		return dto.Applications{}, err

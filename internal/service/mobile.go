@@ -60,16 +60,18 @@ type mobileService struct {
 	notificationRepo repository.NotificationRepository
 	vaultLogRepo     repository.VaultDecryptLogRepository
 	applicationRepo  repository.ApplicationsRepository
+	slaRepo          repository.SLARepository
 	minio            *storage.MinIOManager
 }
 
-func NewMobileService(mobileRepo repository.MobileRepository, programRepo repository.ProgramsRepository, notificationRepo repository.NotificationRepository, vaultLogRepo repository.VaultDecryptLogRepository, applicationRepo repository.ApplicationsRepository, minio *storage.MinIOManager) MobileService {
+func NewMobileService(mobileRepo repository.MobileRepository, programRepo repository.ProgramsRepository, notificationRepo repository.NotificationRepository, vaultLogRepo repository.VaultDecryptLogRepository, applicationRepo repository.ApplicationsRepository, slaRepo repository.SLARepository, minio *storage.MinIOManager) MobileService {
 	return &mobileService{
 		mobileRepo:       mobileRepo,
 		programRepo:      programRepo,
 		notificationRepo: notificationRepo,
 		vaultLogRepo:     vaultLogRepo,
 		applicationRepo:  applicationRepo,
+		slaRepo:          slaRepo,
 		minio:            minio,
 	}
 }
@@ -412,6 +414,11 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 		return errors.New("you have already applied for this program")
 	}
 
+	screeningExpiredAt, err := s.slaRepo.GetSLAByStatus(ctx, "screening")
+	if err != nil {
+		return err
+	}
+
 	// Create base application
 	application := model.Application{
 		UMKMID:      umkm.ID,
@@ -419,7 +426,7 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 		Type:        "training",
 		Status:      "screening",
 		SubmittedAt: time.Now(),
-		ExpiredAt:   time.Now().AddDate(0, 0, 30),
+		ExpiredAt:   time.Now().AddDate(0, 0, screeningExpiredAt.MaxDays),
 	}
 
 	createdApp, err := s.mobileRepo.CreateApplication(ctx, application)
@@ -481,6 +488,11 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 		return errors.New("you have already applied for this program")
 	}
 
+	screeningExpiredAt, err := s.slaRepo.GetSLAByStatus(ctx, "screening")
+	if err != nil {
+		return err
+	}
+
 	// Create base application
 	application := model.Application{
 		UMKMID:      umkm.ID,
@@ -488,7 +500,7 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 		Type:        "certification",
 		Status:      "screening",
 		SubmittedAt: time.Now(),
-		ExpiredAt:   time.Now().AddDate(0, 0, 30),
+		ExpiredAt:   time.Now().AddDate(0, 0, screeningExpiredAt.MaxDays),
 	}
 
 	createdApp, err := s.mobileRepo.CreateApplication(ctx, application)
@@ -565,6 +577,11 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 		return errors.New("you have already applied for this program")
 	}
 
+	screeningExpiredAt, err := s.slaRepo.GetSLAByStatus(ctx, "screening")
+	if err != nil {
+		return err
+	}
+
 	// Create base application
 	application := model.Application{
 		UMKMID:      umkm.ID,
@@ -572,7 +589,7 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 		Type:        "funding",
 		Status:      "screening",
 		SubmittedAt: time.Now(),
-		ExpiredAt:   time.Now().AddDate(0, 0, 30),
+		ExpiredAt:   time.Now().AddDate(0, 0, screeningExpiredAt.MaxDays),
 	}
 
 	createdApp, err := s.mobileRepo.CreateApplication(ctx, application)

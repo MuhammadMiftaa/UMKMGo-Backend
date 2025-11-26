@@ -1,0 +1,826 @@
+### Variables
+@baseUrl = http://localhost:8080
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN1cGVyYWRtaW5AdW1rbS5nby5pZCIsImV4cCI6MTc2NDM3NDIyOCwiaWF0IjoxNzY0MTE1MDI4LCJpZCI6MSwiaXNfYWRtaW4iOnRydWUsIm5hbWUiOiJTdXBlciBBZG1pbiIsInBlcm1pc3Npb25zIjpbIlNDUkVFTklOR19UUkFJTklORyIsIk1BTkFHRV9UUkFJTklOR19QUk9HUkFNUyIsIkZJTkFMX1RSQUlOSU5HIiwiVklFV19UUkFJTklORyIsIlNDUkVFTklOR19DRVJUSUZJQ0FUSU9OIiwiTUFOQUdFX0NFUlRJRklDQVRJT05fUFJPR1JBTVMiLCJGSU5BTF9DRVJUSUZJQ0FUSU9OIiwiVklFV19DRVJUSUZJQ0FUSU9OIiwiU0NSRUVOSU5HX0ZVTkRJTkciLCJNQU5BR0VfRlVORElOR19QUk9HUkFNUyIsIkZJTkFMX0ZVTkRJTkciLCJWSUVXX0ZVTkRJTkciLCJVU0VSX01BTkFHRU1FTlQiLCJST0xFX1BFUk1JU1NJT05TX01BTkFHRU1FTlQiLCJHRU5FUkFURV9SRVBPUlQiLCJTTEFfQ09ORklHVVJBVElPTiJdLCJyb2xlIjoxLCJyb2xlX25hbWUiOiJzdXBlcmFkbWluIn0.oicA0omBfc8AoFfw8asvM5HRyYyjQAA5Pgnbrcp18QY
+@mobileToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJidXNpbmVzc19uYW1lIjoiUFQgU2VtdWEgVGVtYW4iLCJlbWFpbCI6InRlc0B1bWttLmdvLmlkIiwiZXhwIjoxNzYzOTEyMDkxLCJpYXQiOjE3NjM2NTI4OTEsImlkIjoxMywia2FydHVfdHlwZSI6ImFmaXJtYXRpZiIsIm5hbWUiOiJBa2JhciBDaGFsYXkiLCJwaG9uZSI6Ijg5Njc2MzYwNTQ2In0.gH0Rrv-Bm3y7DkITAvL6TIack-T8eGgncp3YfRgLYhY
+
+### ============================================
+### AUTH - WEB DASHBOARD
+### ============================================
+
+### Login Web Dashboard
+POST {{baseUrl}}/v1/webauth/login
+Content-Type: application/json
+
+{
+    "email": "superadmin@umkm.go.id",
+    "password": "admin123"
+}
+
+### Register Web Dashboard
+POST {{baseUrl}}/v1/webauth/register
+Content-Type: application/json
+
+{
+    "name": "Admin Kementrian",
+    "email": "admin@umkm.go.id",
+    "password": "admin123",
+    "confirm_password": "admin123",`
+    "role_id": 2
+}
+
+### Update Profile
+PUT {{baseUrl}}/v1/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "Updated Name",
+    "email": "updated@email.com"
+}
+
+### ============================================
+### AUTH - MOBILE APP
+### ============================================
+
+### Login Mobile
+POST {{baseUrl}}/v1/mobileauth/login
+Content-Type: application/json
+
+{
+    "email": "pelakuusaha@umkm.go.id",
+    "password": "pelaku123"
+}
+
+### Register Mobile
+POST {{baseUrl}}/v1/mobileauth/register
+Content-Type: application/json
+
+{
+    "name": "Pelaku Usaha",
+    "email": "pelakuusaha@umkm.go.id",
+    "password": "pelaku123",
+    "confirm_password": "pelaku123",
+    "role_id": 4
+}
+
+### Send OTP
+POST {{baseUrl}}/v1/mobileauth/send/otp
+Content-Type: application/json
+
+{
+    "email": "pelakuusaha@umkm.go.id"
+}
+
+### Verify OTP
+POST {{baseUrl}}/v1/mobileauth/verify/otp
+Content-Type: application/json
+
+{
+    "email": "pelakuusaha@umkm.go.id",
+    "otp": "123456"
+}
+
+### ============================================
+### USERS MANAGEMENT
+### ============================================
+
+### Get All Users
+GET {{baseUrl}}/v1/users
+Authorization: Bearer {{token}}
+
+### Get User By ID
+GET {{baseUrl}}/v1/users/1
+Authorization: Bearer {{token}}
+
+### Update User
+PUT {{baseUrl}}/v1/users/3
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "Admin Screening Updated",
+    "email": "adminscreening@umkm.go.id",
+    "role_id": 2
+}
+
+### Delete User
+DELETE {{baseUrl}}/v1/users/3
+Authorization: Bearer {{token}}
+
+### ============================================
+### PERMISSIONS & ROLES
+### ============================================
+
+### Get List Permissions
+GET {{baseUrl}}/v1/permissions
+Authorization: Bearer {{token}}
+
+### Get List Role Permissions
+GET {{baseUrl}}/v1/role-permissions
+Authorization: Bearer {{token}}
+
+### Update Role Permissions
+POST {{baseUrl}}/v1/role-permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "role_id": 2,
+    "permissions": [2, 3, 7, 8, 12, 13]
+}
+
+### ============================================
+### PROGRAMS MANAGEMENT
+### ============================================
+
+### Get All Programs
+GET {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+
+### Get Program By ID
+GET {{baseUrl}}/v1/programs/1
+Authorization: Bearer {{token}}
+
+### Create Training Program
+POST {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Pelatihan Digital Marketing untuk UMKM",
+    "description": "Pelatihan komprehensif tentang digital marketing untuk meningkatkan penjualan UMKM melalui platform online",
+    "banner": "base64",
+    "provider": "Kementerian Koperasi dan UKM",
+    "provider_logo": "base64",
+    "type": "training",
+    "training_type": "hybrid",
+    "batch": 1,
+    "batch_start_date": "2025-12-01",
+    "batch_end_date": "2025-12-15",
+    "location": "Jakarta Convention Center & Online",
+    "application_deadline": "2025-11-20",
+    "benefits": [
+        "Sertifikat resmi dari Kemenkop",
+        "Modul pembelajaran lengkap",
+        "Mentoring selama 3 bulan",
+        "Akses ke komunitas alumni",
+        "Konsultasi bisnis gratis"
+    ],
+    "requirements": [
+        "Memiliki usaha yang sudah berjalan minimal 1 tahun",
+        "Memiliki NIB dan NPWP",
+        "Berusia minimal 18 tahun",
+        "Bersedia mengikuti seluruh rangkaian pelatihan",
+        "Memiliki perangkat untuk mengikuti sesi online"
+    ]
+}
+
+### Create Certification Program
+POST {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Sertifikasi Halal untuk Produk UMKM",
+    "description": "Program sertifikasi halal untuk produk makanan dan minuman UMKM sesuai standar LPPOM MUI",
+    "banner": "https://example.com/banner/halal-cert.jpg",
+    "provider": "LPPOM MUI",
+    "provider_logo": "https://example.com/logo/mui.png",
+    "type": "certification",
+    "training_type": "offline",
+    "batch": 2,
+    "batch_start_date": "2025-11-15",
+    "batch_end_date": "2025-11-30",
+    "location": "Jakarta, Surabaya, Medan",
+    "application_deadline": "2025-11-01",
+    "benefits": [
+        "Sertifikat halal resmi MUI",
+        "Logo halal untuk kemasan produk",
+        "Pendampingan proses sertifikasi",
+        "Akses ke database produk halal nasional",
+        "Peningkatan kepercayaan konsumen"
+    ],
+    "requirements": [
+        "Memiliki NIB dan izin usaha",
+        "Produk sudah diproduksi secara konsisten",
+        "Bersedia mengikuti audit halal",
+        "Memiliki dokumentasi bahan baku",
+        "Komitmen menjaga standar halal"
+    ]
+}
+
+### Create Funding Program
+POST {{baseUrl}}/v1/programs/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "KUR Mikro - Kredit Usaha Rakyat",
+    "description": "Program pinjaman modal usaha dengan bunga rendah untuk UMKM yang ingin mengembangkan bisnis",
+    "banner": "https://example.com/banner/kur-mikro.jpg",
+    "provider": "Bank Indonesia - KUR",
+    "provider_logo": "https://example.com/logo/bi.png",
+    "type": "funding",
+    "min_amount": 1000000,
+    "max_amount": 50000000,
+    "interest_rate": 6.0,
+    "max_tenure_months": 36,
+    "application_deadline": "2025-12-31",
+    "benefits": [
+        "Bunga rendah 6% per tahun",
+        "Proses pencairan cepat",
+        "Tanpa agunan untuk pinjaman < 10 juta",
+        "Masa tenggang 3 bulan",
+        "Pendampingan usaha gratis"
+    ],
+    "requirements": [
+        "Memiliki usaha produktif minimal 6 bulan",
+        "NIB dan NPWP aktif",
+        "Tidak sedang menerima kredit dari program pemerintah lain",
+        "Laporan keuangan 3 bulan terakhir",
+        "Rencana penggunaan dana yang jelas"
+    ]
+}
+
+### Update Program
+PUT {{baseUrl}}/v1/programs/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Pelatihan Digital Marketing untuk UMKM - Updated",
+    "description": "Pelatihan komprehensif tentang digital marketing untuk meningkatkan penjualan UMKM melalui platform online - Edisi Khusus 2025",
+    "banner": "https://example.com/banner/digital-marketing-v2.jpg",
+    "provider": "Kementerian Koperasi dan UKM",
+    "provider_logo": "https://example.com/logo/kemenkop.png",
+    "type": "training",
+    "training_type": "online",
+    "batch": 2,
+    "batch_start_date": "2026-01-15",
+    "batch_end_date": "2026-01-30",
+    "location": "Full Online",
+    "application_deadline": "2026-01-01",
+    "benefits": [
+        "Sertifikat resmi dari Kemenkop",
+        "Modul pembelajaran lengkap versi terbaru",
+        "Mentoring selama 6 bulan",
+        "Akses ke komunitas alumni",
+        "Konsultasi bisnis gratis",
+        "Voucher iklan Google Ads senilai 1 juta"
+    ],
+    "requirements": [
+        "Memiliki usaha yang sudah berjalan minimal 6 bulan",
+        "Memiliki NIB dan NPWP",
+        "Berusia minimal 18 tahun",
+        "Bersedia mengikuti seluruh rangkaian pelatihan",
+        "Memiliki laptop dan koneksi internet stabil"
+    ]
+}
+
+### Activate Program
+PUT {{baseUrl}}/v1/programs/activate/1
+Authorization: Bearer {{token}}
+
+### Deactivate Program
+PUT {{baseUrl}}/v1/programs/deactivate/1
+Authorization: Bearer {{token}}
+
+### Delete Program
+DELETE {{baseUrl}}/v1/programs/1
+Authorization: Bearer {{token}}
+
+### ============================================
+### APPLICATIONS MANAGEMENT
+### ============================================
+
+### Get All Applications
+GET {{baseUrl}}/v1/applications/
+Authorization: Bearer {{token}}
+
+### Get All Applications - Filter by Type (training)
+GET {{baseUrl}}/v1/applications/?type=training
+Authorization: Bearer {{token}}
+
+### Get All Applications - Filter by Type (certification)
+GET {{baseUrl}}/v1/applications/?type=certification
+Authorization: Bearer {{token}}
+
+### Get All Applications - Filter by Type (funding)
+GET {{baseUrl}}/v1/applications/?type=funding
+Authorization: Bearer {{token}}
+
+### Get Application By ID
+GET {{baseUrl}}/v1/applications/1
+Authorization: Bearer {{token}}
+
+### Create Application - Training
+POST {{baseUrl}}/v1/applications/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "program_id": 1,
+    "documents": [
+        {
+            "type": "ktp",
+            "file": "https://example.com/documents/ktp.pdf"
+        },
+        {
+            "type": "nib",
+            "file": "https://example.com/documents/nib.pdf"
+        },
+        {
+            "type": "npwp",
+            "file": "https://example.com/documents/npwp.pdf"
+        },
+        {
+            "type": "proposal",
+            "file": "https://example.com/documents/proposal.pdf"
+        }
+    ]
+}
+
+### Create Application - Certification
+POST {{baseUrl}}/v1/applications/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "program_id": 2,
+    "documents": [
+        {
+            "type": "ktp",
+            "file": "https://example.com/documents/ktp.pdf"
+        },
+        {
+            "type": "nib",
+            "file": "https://example.com/documents/nib.pdf"
+        },
+        {
+            "type": "npwp",
+            "file": "https://example.com/documents/npwp.pdf"
+        },
+        {
+            "type": "portfolio",
+            "file": "https://example.com/documents/portfolio.pdf"
+        }
+    ]
+}
+
+### Create Application - Funding
+POST {{baseUrl}}/v1/applications/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "program_id": 3,
+    "documents": [
+        {
+            "type": "ktp",
+            "file": "https://example.com/documents/ktp.pdf"
+        },
+        {
+            "type": "nib",
+            "file": "https://example.com/documents/nib.pdf"
+        },
+        {
+            "type": "npwp",
+            "file": "https://example.com/documents/npwp.pdf"
+        },
+        {
+            "type": "proposal",
+            "file": "https://example.com/documents/proposal.pdf"
+        },
+        {
+            "type": "rekening",
+            "file": "https://example.com/documents/rekening.pdf"
+        }
+    ]
+}
+
+### Update Application (Resubmit after revision)
+PUT {{baseUrl}}/v1/applications/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "documents": [
+        {
+            "type": "ktp",
+            "file": "https://example.com/documents/ktp-updated.pdf"
+        },
+        {
+            "type": "nib",
+            "file": "https://example.com/documents/nib-updated.pdf"
+        },
+        {
+            "type": "npwp",
+            "file": "https://example.com/documents/npwp-updated.pdf"
+        },
+        {
+            "type": "proposal",
+            "file": "https://example.com/documents/proposal-updated.pdf"
+        }
+    ]
+}
+
+### Delete Application
+DELETE {{baseUrl}}/v1/applications/1
+Authorization: Bearer {{token}}
+
+### ============================================
+### SCREENING DECISIONS (Admin Screening)
+### ============================================
+
+### Screening - Approve
+PUT {{baseUrl}}/v1/applications/screening-approve/1
+Authorization: Bearer {{token}}
+
+### Screening - Reject
+PUT {{baseUrl}}/v1/applications/screening-reject/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "notes": "Dokumen tidak lengkap. Mohon melengkapi dokumen NIB dan NPWP yang masih kosong."
+}
+
+### Screening - Revise
+PUT {{baseUrl}}/v1/applications/screening-revise/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "notes": "Dokumen KTP tidak jelas. Mohon upload ulang dengan resolusi yang lebih baik. Dokumen proposal perlu ditambahkan informasi target market yang lebih detail."
+}
+
+### ============================================
+### FINAL DECISIONS (Admin Vendor)
+### ============================================
+
+### Final - Approve
+PUT {{baseUrl}}/v1/applications/final-approve/1
+Authorization: Bearer {{token}}
+
+### Final - Reject
+PUT {{baseUrl}}/v1/applications/final-reject/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "notes": "Setelah evaluasi lebih lanjut, kami memutuskan untuk menolak aplikasi ini karena kapasitas program sudah penuh untuk batch ini. Silakan mendaftar kembali di batch berikutnya."
+}
+
+### ============================================
+### DASHBOARD STATISTICS
+### ============================================
+
+### Dashboard - UMKM by Card Type
+GET {{baseUrl}}/v1/dashboard/umkm-by-card-type
+Authorization: Bearer {{token}}
+
+### Dashboard - Application Status Summary
+GET {{baseUrl}}/v1/dashboard/application-status-summary
+Authorization: Bearer {{token}}
+
+### Dashboard - Application Status Detail
+GET {{baseUrl}}/v1/dashboard/application-status-detail
+Authorization: Bearer {{token}}
+
+### Dashboard - Application by Program
+GET {{baseUrl}}/v1/dashboard/application-by-type
+Authorization: Bearer {{token}}
+
+### ============================================
+### SLA MANAGEMENT
+### ============================================
+
+### Get SLA for Screening and Final Decisions
+GET {{baseUrl}}/v1/sla/screening
+Authorization: Bearer {{token}}
+
+### Get SLA for Final Decisions
+GET {{baseUrl}}/v1/sla/final
+Authorization: Bearer {{token}}    
+
+### Update SLA for Screening
+PUT {{baseUrl}}/v1/sla/screening
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "max_days": 10,
+    "description": "Updated screening SLA"
+}
+
+### Update SLA for Final Decisions
+PUT {{baseUrl}}/v1/sla/final
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "max_days": 15,
+    "description": "Updated final SLA"
+}
+
+### Export All Applications Data
+POST {{baseUrl}}/v1/sla/export-applications
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "file_type": "pdf",
+    "application_type": "all"
+}
+
+### Export Applications Data - Training Only
+POST {{baseUrl}}/v1/sla/export-applications
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "file_type": "excel",
+    "application_type": "training"
+}
+
+### Export Programs Data
+POST {{baseUrl}}/v1/sla/export-programs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "file_type": "pdf",
+    "application_type": "all"
+}
+
+
+#  ~ ============================================
+# $ MOBILE APP API
+# ~ ============================================
+
+### ============================================
+### MOBILE AUTH ENDPOINTS
+### ============================================
+
+### Get Meta (Provinces & Cities)
+GET {{baseUrl}}/v1/mobileauth/meta
+Content-Type: application/json
+
+### Register Mobile - Step 1 (Send OTP)
+POST {{baseUrl}}/v1/mobileauth/register
+Content-Type: application/json
+
+{
+    "email": "user@example.com",
+    "phone": "081234567890"
+}
+
+### Verify OTP - Step 2
+POST {{baseUrl}}/v1/mobileauth/verify/otp
+Content-Type: application/json
+
+{
+    "phone": "081234567890",
+    "otp_code": "123456"
+}
+
+### Register Mobile Profile - Step 3
+POST {{baseUrl}}/v1/mobileauth/register/profile?temp_token=tempToken
+Content-Type: application/json
+
+{
+    "fullname": "John Doe",
+    "business_name": "Toko Maju Jaya",
+    "nik": "3201234567890001",
+    "gender": "male",
+    "birth_date": "1990-05-15",
+    "password": "Password123",
+    "address": "Jl. Sudirman No. 123",
+    "province_id": 32,
+    "city_id": 3273,
+    "district": "Coblong",
+    "subdistrict": "Dago",
+    "postal_code": "40135",
+    "kartu_type": "produktif",
+    "kartu_number": "KUR001234567"
+}
+
+### Login Mobile
+POST {{baseUrl}}/v1/mobileauth/login
+Content-Type: application/json
+
+{
+    "phone": "081234567890",
+    "password": "Password123"
+}
+
+### Forgot Password - Step 1 (Send OTP)
+POST {{baseUrl}}/v1/mobileauth/forgot-password
+Content-Type: application/json
+
+{
+    "phone": "081234567890"
+}
+
+### Reset Password - Step 2
+POST {{baseUrl}}/v1/mobileauth/reset-password?temp_token=tempToken
+Content-Type: application/json
+
+{
+    "password": "NewPassword123",
+    "confirm_password": "NewPassword123"
+}
+
+### ============================================
+### MOBILE PROGRAMS ENDPOINTS
+### ============================================
+
+### Get Training Programs
+GET {{baseUrl}}/v1/mobile/programs/training
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Certification Programs
+GET {{baseUrl}}/v1/mobile/programs/certification
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Funding Programs
+GET {{baseUrl}}/v1/mobile/programs/funding
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Program Detail
+GET {{baseUrl}}/v1/mobile/programs/1
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### ============================================
+### MOBILE PROFILE ENDPOINTS
+### ============================================
+
+### Get UMKM Profile
+GET {{baseUrl}}/v1/mobile/profile
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Update UMKM Profile
+PUT {{baseUrl}}/v1/mobile/profile
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "business_name": "Toko Maju Sejahtera",
+    "gender": "male",
+    "birth_date": "1990-05-15",
+    "phone": "081234567890",
+    "address": "Jl. Asia Afrika No. 456",
+    "province_id": 32,
+    "city_id": 3273,
+    "district": "Sukajadi",
+    "subdistrict": "Cipedes",
+    "postal_code": "40162",
+    "kartu_type": "produktif"
+}
+
+### ============================================
+### MOBILE DOCUMENTS ENDPOINTS
+### ============================================
+
+### Upload NIB Document
+POST {{baseUrl}}/v1/mobile/documents/nib
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "document": "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKNCAwIG9iago..."
+}
+
+### Upload NPWP Document
+POST {{baseUrl}}/v1/mobile/documents/npwp
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "document": "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKNCAwIG9iago..."
+}
+
+### Upload Revenue Record Document
+POST {{baseUrl}}/v1/mobile/documents/revenue-record
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "document": "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKNCAwIG9iago..."
+}
+
+### Upload Business Permit Document
+POST {{baseUrl}}/v1/mobile/documents/business-permit
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "document": "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKNCAwIG9iago..."
+}
+
+### ============================================
+### MOBILE APPLICATIONS ENDPOINTS
+### ============================================
+
+### Create Training Application
+POST {{baseUrl}}/v1/mobile/applications/training
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "program_id": 1,
+    "motivation": "Saya ingin meningkatkan kemampuan digital marketing untuk mengembangkan bisnis saya",
+    "business_experience": "Sudah menjalankan usaha selama 3 tahun",
+    "learning_objectives": "Memahami strategi digital marketing dan social media marketing",
+    "availability_notes": "Tersedia untuk mengikuti pelatihan pada weekday",
+    "documents": {
+        "ktp": "data:application/pdf;base64,JVBERi0xLjQKJe...",
+        "proposal": "data:application/pdf;base64,JVBERi0xLjQKJe..."
+    }
+}
+
+### Create Certification Application
+POST {{baseUrl}}/v1/mobile/applications/certification
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "program_id": 11,
+    "business_sector": "Food & Beverage",
+    "product_or_service": "Produk makanan ringan tradisional",
+    "business_description": "Memproduksi dan menjual makanan ringan khas daerah",
+    "years_operating": 3,
+    "current_standards": "Sudah memiliki PIRT",
+    "certification_goals": "Mendapatkan sertifikat halal untuk ekspansi pasar",
+    "documents": {
+        "ktp": "data:application/pdf;base64,JVBERi0xLjQKJe...",
+        "portfolio": "data:application/pdf;base64,JVBERi0xLjQKJe..."
+    }
+}
+
+### Create Funding Application
+POST {{baseUrl}}/v1/mobile/applications/funding
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "program_id": 21,
+    "business_sector": "Retail",
+    "business_description": "Toko kelontong yang melayani kebutuhan sehari-hari masyarakat",
+    "years_operating": 2,
+    "requested_amount": 25000000,
+    "fund_purpose": "Menambah modal untuk ekspansi usaha dan penambahan stok barang",
+    "business_plan": "Membuka cabang baru di lokasi strategis",
+    "revenue_projection": 50000000,
+    "monthly_revenue": 15000000,
+    "requested_tenure_months": 24,
+    "collateral_description": "Sertifikat tanah",
+    "documents": {
+        "ktp": "data:application/pdf;base64,JVBERi0xLjQKJe...",
+        "rekening": "data:application/pdf;base64,JVBERi0xLjQKJe...",
+        "proposal": "data:application/pdf;base64,JVBERi0xLjQKJe..."
+    }
+}
+
+### Get Application List
+GET {{baseUrl}}/v1/mobile/applications
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Application Detail
+GET {{baseUrl}}/v1/mobile/applications/1
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### ============================================
+### MOBILE NOTIFICATIONS ENDPOINTS
+### ============================================
+
+### Get Notifications by UMKM ID
+GET {{baseUrl}}/v1/mobile/notifications
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Get Unread Notification Count
+GET {{baseUrl}}/v1/mobile/notifications/unread-count
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+### Mark Notifications as Read
+PUT {{baseUrl}}/v1/mobile/notifications/mark-as-read
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json
+
+{
+    "notification_ids": [1, 2, 3]
+}
+
+### Mark All Notifications as Read
+PUT {{baseUrl}}/v1/mobile/notifications/mark-all-as-read
+Authorization: Bearer {{mobileToken}}
+Content-Type: application/json

@@ -518,7 +518,12 @@ func (h *MobileHandler) GetUnreadCount(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve unread count"})
 	}
 
-	return c.JSON(fiber.Map{"unread_count": count})
+	return c.JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Get application detail",
+		"data":       count,
+	})
 }
 
 // MarkNotificationsAsRead marks specified notifications as read for a specific UMKM ID.

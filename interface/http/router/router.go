@@ -13,7 +13,7 @@ import (
 
 func SetupRouter() *fiber.App {
 	router := fiber.New(fiber.Config{
-		Prefork: true,
+		// Prefork: true,
 	})
 
 	router.Use(middleware.CORS(), middleware.Logger())

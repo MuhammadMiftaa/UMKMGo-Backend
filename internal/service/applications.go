@@ -10,6 +10,7 @@ import (
 	"UMKMGo-backend/internal/repository"
 	"UMKMGo-backend/internal/types/dto"
 	"UMKMGo-backend/internal/types/model"
+	"UMKMGo-backend/internal/utils"
 	"UMKMGo-backend/internal/utils/constant"
 )
 
@@ -205,6 +206,9 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, userID, id
 			Address:      application.UMKM.Address,
 			District:     application.UMKM.District,
 			Subdistrict:  application.UMKM.Subdistrict,
+			Phone:        utils.DenormalizePhone(application.UMKM.Phone),
+			BirthDate:    application.UMKM.BirthDate.Format("2006-01-02"),
+			Gender:       application.UMKM.Gender,
 			User: dto.User{
 				ID:    application.UMKM.User.ID,
 				Name:  application.UMKM.User.Name,

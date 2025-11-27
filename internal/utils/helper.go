@@ -283,6 +283,34 @@ func NormalizePhone(phone string) (string, error) {
 	return p, nil
 }
 
+// ~ DenormalizePhone converts a normalized Indonesian phone number to the international format with +62
+func DenormalizePhone(phone string) string {
+	// Hilangkan semua spasi
+	phone = strings.ReplaceAll(phone, " ", "")
+
+	if phone == "" {
+		return ""
+	}
+
+	// Jika sudah +62
+	if strings.HasPrefix(phone, "+62") {
+		return phone
+	}
+
+	// Jika diawali 62 tanpa +
+	if strings.HasPrefix(phone, "62") {
+		return "+" + phone
+	}
+
+	// Jika diawali 0
+	if strings.HasPrefix(phone, "0") {
+		return "+62" + phone[1:]
+	}
+
+	// Jika tidak ada awalan sama sekali (misal 8123...)
+	return "+62" + phone
+}
+
 // ~ RandomString generates a random hexadecimal string of the specified size
 func RandomString(size int) string {
 	b := make([]byte, 32)

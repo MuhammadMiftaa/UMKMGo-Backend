@@ -244,27 +244,29 @@ func (s *mobileService) UpdateUMKMProfile(ctx context.Context, userID int, reque
 	}
 
 	// If photo is provided, upload to MinIO
-	if !(strings.HasPrefix(request.Photo, "http") || strings.HasPrefix(request.Photo, "https")) {
-		res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
-			Base64Data: request.Photo,
-			BucketName: storage.UMKMBucket,
-			Prefix:     utils.GenerateFileName(request.Name, "photo_profile_"),
-			Validation: storage.CreateImageValidationConfig(),
-		})
-		if err != nil {
-			return dto.UMKMProfile{}, err
-		}
+	if request.Photo != "" {
+		if !(strings.HasPrefix(request.Photo, "http") || strings.HasPrefix(request.Photo, "https")) {
+			res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
+				Base64Data: request.Photo,
+				BucketName: storage.UMKMBucket,
+				Prefix:     utils.GenerateFileName(request.Name, "photo_profile_"),
+				Validation: storage.CreateImageValidationConfig(),
+			})
+			if err != nil {
+				return dto.UMKMProfile{}, err
+			}
 
-		if umkm.Photo != "" {
-			objectName := storage.ExtractObjectNameFromURL(umkm.Photo)
-			if objectName != "" {
-				if deleteErr := s.minio.DeleteFile(ctx, storage.ProgramBucket, objectName); deleteErr != nil {
-					return dto.UMKMProfile{}, fmt.Errorf("failed to delete old provider logo: %w", deleteErr)
+			if umkm.Photo != "" {
+				objectName := storage.ExtractObjectNameFromURL(umkm.Photo)
+				if objectName != "" {
+					if deleteErr := s.minio.DeleteFile(ctx, storage.ProgramBucket, objectName); deleteErr != nil {
+						return dto.UMKMProfile{}, fmt.Errorf("failed to delete old provider logo: %w", deleteErr)
+					}
 				}
 			}
-		}
 
-		umkm.Photo = res.URL
+			umkm.Photo = res.URL
+		}
 	}
 
 	// Update fields

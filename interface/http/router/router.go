@@ -2,18 +2,20 @@ package router
 
 import (
 	"UMKMGo-backend/config/db"
+	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/config/log"
 	"UMKMGo-backend/config/redis"
 	"UMKMGo-backend/config/storage"
 	"UMKMGo-backend/interface/http/middleware"
 	"UMKMGo-backend/interface/http/routes"
+	"UMKMGo-backend/internal/utils/constant"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func SetupRouter() *fiber.App {
 	router := fiber.New(fiber.Config{
-		// Prefork: true,
+		Prefork: env.Cfg.Server.Mode == constant.DEVELOPMENT_MODE,
 	})
 
 	router.Use(middleware.CORS(), middleware.Logger())

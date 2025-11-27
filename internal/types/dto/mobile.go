@@ -124,38 +124,6 @@ type ApplicationListMobile struct {
 	ExpiredAt   string `json:"expired_at"`
 }
 
-// Training Application Data
-type TrainingApplicationData struct {
-	Motivation         string `json:"motivation"`
-	BusinessExperience string `json:"business_experience,omitempty"`
-	LearningObjectives string `json:"learning_objectives,omitempty"`
-	AvailabilityNotes  string `json:"availability_notes,omitempty"`
-}
-
-// Certification Application Data
-type CertificationApplicationData struct {
-	BusinessSector      string `json:"business_sector"`
-	ProductOrService    string `json:"product_or_service"`
-	BusinessDescription string `json:"business_description"`
-	YearsOperating      *int   `json:"years_operating,omitempty"`
-	CurrentStandards    string `json:"current_standards,omitempty"`
-	CertificationGoals  string `json:"certification_goals"`
-}
-
-// Funding Application Data
-type FundingApplicationData struct {
-	BusinessSector        string   `json:"business_sector"`
-	BusinessDescription   string   `json:"business_description"`
-	YearsOperating        *int     `json:"years_operating,omitempty"`
-	RequestedAmount       float64  `json:"requested_amount"`
-	FundPurpose           string   `json:"fund_purpose"`
-	BusinessPlan          string   `json:"business_plan,omitempty"`
-	RevenueProjection     *float64 `json:"revenue_projection,omitempty"`
-	MonthlyRevenue        *float64 `json:"monthly_revenue,omitempty"`
-	RequestedTenureMonths int      `json:"requested_tenure_months"`
-	CollateralDescription string   `json:"collateral_description,omitempty"`
-}
-
 // Updated Application Detail Response
 type ApplicationDetailMobile struct {
 	ID                int                           `json:"id"`

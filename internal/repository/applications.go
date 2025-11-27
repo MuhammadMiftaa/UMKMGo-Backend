@@ -73,6 +73,9 @@ func (repo *applicationsRepository) GetApplicationByID(ctx context.Context, id i
 		Preload("UMKM.City.Province").
 		Preload("Documents").
 		Preload("Histories.User").
+		Preload("TrainingApplication").
+		Preload("CertificationApplication").
+		Preload("FundingApplication").
 		Where("applications.id = ? AND applications.deleted_at IS NULL", id).
 		First(&application).Error
 	if err != nil {

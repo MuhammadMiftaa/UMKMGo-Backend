@@ -149,12 +149,10 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, userID, id
 		application.UMKM.KartuNumber = decryptedKartu
 	}
 
-	// ... rest of the mapping logic similar to GetAllApplications ...
-
-	documents, _ := s.applicationRepository.GetApplicationDocuments(ctx, application.ID)
-	var documentsDTO []dto.ApplicationDocuments
-	for _, doc := range documents {
-		documentsDTO = append(documentsDTO, dto.ApplicationDocuments{
+	// Map documents
+	var documents []dto.ApplicationDocuments
+	for _, doc := range application.Documents {
+		documents = append(documents, dto.ApplicationDocuments{
 			ID:            doc.ID,
 			ApplicationID: doc.ApplicationID,
 			Type:          doc.Type,
@@ -164,10 +162,10 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, userID, id
 		})
 	}
 
-	histories, _ := s.applicationRepository.GetApplicationHistories(ctx, application.ID)
-	var historiesDTO []dto.ApplicationHistories
-	for _, hist := range histories {
-		historiesDTO = append(historiesDTO, dto.ApplicationHistories{
+	// Map histories
+	var histories []dto.ApplicationHistories
+	for _, hist := range application.Histories {
+		histories = append(histories, dto.ApplicationHistories{
 			ID:             hist.ID,
 			ApplicationID:  hist.ApplicationID,
 			Status:         hist.Status,
@@ -180,7 +178,7 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, userID, id
 		})
 	}
 
-	return dto.Applications{
+	detail := dto.Applications{
 		ID:          application.ID,
 		UMKMID:      application.UMKMID,
 		ProgramID:   application.ProgramID,
@@ -190,8 +188,8 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, userID, id
 		ExpiredAt:   application.ExpiredAt.Format("2006-01-02 15:04:05"),
 		CreatedAt:   application.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:   application.UpdatedAt.Format("2006-01-02 15:04:05"),
-		Documents:   documentsDTO,
-		Histories:   historiesDTO,
+		Documents:   documents,
+		Histories:   histories,
 		Program: &dto.Programs{
 			ID:                  application.Program.ID,
 			Title:               application.Program.Title,
@@ -221,7 +219,48 @@ func (s *applicationsService) GetApplicationByID(ctx context.Context, userID, id
 				Name: application.UMKM.City.Name,
 			},
 		},
-	}, nil
+	}
+
+	// Add specific application data based on type
+	switch application.Type {
+	case "training":
+		if application.TrainingApplication != nil {
+			detail.TrainingData = &dto.TrainingApplicationData{
+				Motivation:         application.TrainingApplication.Motivation,
+				BusinessExperience: application.TrainingApplication.BusinessExperience,
+				LearningObjectives: application.TrainingApplication.LearningObjectives,
+				AvailabilityNotes:  application.TrainingApplication.AvailabilityNotes,
+			}
+		}
+	case "certification":
+		if application.CertificationApplication != nil {
+			detail.CertificationData = &dto.CertificationApplicationData{
+				BusinessSector:      application.CertificationApplication.BusinessSector,
+				ProductOrService:    application.CertificationApplication.ProductOrService,
+				BusinessDescription: application.CertificationApplication.BusinessDescription,
+				YearsOperating:      application.CertificationApplication.YearsOperating,
+				CurrentStandards:    application.CertificationApplication.CurrentStandards,
+				CertificationGoals:  application.CertificationApplication.CertificationGoals,
+			}
+		}
+	case "funding":
+		if application.FundingApplication != nil {
+			detail.FundingData = &dto.FundingApplicationData{
+				BusinessSector:        application.FundingApplication.BusinessSector,
+				BusinessDescription:   application.FundingApplication.BusinessDescription,
+				YearsOperating:        application.FundingApplication.YearsOperating,
+				RequestedAmount:       application.FundingApplication.RequestedAmount,
+				FundPurpose:           application.FundingApplication.FundPurpose,
+				BusinessPlan:          application.FundingApplication.BusinessPlan,
+				RevenueProjection:     application.FundingApplication.RevenueProjection,
+				MonthlyRevenue:        application.FundingApplication.MonthlyRevenue,
+				RequestedTenureMonths: application.FundingApplication.RequestedTenureMonths,
+				CollateralDescription: application.FundingApplication.CollateralDescription,
+			}
+		}
+	}
+
+	return detail, nil
 }
 
 func (s *applicationsService) ScreeningApprove(ctx context.Context, userID int, applicationID int) (dto.Applications, error) {

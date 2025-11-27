@@ -940,6 +940,8 @@ func (s *mobileService) createApplicationHistory(ctx context.Context, applicatio
 		ApplicationID: applicationID,
 		Status:        status,
 		Notes:         notes,
+		ActionedBy:    &userID,
+		ActionedAt:    time.Now(),
 	}
 	return s.mobileRepo.CreateApplicationHistory(ctx, history)
 }

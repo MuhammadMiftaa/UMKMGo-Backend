@@ -249,6 +249,7 @@ func (s *mobileService) UpdateUMKMProfile(ctx context.Context, userID int, reque
 			Base64Data: request.Photo,
 			BucketName: storage.UMKMBucket,
 			Prefix:     utils.GenerateFileName(request.Name, "photo_profile_"),
+			Validation: storage.CreateImageValidationConfig(),
 		})
 		if err != nil {
 			return dto.UMKMProfile{}, err
@@ -299,6 +300,7 @@ func (s *mobileService) UploadNIB(ctx context.Context, userID int, document stri
 		Base64Data: document,
 		BucketName: "umkmgo-documents",
 		Prefix:     fmt.Sprintf("nib_%d_", umkm.ID),
+		Validation: storage.CreateImageValidationConfig(),
 	})
 	if err != nil {
 		return err
@@ -325,6 +327,7 @@ func (s *mobileService) UploadNPWP(ctx context.Context, userID int, document str
 		Base64Data: document,
 		BucketName: "umkmgo-documents",
 		Prefix:     fmt.Sprintf("npwp_%d_", umkm.ID),
+		Validation: storage.CreateImageValidationConfig(),
 	})
 	if err != nil {
 		return err
@@ -350,6 +353,7 @@ func (s *mobileService) UploadRevenueRecord(ctx context.Context, userID int, doc
 		Base64Data: document,
 		BucketName: "umkmgo-documents",
 		Prefix:     fmt.Sprintf("revenue_%d_", umkm.ID),
+		Validation: storage.CreateImageValidationConfig(),
 	})
 	if err != nil {
 		return err
@@ -375,6 +379,7 @@ func (s *mobileService) UploadBusinessPermit(ctx context.Context, userID int, do
 		Base64Data: document,
 		BucketName: "umkmgo-documents",
 		Prefix:     fmt.Sprintf("permit_%d_", umkm.ID),
+		Validation: storage.CreateImageValidationConfig(),
 	})
 	if err != nil {
 		return err
@@ -909,6 +914,7 @@ func (s *mobileService) processAndSaveDocuments(ctx context.Context, application
 				Base64Data: docData,
 				BucketName: storage.ApplicationBucket,
 				Prefix:     fmt.Sprintf("app_%d_%s_", applicationID, docType),
+				Validation: storage.CreateImageValidationConfig(),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to upload %s document, %w", docType, err)

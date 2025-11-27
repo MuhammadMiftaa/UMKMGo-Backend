@@ -174,6 +174,7 @@ func (s *programsService) CreateProgram(ctx context.Context, program dto.Program
 			Base64Data: program.Banner,
 			BucketName: storage.ProgramBucket,
 			Prefix:     utils.GenerateFileName(program.Title, "banner_"),
+			Validation: storage.CreateImageValidationConfig(),
 		})
 		if err != nil {
 			return dto.Programs{}, err
@@ -187,6 +188,7 @@ func (s *programsService) CreateProgram(ctx context.Context, program dto.Program
 			Base64Data: program.ProviderLogo,
 			BucketName: storage.ProgramBucket,
 			Prefix:     utils.GenerateFileName(program.Title, "provider_logos_"),
+			Validation: storage.CreateImageValidationConfig(),
 		})
 		if err != nil {
 			return dto.Programs{}, err
@@ -284,6 +286,7 @@ func (s *programsService) UpdateProgram(ctx context.Context, id int, program dto
 			Base64Data: program.Banner,
 			BucketName: storage.ProgramBucket,
 			Prefix:     utils.GenerateFileName(program.Title, "banner_"),
+			Validation: storage.CreateImageValidationConfig(),
 		})
 		if err != nil {
 			return dto.Programs{}, err
@@ -307,6 +310,7 @@ func (s *programsService) UpdateProgram(ctx context.Context, id int, program dto
 			Base64Data: program.ProviderLogo,
 			BucketName: storage.ProgramBucket,
 			Prefix:     utils.GenerateFileName(program.Title, "provider_logos_"),
+			Validation: storage.CreateImageValidationConfig(),
 		})
 		if err != nil {
 			return dto.Programs{}, err

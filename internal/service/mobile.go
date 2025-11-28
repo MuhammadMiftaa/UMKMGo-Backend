@@ -454,11 +454,6 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 		return err
 	}
 
-	// Process and save documents
-	if err := s.processAndSaveDocuments(ctx, createdApp.ID, umkm, request.Documents); err != nil {
-		return err
-	}
-
 	// Create history
 	if err := s.createApplicationHistory(ctx, createdApp.ID, umkm.UserID, "submit", "Training application submitted"); err != nil {
 		return err
@@ -468,6 +463,9 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 	if err := s.createNotification(ctx, umkm.ID, createdApp.ID, constant.NotificationSubmitted, constant.NotificationTitleSubmitted, constant.NotificationMessageSubmitted); err != nil {
 		return err
 	}
+	
+	// Process and save documents
+	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
 
 	return nil
 }
@@ -530,11 +528,6 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 		return err
 	}
 
-	// Process and save documents
-	if err := s.processAndSaveDocuments(ctx, createdApp.ID, umkm, request.Documents); err != nil {
-		return err
-	}
-
 	// Create history
 	if err := s.createApplicationHistory(ctx, createdApp.ID, umkm.UserID, "submit", "Certification application submitted"); err != nil {
 		return err
@@ -544,6 +537,9 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 	if err := s.createNotification(ctx, umkm.ID, createdApp.ID, constant.NotificationSubmitted, constant.NotificationTitleSubmitted, constant.NotificationMessageSubmitted); err != nil {
 		return err
 	}
+	
+	// Process and save documents
+	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
 
 	return nil
 }
@@ -624,11 +620,6 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 		return err
 	}
 
-	// Process and save documents
-	if err := s.processAndSaveDocuments(ctx, createdApp.ID, umkm, request.Documents); err != nil {
-		return err
-	}
-
 	// Create history
 	if err := s.createApplicationHistory(ctx, createdApp.ID, umkm.UserID, "submit", "Funding application submitted"); err != nil {
 		return err
@@ -638,6 +629,9 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 	if err := s.createNotification(ctx, umkm.ID, createdApp.ID, constant.NotificationSubmitted, constant.NotificationTitleSubmitted, constant.NotificationMessageSubmitted); err != nil {
 		return err
 	}
+	
+	// Process and save documents
+	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
 
 	return nil
 }
@@ -905,21 +899,21 @@ func (s *mobileService) mapProgramToDTO(p model.Program) dto.ProgramListMobile {
 	}
 }
 
-func (s *mobileService) processAndSaveDocuments(ctx context.Context, applicationID int, umkm model.UMKM, providedDocs map[string]string) error {
+func (s *mobileService) processAndSaveDocuments(applicationID int, umkm model.UMKM, providedDocs map[string]string) {
 	var appDocuments []model.ApplicationDocument
 	var url string
 
 	// Add documents from request
 	for docType, docData := range providedDocs {
 		if !(strings.HasPrefix(docData, "http") || strings.HasPrefix(docData, "https")) {
-			res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
+			res, err := s.minio.UploadFile(context.Background(), storage.UploadRequest{
 				Base64Data: docData,
 				BucketName: storage.ApplicationBucket,
 				Prefix:     fmt.Sprintf("app_%d_%s_", applicationID, docType),
 				Validation: storage.CreateImageValidationConfig(),
 			})
 			if err != nil {
-				return fmt.Errorf("failed to upload %s document, %w", docType, err)
+				log.Log.Errorf("failed to upload %s document, %w, for application ID %d", docType, err, applicationID)
 			}
 
 			url = res.URL
@@ -934,7 +928,8 @@ func (s *mobileService) processAndSaveDocuments(ctx context.Context, application
 		})
 	}
 
-	return s.mobileRepo.CreateApplicationDocuments(ctx, appDocuments)
+	log.Log.Infof("Saving application documents for application ID %d: %+v", applicationID, appDocuments)
+	return
 }
 
 func (s *mobileService) createApplicationHistory(ctx context.Context, applicationID, userID int, status, notes string) error {

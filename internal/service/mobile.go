@@ -460,7 +460,7 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 	}
 
 	// Create history
-	if err := s.createApplicationHistory(ctx, createdApp.ID, userID, "submit", "Training application submitted"); err != nil {
+	if err := s.createApplicationHistory(ctx, createdApp.ID, umkm.UserID, "submit", "Training application submitted"); err != nil {
 		return err
 	}
 
@@ -536,7 +536,7 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 	}
 
 	// Create history
-	if err := s.createApplicationHistory(ctx, createdApp.ID, userID, "submit", "Certification application submitted"); err != nil {
+	if err := s.createApplicationHistory(ctx, createdApp.ID, umkm.UserID, "submit", "Certification application submitted"); err != nil {
 		return err
 	}
 
@@ -630,7 +630,7 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 	}
 
 	// Create history
-	if err := s.createApplicationHistory(ctx, createdApp.ID, userID, "submit", "Funding application submitted"); err != nil {
+	if err := s.createApplicationHistory(ctx, createdApp.ID, umkm.UserID, "submit", "Funding application submitted"); err != nil {
 		return err
 	}
 

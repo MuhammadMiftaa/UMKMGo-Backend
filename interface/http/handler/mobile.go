@@ -541,7 +541,12 @@ func (h *MobileHandler) MarkNotificationsAsRead(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to mark notifications as read"})
 	}
 
-	return c.JSON(fiber.Map{"message": "Notifications marked as read"})
+	return c.JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Notification marked as read",
+		"data":       nil,
+	})
 }
 
 // MarkAllNotificationsAsRead marks all notifications as read for a specific UMKM ID.
@@ -555,5 +560,10 @@ func (h *MobileHandler) MarkAllNotificationsAsRead(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to mark all notifications as read"})
 	}
 
-	return c.JSON(fiber.Map{"message": "All notifications marked as read"})
+	return c.JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "All notifications marked as read",
+		"data":       nil,
+	})
 }

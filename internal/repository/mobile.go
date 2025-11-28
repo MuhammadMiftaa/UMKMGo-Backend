@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"UMKMGo-backend/internal/types/dto"
 	"UMKMGo-backend/internal/types/model"
 
 	"gorm.io/gorm"
@@ -35,6 +36,11 @@ type MobileRepository interface {
 	GetProgramByID(ctx context.Context, id int) (model.Program, error)
 	GetProgramRequirements(ctx context.Context, programID int) ([]model.ProgramRequirement, error)
 	IsApplicationExists(ctx context.Context, umkmID, programID int) bool
+
+	// News
+	GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]model.News, int64, error)
+	GetPublishedNewsBySlug(ctx context.Context, slug string) (model.News, error)
+	IncrementViews(ctx context.Context, newsID int) error
 }
 
 type mobileRepository struct {
@@ -233,4 +239,73 @@ func (r *mobileRepository) IsApplicationExists(ctx context.Context, umkmID, prog
 		Where("umkm_id = ? AND program_id = ? AND deleted_at IS NULL AND status NOT IN ('rejected')", umkmID, programID).
 		Count(&count)
 	return count > 0
+}
+
+
+func (r *mobileRepository) GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]model.News, int64, error) {
+	var news []model.News
+	var total int64
+
+	query := r.db.WithContext(ctx).
+		Model(&model.News{}).
+		Preload("Author").
+		Preload("Tags").
+		Where("is_published = ? AND deleted_at IS NULL", true)
+
+	// Filter by category
+	if params.Category != "" {
+		query = query.Where("category = ?", params.Category)
+	}
+
+	// Search by title
+	if params.Search != "" {
+		searchPattern := "%" + params.Search + "%"
+		query = query.Where("title ILIKE ?", searchPattern)
+	}
+
+	// Filter by tag
+	if params.Tag != "" {
+		query = query.Joins("JOIN news_tags ON news_tags.news_id = news.id").
+			Where("news_tags.tag_name = ?", params.Tag)
+	}
+
+	// Count total
+	query.Count(&total)
+
+	// Pagination
+	if params.Page < 1 {
+		params.Page = 1
+	}
+	if params.Limit < 1 {
+		params.Limit = 10
+	}
+	offset := (params.Page - 1) * params.Limit
+
+	err := query.Order("published_at DESC").
+		Limit(params.Limit).
+		Offset(offset).
+		Find(&news).Error
+
+	return news, total, err
+}
+
+func (r *mobileRepository) GetPublishedNewsBySlug(ctx context.Context, slug string) (model.News, error) {
+	var news model.News
+	err := r.db.WithContext(ctx).
+		Preload("Author").
+		Preload("Tags").
+		Where("slug = ? AND is_published = ? AND deleted_at IS NULL", slug, true).
+		First(&news).Error
+	if err != nil {
+		return model.News{}, errors.New("news not found")
+	}
+	return news, nil
+}
+
+func (r *mobileRepository) IncrementViews(ctx context.Context, newsID int) error {
+	return r.db.WithContext(ctx).
+		Model(&model.News{}).
+		Where("id = ?", newsID).
+		UpdateColumn("views_count", gorm.Expr("views_count + ?", 1)).
+		Error
 }

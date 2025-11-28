@@ -72,6 +72,7 @@ type UpdateUMKMProfile struct {
 
 // Upload Document Request
 type UploadDocumentRequest struct {
+	Type     string `json:"type" validate:"required,oneof=nib npwp revenue_record business_permit"`
 	Document string `json:"document" validate:"required"`
 }
 
@@ -167,4 +168,9 @@ type DashboardData struct {
 	NotificationsCount   int    `json:"notifications_count"`
 	TotalApplications    int    `json:"total_applications"`
 	ApprovedApplications int    `json:"approved_applications"`
+}
+
+type UMKMDocument struct {
+	DocumentType string `json:"document_type"`
+	DocumentURL  string `json:"document_url"`
 }

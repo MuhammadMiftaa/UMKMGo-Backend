@@ -11,7 +11,6 @@ import (
 )
 
 type NewsRepository interface {
-	// Web - Admin Management
 	GetAllNews(ctx context.Context, params dto.NewsQueryParams) ([]model.News, int64, error)
 	GetNewsByID(ctx context.Context, id int) (model.News, error)
 	GetNewsBySlug(ctx context.Context, slug string) (model.News, error)
@@ -20,15 +19,9 @@ type NewsRepository interface {
 	DeleteNews(ctx context.Context, news model.News) error
 	IsSlugExists(ctx context.Context, slug string, excludeID int) bool
 
-	// Tags Management
 	CreateNewsTags(ctx context.Context, tags []model.NewsTag) error
 	DeleteNewsTags(ctx context.Context, newsID int) error
 	GetNewsTags(ctx context.Context, newsID int) ([]model.NewsTag, error)
-
-	// Mobile - Public Access
-	GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]model.News, int64, error)
-	GetPublishedNewsBySlug(ctx context.Context, slug string) (model.News, error)
-	IncrementViews(ctx context.Context, newsID int) error
 }
 
 type newsRepository struct {
@@ -170,73 +163,4 @@ func (r *newsRepository) GetNewsTags(ctx context.Context, newsID int) ([]model.N
 	var tags []model.NewsTag
 	err := r.db.WithContext(ctx).Where("news_id = ?", newsID).Find(&tags).Error
 	return tags, err
-}
-
-// Mobile - Public Access
-func (r *newsRepository) GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]model.News, int64, error) {
-	var news []model.News
-	var total int64
-
-	query := r.db.WithContext(ctx).
-		Model(&model.News{}).
-		Preload("Author").
-		Preload("Tags").
-		Where("is_published = ? AND deleted_at IS NULL", true)
-
-	// Filter by category
-	if params.Category != "" {
-		query = query.Where("category = ?", params.Category)
-	}
-
-	// Search by title
-	if params.Search != "" {
-		searchPattern := "%" + params.Search + "%"
-		query = query.Where("title ILIKE ?", searchPattern)
-	}
-
-	// Filter by tag
-	if params.Tag != "" {
-		query = query.Joins("JOIN news_tags ON news_tags.news_id = news.id").
-			Where("news_tags.tag_name = ?", params.Tag)
-	}
-
-	// Count total
-	query.Count(&total)
-
-	// Pagination
-	if params.Page < 1 {
-		params.Page = 1
-	}
-	if params.Limit < 1 {
-		params.Limit = 10
-	}
-	offset := (params.Page - 1) * params.Limit
-
-	err := query.Order("published_at DESC").
-		Limit(params.Limit).
-		Offset(offset).
-		Find(&news).Error
-
-	return news, total, err
-}
-
-func (r *newsRepository) GetPublishedNewsBySlug(ctx context.Context, slug string) (model.News, error) {
-	var news model.News
-	err := r.db.WithContext(ctx).
-		Preload("Author").
-		Preload("Tags").
-		Where("slug = ? AND is_published = ? AND deleted_at IS NULL", slug, true).
-		First(&news).Error
-	if err != nil {
-		return model.News{}, errors.New("news not found")
-	}
-	return news, nil
-}
-
-func (r *newsRepository) IncrementViews(ctx context.Context, newsID int) error {
-	return r.db.WithContext(ctx).
-		Model(&model.News{}).
-		Where("id = ?", newsID).
-		UpdateColumn("views_count", gorm.Expr("views_count + ?", 1)).
-		Error
 }

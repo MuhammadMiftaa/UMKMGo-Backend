@@ -34,10 +34,8 @@ type MobileService interface {
 	UpdateUMKMProfile(ctx context.Context, userID int, request dto.UpdateUMKMProfile) (dto.UMKMProfile, error)
 
 	// Documents
-	UploadNIB(ctx context.Context, userID int, document string) error
-	UploadNPWP(ctx context.Context, userID int, document string) error
-	UploadRevenueRecord(ctx context.Context, userID int, document string) error
-	UploadBusinessPermit(ctx context.Context, userID int, document string) error
+	GetUMKMDocuments(ctx context.Context, userID int) ([]dto.UMKMDocument, error)
+	UploadDocument(ctx context.Context, userID int, doc dto.UploadDocumentRequest) error
 
 	// Applications
 	CreateTrainingApplication(ctx context.Context, userID int, request dto.CreateApplicationTraining) error
@@ -52,6 +50,10 @@ type MobileService interface {
 	GetUnreadCount(ctx context.Context, umkmID int) (int64, error)
 	MarkNotificationsAsRead(ctx context.Context, umkmID int, notificationIDs int) error
 	MarkAllNotificationsAsRead(ctx context.Context, umkmID int) error
+
+	// News
+	GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]dto.NewsListMobile, int64, error)
+	GetNewsDetail(ctx context.Context, slug string) (dto.NewsDetailMobile, error)
 }
 
 type mobileService struct {
@@ -290,18 +292,85 @@ func (s *mobileService) UpdateUMKMProfile(ctx context.Context, userID int, reque
 	return s.GetUMKMProfile(ctx, userID)
 }
 
-// Documents
-func (s *mobileService) UploadNIB(ctx context.Context, userID int, document string) error {
+func (s *mobileService) GetUMKMDocuments(ctx context.Context, userID int) ([]dto.UMKMDocument, error) {
+	umkm, err := s.mobileRepo.GetUMKMProfileByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var documents []dto.UMKMDocument
+	if umkm.NIB != "" {
+		documents = append(documents, dto.UMKMDocument{
+			DocumentType: constant.DocumentTypeNib,
+			DocumentURL:  umkm.NIB,
+		})
+	}
+	if umkm.NPWP != "" {
+		documents = append(documents, dto.UMKMDocument{
+			DocumentType: constant.DocumentTypeNPWP,
+			DocumentURL:  umkm.NPWP,
+		})
+	}
+	if umkm.RevenueRecord != "" {
+		documents = append(documents, dto.UMKMDocument{
+			DocumentType: constant.DocumentTypeRevenueRecord,
+			DocumentURL:  umkm.RevenueRecord,
+		})
+	}
+	if umkm.BusinessPermit != "" {
+		documents = append(documents, dto.UMKMDocument{
+			DocumentType: constant.DocumentTypeBusinessPermit,
+			DocumentURL:  umkm.BusinessPermit,
+		})
+	}
+
+	return documents, nil
+}
+
+func (s *mobileService) UploadDocument(ctx context.Context, userID int, doc dto.UploadDocumentRequest) error {
 	umkm, err := s.mobileRepo.GetUMKMProfileByID(ctx, userID)
 	if err != nil {
 		return err
 	}
 
+	// Map document type to database field and file prefix
+	docTypeConfig := map[string]struct {
+		field  string
+		prefix string
+		oldURL string
+	}{
+		"nib": {
+			field:  "nib",
+			prefix: fmt.Sprintf("nib_%d_", umkm.ID),
+			oldURL: umkm.NIB,
+		},
+		"npwp": {
+			field:  "npwp",
+			prefix: fmt.Sprintf("npwp_%d_", umkm.ID),
+			oldURL: umkm.NPWP,
+		},
+		"revenue-record": {
+			field:  "revenue_record",
+			prefix: fmt.Sprintf("revenue_%d_", umkm.ID),
+			oldURL: umkm.RevenueRecord,
+		},
+		"business-permit": {
+			field:  "business_permit",
+			prefix: fmt.Sprintf("permit_%d_", umkm.ID),
+			oldURL: umkm.BusinessPermit,
+		},
+	}
+
+	config, exists := docTypeConfig[doc.Type]
+	if !exists {
+		return errors.New("invalid document type")
+	}
+
 	// Upload to MinIO
 	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
-		Base64Data: document,
-		BucketName: "umkmgo-documents",
-		Prefix:     fmt.Sprintf("nib_%d_", umkm.ID),
+		Base64Data: doc.Document,
+		BucketName: storage.UMKMBucket,
+		Prefix:     config.prefix,
 		Validation: storage.CreateImageValidationConfig(),
 	})
 	if err != nil {
@@ -309,92 +378,15 @@ func (s *mobileService) UploadNIB(ctx context.Context, userID int, document stri
 	}
 
 	// Delete old document if exists
-	if umkm.NIB != "" {
-		oldObjectName := storage.ExtractObjectNameFromURL(umkm.NIB)
+	if config.oldURL != "" {
+		oldObjectName := storage.ExtractObjectNameFromURL(config.oldURL)
 		if oldObjectName != "" {
-			s.minio.DeleteFile(ctx, "umkmgo-documents", oldObjectName)
+			s.minio.DeleteFile(ctx, storage.UMKMBucket, oldObjectName)
 		}
 	}
 
-	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, "nib", res.URL)
-}
-
-func (s *mobileService) UploadNPWP(ctx context.Context, userID int, document string) error {
-	umkm, err := s.mobileRepo.GetUMKMProfileByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
-		Base64Data: document,
-		BucketName: "umkmgo-documents",
-		Prefix:     fmt.Sprintf("npwp_%d_", umkm.ID),
-		Validation: storage.CreateImageValidationConfig(),
-	})
-	if err != nil {
-		return err
-	}
-
-	if umkm.NPWP != "" {
-		oldObjectName := storage.ExtractObjectNameFromURL(umkm.NPWP)
-		if oldObjectName != "" {
-			s.minio.DeleteFile(ctx, "umkmgo-documents", oldObjectName)
-		}
-	}
-
-	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, "npwp", res.URL)
-}
-
-func (s *mobileService) UploadRevenueRecord(ctx context.Context, userID int, document string) error {
-	umkm, err := s.mobileRepo.GetUMKMProfileByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
-		Base64Data: document,
-		BucketName: "umkmgo-documents",
-		Prefix:     fmt.Sprintf("revenue_%d_", umkm.ID),
-		Validation: storage.CreateImageValidationConfig(),
-	})
-	if err != nil {
-		return err
-	}
-
-	if umkm.RevenueRecord != "" {
-		oldObjectName := storage.ExtractObjectNameFromURL(umkm.RevenueRecord)
-		if oldObjectName != "" {
-			s.minio.DeleteFile(ctx, "umkmgo-documents", oldObjectName)
-		}
-	}
-
-	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, "revenue_record", res.URL)
-}
-
-func (s *mobileService) UploadBusinessPermit(ctx context.Context, userID int, document string) error {
-	umkm, err := s.mobileRepo.GetUMKMProfileByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
-		Base64Data: document,
-		BucketName: "umkmgo-documents",
-		Prefix:     fmt.Sprintf("permit_%d_", umkm.ID),
-		Validation: storage.CreateImageValidationConfig(),
-	})
-	if err != nil {
-		return err
-	}
-
-	if umkm.BusinessPermit != "" {
-		oldObjectName := storage.ExtractObjectNameFromURL(umkm.BusinessPermit)
-		if oldObjectName != "" {
-			s.minio.DeleteFile(ctx, "umkmgo-documents", oldObjectName)
-		}
-	}
-
-	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, "business_permit", res.URL)
+	// Update document in database
+	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, config.field, res.URL)
 }
 
 // Applications
@@ -463,7 +455,7 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 	if err := s.createNotification(ctx, umkm.ID, createdApp.ID, constant.NotificationSubmitted, constant.NotificationTitleSubmitted, constant.NotificationMessageSubmitted); err != nil {
 		return err
 	}
-	
+
 	// Process and save documents
 	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
 
@@ -537,7 +529,7 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 	if err := s.createNotification(ctx, umkm.ID, createdApp.ID, constant.NotificationSubmitted, constant.NotificationTitleSubmitted, constant.NotificationMessageSubmitted); err != nil {
 		return err
 	}
-	
+
 	// Process and save documents
 	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
 
@@ -629,7 +621,7 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 	if err := s.createNotification(ctx, umkm.ID, createdApp.ID, constant.NotificationSubmitted, constant.NotificationTitleSubmitted, constant.NotificationMessageSubmitted); err != nil {
 		return err
 	}
-	
+
 	// Process and save documents
 	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
 
@@ -816,6 +808,58 @@ func (s *mobileService) MarkAllNotificationsAsRead(ctx context.Context, umkmID i
 	return s.notificationRepo.MarkAllAsRead(ctx, umkmID)
 }
 
+func (s *mobileService) GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]dto.NewsListMobile, int64, error) {
+	news, total, err := s.mobileRepo.GetPublishedNews(ctx, params)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var response []dto.NewsListMobile
+	for _, n := range news {
+		response = append(response, dto.NewsListMobile{
+			ID:         n.ID,
+			Title:      n.Title,
+			Slug:       n.Slug,
+			Excerpt:    n.Excerpt,
+			Thumbnail:  n.Thumbnail,
+			Category:   n.Category,
+			AuthorName: n.Author.Name,
+			ViewsCount: n.ViewsCount,
+			CreatedAt:  n.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	return response, total, nil
+}
+
+func (s *mobileService) GetNewsDetail(ctx context.Context, slug string) (dto.NewsDetailMobile, error) {
+	news, err := s.mobileRepo.GetPublishedNewsBySlug(ctx, slug)
+	if err != nil {
+		return dto.NewsDetailMobile{}, err
+	}
+
+	// Increment views
+	s.mobileRepo.IncrementViews(ctx, news.ID)
+
+	var tags []string
+	for _, tag := range news.Tags {
+		tags = append(tags, tag.TagName)
+	}
+
+	return dto.NewsDetailMobile{
+		ID:         news.ID,
+		Title:      news.Title,
+		Slug:       news.Slug,
+		Content:    news.Content,
+		Thumbnail:  news.Thumbnail,
+		Category:   news.Category,
+		AuthorName: news.Author.Name,
+		ViewsCount: news.ViewsCount + 1, // Show incremented value
+		CreatedAt:  news.CreatedAt.Format("2006-01-02 15:04:05"),
+		Tags:       tags,
+	}, nil
+}
+
 // Get UMKM Profile with decryption
 func (s *mobileService) GetUMKMProfileWithDecryption(ctx context.Context, userID int, purpose string) (dto.UMKMProfile, error) {
 	umkm, err := s.getUMKMWithDecryption(ctx, userID, purpose)
@@ -916,6 +960,7 @@ func (s *mobileService) processAndSaveDocuments(applicationID int, umkm model.UM
 				log.Log.Errorf("failed to upload %s document, %w, for application ID %d", docType, err, applicationID)
 			}
 
+			log.Log.Infof("uploaded %s document for application ID %d: %s", docType, applicationID, res.URL)
 			url = res.URL
 		} else {
 			url = docData
@@ -928,7 +973,6 @@ func (s *mobileService) processAndSaveDocuments(applicationID int, umkm model.UM
 		})
 	}
 
-	log.Log.Infof("Saving application documents for application ID %d: %+v", applicationID, appDocuments)
 	return
 }
 

@@ -52,4 +52,9 @@ const (
 	NotificationMessageProgramReminder  = "Ingatkan program yang akan datang."
 	NotificationMessageDocumentRequired = "Dokumen tambahan diperlukan untuk melanjutkan proses pengajuan."
 	NotificationMessageGeneralInfo      = "Informasi umum terkait program atau aplikasi."
+
+	DocumentTypeNib          = "nib"
+	DocumentTypeNPWP        = "npwp"
+	DocumentTypeRevenueRecord = "revenue_record"
+	DocumentTypeBusinessPermit = "business_permit"
 )

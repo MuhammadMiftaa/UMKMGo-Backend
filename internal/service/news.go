@@ -16,7 +16,6 @@ import (
 )
 
 type NewsService interface {
-	// Web - Admin Management
 	GetAllNews(ctx context.Context, params dto.NewsQueryParams) ([]dto.NewsListResponse, int64, error)
 	GetNewsByID(ctx context.Context, id int) (dto.NewsResponse, error)
 	CreateNews(ctx context.Context, authorID int, request dto.NewsRequest) (dto.NewsResponse, error)
@@ -24,10 +23,6 @@ type NewsService interface {
 	DeleteNews(ctx context.Context, id int) error
 	PublishNews(ctx context.Context, id int) (dto.NewsResponse, error)
 	UnpublishNews(ctx context.Context, id int) (dto.NewsResponse, error)
-
-	// Mobile - Public Access
-	GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]dto.NewsListMobile, int64, error)
-	GetNewsDetail(ctx context.Context, slug string) (dto.NewsDetailMobile, error)
 }
 
 type newsService struct {
@@ -42,7 +37,6 @@ func NewNewsService(newsRepo repository.NewsRepository, minio *storage.MinIOMana
 	}
 }
 
-// Web - Admin Management
 func (s *newsService) GetAllNews(ctx context.Context, params dto.NewsQueryParams) ([]dto.NewsListResponse, int64, error) {
 	news, total, err := s.newsRepository.GetAllNews(ctx, params)
 	if err != nil {
@@ -127,10 +121,10 @@ func (s *newsService) CreateNews(ctx context.Context, authorID int, request dto.
 
 	// Upload thumbnail if provided
 	thumbnailURL := request.Thumbnail
-	if request.Thumbnail != "" && !strings.HasPrefix(request.Thumbnail, "http") {
+	if request.Thumbnail != "" && !(strings.HasPrefix(request.Thumbnail, "http") || strings.HasPrefix(request.Thumbnail, "https")) {
 		res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
 			Base64Data: request.Thumbnail,
-			BucketName: storage.ProgramBucket,
+			BucketName: storage.NewsBucket,
 			Prefix:     utils.GenerateFileName(request.Title, "news_thumbnail_"),
 			Validation: storage.CreateImageValidationConfig(),
 		})
@@ -202,10 +196,10 @@ func (s *newsService) UpdateNews(ctx context.Context, id int, request dto.NewsRe
 	}
 
 	// Upload new thumbnail if provided
-	if request.Thumbnail != "" && !strings.HasPrefix(request.Thumbnail, "http") {
+	if request.Thumbnail != "" && !(strings.HasPrefix(request.Thumbnail, "http") || strings.HasPrefix(request.Thumbnail, "https")) {
 		res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
 			Base64Data: request.Thumbnail,
-			BucketName: storage.ProgramBucket,
+			BucketName: storage.NewsBucket,
 			Prefix:     utils.GenerateFileName(request.Title, "news_thumbnail_"),
 			Validation: storage.CreateImageValidationConfig(),
 		})
@@ -217,7 +211,7 @@ func (s *newsService) UpdateNews(ctx context.Context, id int, request dto.NewsRe
 		if news.Thumbnail != "" {
 			oldObjectName := storage.ExtractObjectNameFromURL(news.Thumbnail)
 			if oldObjectName != "" {
-				s.minio.DeleteFile(ctx, storage.ProgramBucket, oldObjectName)
+				s.minio.DeleteFile(ctx, storage.NewsBucket, oldObjectName)
 			}
 		}
 
@@ -279,7 +273,7 @@ func (s *newsService) DeleteNews(ctx context.Context, id int) error {
 	if news.Thumbnail != "" {
 		objectName := storage.ExtractObjectNameFromURL(news.Thumbnail)
 		if objectName != "" {
-			s.minio.DeleteFile(ctx, storage.ProgramBucket, objectName)
+			s.minio.DeleteFile(ctx, storage.NewsBucket, objectName)
 		}
 	}
 
@@ -327,59 +321,6 @@ func (s *newsService) UnpublishNews(ctx context.Context, id int) (dto.NewsRespon
 	}
 
 	return s.GetNewsByID(ctx, id)
-}
-
-// Mobile - Public Access
-func (s *newsService) GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]dto.NewsListMobile, int64, error) {
-	news, total, err := s.newsRepository.GetPublishedNews(ctx, params)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var response []dto.NewsListMobile
-	for _, n := range news {
-		response = append(response, dto.NewsListMobile{
-			ID:         n.ID,
-			Title:      n.Title,
-			Slug:       n.Slug,
-			Excerpt:    n.Excerpt,
-			Thumbnail:  n.Thumbnail,
-			Category:   n.Category,
-			AuthorName: n.Author.Name,
-			ViewsCount: n.ViewsCount,
-			CreatedAt:  n.CreatedAt.Format("2006-01-02 15:04:05"),
-		})
-	}
-
-	return response, total, nil
-}
-
-func (s *newsService) GetNewsDetail(ctx context.Context, slug string) (dto.NewsDetailMobile, error) {
-	news, err := s.newsRepository.GetPublishedNewsBySlug(ctx, slug)
-	if err != nil {
-		return dto.NewsDetailMobile{}, err
-	}
-
-	// Increment views
-	s.newsRepository.IncrementViews(ctx, news.ID)
-
-	var tags []string
-	for _, tag := range news.Tags {
-		tags = append(tags, tag.TagName)
-	}
-
-	return dto.NewsDetailMobile{
-		ID:         news.ID,
-		Title:      news.Title,
-		Slug:       news.Slug,
-		Content:    news.Content,
-		Thumbnail:  news.Thumbnail,
-		Category:   news.Category,
-		AuthorName: news.Author.Name,
-		ViewsCount: news.ViewsCount + 1, // Show incremented value
-		CreatedAt:  news.CreatedAt.Format("2006-01-02 15:04:05"),
-		Tags:       tags,
-	}, nil
 }
 
 // Helper function

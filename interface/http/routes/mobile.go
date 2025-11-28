@@ -52,10 +52,8 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 		// Documents
 		documents := mobile.Group("/documents")
 		{
-			documents.Post("/nib", mobileHandler.UploadNIB)
-			documents.Post("/npwp", mobileHandler.UploadNPWP)
-			documents.Post("/revenue-record", mobileHandler.UploadRevenueRecord)
-			documents.Post("/business-permit", mobileHandler.UploadBusinessPermit)
+			documents.Get("/", mobileHandler.GetUMKMDocuments)
+			documents.Post("/upload", mobileHandler.UploadDocument)
 		}
 
 		// Applications
@@ -75,6 +73,13 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 			notifications.Get("/unread-count", mobileHandler.GetUnreadCount)
 			notifications.Put("/mark-as-read/:id", mobileHandler.MarkNotificationsAsRead)
 			notifications.Put("/mark-all-as-read", mobileHandler.MarkAllNotificationsAsRead)
+		}
+
+		// News
+		news := mobile.Group("/news")
+		{
+			news.Get("/", mobileHandler.GetPublishedNews)
+			news.Get("/:slug", mobileHandler.GetNewsDetailBySlug)
 		}
 	}
 }

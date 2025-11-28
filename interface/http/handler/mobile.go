@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -197,8 +198,7 @@ func (h *MobileHandler) UpdateUMKMProfile(c *fiber.Ctx) error {
 	})
 }
 
-// Upload Documents
-func (h *MobileHandler) UploadNIB(c *fiber.Ctx) error {
+func (h *MobileHandler) GetUMKMDocuments(c *fiber.Ctx) error {
 	userData, ok := c.Locals("user_data").(dto.UserData)
 	if !ok {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
@@ -208,16 +208,8 @@ func (h *MobileHandler) UploadNIB(c *fiber.Ctx) error {
 		})
 	}
 
-	var request dto.UploadDocumentRequest
-	if err := c.BodyParser(&request); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"statusCode": 400,
-			"status":     false,
-			"message":    err.Error(),
-		})
-	}
-
-	if err := h.mobileService.UploadNIB(c.Context(), int(userData.ID), request.Document); err != nil {
+	documents, err := h.mobileService.GetUMKMDocuments(c.Context(), int(userData.ID))
+	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
 			"status":     false,
@@ -228,11 +220,13 @@ func (h *MobileHandler) UploadNIB(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"statusCode": 200,
 		"status":     true,
-		"message":    "NIB document uploaded successfully",
+		"message":    "Get UMKM documents",
+		"data":       documents,
 	})
 }
 
-func (h *MobileHandler) UploadNPWP(c *fiber.Ctx) error {
+// Upload Document with dynamic type
+func (h *MobileHandler) UploadDocument(c *fiber.Ctx) error {
 	userData, ok := c.Locals("user_data").(dto.UserData)
 	if !ok {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
@@ -251,86 +245,27 @@ func (h *MobileHandler) UploadNPWP(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.mobileService.UploadNPWP(c.Context(), int(userData.ID), request.Document); err != nil {
+	// Call service with dynamic document type
+	if err := h.mobileService.UploadDocument(c.Context(), int(userData.ID), request); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
 			"status":     false,
 			"message":    err.Error(),
 		})
+	}
+
+	// Generate dynamic success message
+	docTypeNames := map[string]string{
+		"nib":             "NIB",
+		"npwp":            "NPWP",
+		"revenue-record":  "Revenue Record",
+		"business-permit": "Business Permit",
 	}
 
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"statusCode": 200,
 		"status":     true,
-		"message":    "NPWP document uploaded successfully",
-	})
-}
-
-func (h *MobileHandler) UploadRevenueRecord(c *fiber.Ctx) error {
-	userData, ok := c.Locals("user_data").(dto.UserData)
-	if !ok {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-			"statusCode": 401,
-			"status":     false,
-			"message":    "Unauthorized",
-		})
-	}
-
-	var request dto.UploadDocumentRequest
-	if err := c.BodyParser(&request); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"statusCode": 400,
-			"status":     false,
-			"message":    err.Error(),
-		})
-	}
-
-	if err := h.mobileService.UploadRevenueRecord(c.Context(), int(userData.ID), request.Document); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"statusCode": 400,
-			"status":     false,
-			"message":    err.Error(),
-		})
-	}
-
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"statusCode": 200,
-		"status":     true,
-		"message":    "Revenue Record document uploaded successfully",
-	})
-}
-
-func (h *MobileHandler) UploadBusinessPermit(c *fiber.Ctx) error {
-	userData, ok := c.Locals("user_data").(dto.UserData)
-	if !ok {
-		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
-			"statusCode": 401,
-			"status":     false,
-			"message":    "Unauthorized",
-		})
-	}
-
-	var request dto.UploadDocumentRequest
-	if err := c.BodyParser(&request); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"statusCode": 400,
-			"status":     false,
-			"message":    err.Error(),
-		})
-	}
-
-	if err := h.mobileService.UploadBusinessPermit(c.Context(), int(userData.ID), request.Document); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"statusCode": 400,
-			"status":     false,
-			"message":    err.Error(),
-		})
-	}
-
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"statusCode": 200,
-		"status":     true,
-		"message":    "Business Permit document uploaded successfully",
+		"message":    fmt.Sprintf("%s document uploaded successfully", docTypeNames[request.Type]),
 	})
 }
 
@@ -565,5 +500,59 @@ func (h *MobileHandler) MarkAllNotificationsAsRead(c *fiber.Ctx) error {
 		"status":     true,
 		"message":    "All notifications marked as read",
 		"data":       nil,
+	})
+}
+
+// GetPublishedNews retrieves published news with optional filters.
+func (h *MobileHandler) GetPublishedNews(c *fiber.Ctx) error {
+	params := dto.NewsQueryParams{
+		Page:     c.QueryInt("page", 1),
+		Limit:    c.QueryInt("limit", 10),
+		Category: c.Query("category"),
+		Search:   c.Query("search"),
+		Tag:      c.Query("tag"),
+	}
+
+	news, _, err := h.mobileService.GetPublishedNews(c.Context(), params)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Get published news",
+		"data":       news,
+	})
+}
+
+func (h *MobileHandler) GetNewsDetailBySlug(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+	if slug == "" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    "News slug is required",
+		})
+	}
+
+	news, err := h.mobileService.GetNewsDetail(c.Context(), slug)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Get news detail",
+		"data":       news,
 	})
 }

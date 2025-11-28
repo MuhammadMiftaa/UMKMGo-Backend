@@ -438,6 +438,59 @@ Content-Type: application/json
     "application_type": "all"
 }
 
+### ============================================
+### NEWS MANAGEMENT - WEB DASHBOARD
+### ============================================
+
+### Get All News (with filters)
+GET {{baseUrl}}/v1/news
+Authorization: Bearer {{token}}
+
+### Get News By ID
+GET {{baseUrl}}/v1/news/1
+Authorization: Bearer {{token}}
+
+### Create News - Announcement
+POST {{baseUrl}}/v1/news
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Kisah Sukses: Dari Warung Kecil hingga Ekspor ke 5 Negara",
+    "excerpt": "Pak Budi berhasil mengembangkan usaha keripik singkongnya dari warung kecil hingga ekspor ke 5 negara",
+    "content": "<h2>Perjalanan Inspiratif Pak Budi</h2><p>Pak Budi Santoso, pemilik usaha keripik singkong 'Singkong Nusantara', memulai usahanya dari sebuah warung kecil di Malang 10 tahun yang lalu. Kini, produknya telah diekspor ke 5 negara di Asia.</p><blockquote>'Kunci sukses adalah konsistensi dalam kualitas dan terus berinovasi' - Budi Santoso</blockquote><h3>Awal Mula Usaha</h3><p>Berawal dari resep turun temurun keluarga, Pak Budi memulai usaha keripik singkong dengan modal Rp 5 juta. Ia menjual produknya di pasar tradisional dan warung-warung sekitar.</p><h3>Titik Balik</h3><p>Pada tahun 2020, Pak Budi mengikuti program pelatihan digital marketing dari Kemenkop dan mulai memasarkan produknya secara online. Dalam 6 bulan, orderan meningkat 300%.</p><h3>Pencapaian Saat Ini</h3><ul><li>Omzet mencapai Rp 2 miliar per tahun</li><li>Mempekerjakan 50 karyawan</li><li>Ekspor ke Malaysia, Singapura, Brunei, Thailand, dan Filipina</li><li>Memiliki 10 varian rasa</li><li>Sudah tersertifikasi halal dan BPOM</li></ul><h3>Pesan untuk UMKM Lain</h3><p>'Jangan takut untuk bermimpi besar. Manfaatkan semua program pemerintah dan terus belajar. Yang penting adalah action dan konsistensi,' pesan Pak Budi.</p>",
+    "thumbnail": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA...",
+    "category": "success_story",
+    "is_published": true,
+    "tags": ["success story", "ekspor", "umkm", "inspirasi", "keripik"]
+}
+
+### Update News
+PUT {{baseUrl}}/v1/news/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Pengumuman Program Pelatihan Digital Marketing 2025 (Updated)",
+    "excerpt": "Kementerian Koperasi dan UKM membuka pendaftaran program pelatihan digital marketing untuk UMKM se-Indonesia dengan kuota tambahan",
+    "content": "<h2>Pengumuman Penting - Update</h2><p>Mengingat antusiasme yang luar biasa, kami menambah kuota peserta menjadi 1000 peserta!</p><p>Kementerian Koperasi dan UKM dengan bangga mengumumkan pembukaan pendaftaran program pelatihan digital marketing khusus untuk UMKM se-Indonesia. Program ini dirancang untuk membantu pelaku UMKM meningkatkan kemampuan pemasaran digital mereka.</p><h3>Tentang Program</h3><p>Program pelatihan ini akan berlangsung selama 3 bulan dengan materi yang mencakup:</p><ul><li>Strategi digital marketing</li><li>Social media marketing</li><li>Content creation</li><li>Online advertising</li><li>E-commerce management</li><li><strong>BARU: SEO dan Google Analytics</strong></li></ul>",
+    "thumbnail": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA...",
+    "category": "announcement",
+    "is_published": true,
+    "tags": ["pelatihan", "digital marketing", "umkm", "2025", "update"]
+}
+
+### Publish News
+PUT {{baseUrl}}/v1/news/publish/3
+Authorization: Bearer {{token}}
+
+### Unpublish News
+PUT {{baseUrl}}/v1/news/unpublish/3
+Authorization: Bearer {{token}}
+
+### Delete News
+DELETE {{baseUrl}}/v1/news/1
+Authorization: Bearer {{token}}
 
 #  ~ ============================================
 # $ MOBILE APP API
@@ -709,3 +762,28 @@ Content-Type: application/json
 PUT {{baseUrl}}/v1/mobile/notifications/mark-all-as-read
 Authorization: Bearer {{mobileToken}}
 Content-Type: application/json
+
+### ============================================
+### MOBILE NEWS ENDPOINTS
+### ============================================
+
+### Get Published News (Mobile) - All
+GET {{baseUrl}}/v1/mobile/news?page=1&limit=10
+
+### Get Published News (Mobile) - Filter by Category
+GET {{baseUrl}}/v1/mobile/news?category=tips&page=1&limit=10
+
+### Get Published News (Mobile) - Search
+GET {{baseUrl}}/v1/mobile/news?search=digital&page=1&limit=10
+
+### Get Published News (Mobile) - Filter by Tag
+GET {{baseUrl}}/v1/mobile/news?tag=umkm&page=1&limit=10
+
+### Get News Detail by Slug (Mobile)
+GET {{baseUrl}}/v1/mobile/news/pengumuman-program-pelatihan-digital-marketing-2025
+
+### Get News Detail by Slug (Mobile) - Success Story
+GET {{baseUrl}}/v1/mobile/news/kisah-sukses-dari-warung-kecil-hingga-ekspor-ke-5-negara
+
+### Get News Detail by Slug (Mobile) - Tips
+GET {{baseUrl}}/v1/mobile/news/5-tips-meningkatkan-penjualan-umkm-di-era-digital

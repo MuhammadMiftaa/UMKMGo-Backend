@@ -35,7 +35,7 @@ func (h *NewsHandler) GetAllNews(c *fiber.Ctx) error {
 		params.IsPublished = &isPublished
 	}
 
-	news, total, err := h.newsService.GetAllNews(c.Context(), params)
+	news, _, err := h.newsService.GetAllNews(c.Context(), params)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"statusCode": 400,
@@ -48,12 +48,7 @@ func (h *NewsHandler) GetAllNews(c *fiber.Ctx) error {
 		"statusCode": 200,
 		"status":     true,
 		"message":    "Get all news",
-		"data": fiber.Map{
-			"news":  news,
-			"total": total,
-			"page":  params.Page,
-			"limit": params.Limit,
-		},
+		"data":       news,
 	})
 }
 

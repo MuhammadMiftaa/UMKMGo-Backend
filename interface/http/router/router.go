@@ -1,6 +1,8 @@
 package router
 
 import (
+	"time"
+
 	"UMKMGo-backend/config/db"
 	"UMKMGo-backend/config/env"
 	"UMKMGo-backend/config/log"
@@ -15,7 +17,24 @@ import (
 
 func SetupRouter() *fiber.App {
 	router := fiber.New(fiber.Config{
-		Prefork: env.Cfg.Server.Mode == constant.DEVELOPMENT_MODE,
+		Prefork:       env.Cfg.Server.Mode == constant.DEVELOPMENT_MODE,
+		ServerHeader:  "UMKMGo API",
+		StrictRouting: false,
+		CaseSensitive: false,
+
+		// Body limit - PENTING!
+		BodyLimit: 50 * 1024 * 1024, // 50MB
+
+		// Timeouts
+		ReadTimeout:  time.Second * 300,
+		WriteTimeout: time.Second * 300,
+		IdleTimeout:  time.Second * 120,
+
+		// Disable keep-alive jika ada masalah connection
+		DisableKeepalive: false,
+
+		// Error handler
+		// ErrorHandler: customErrorHandler,
 	})
 
 	router.Use(middleware.CORS(), middleware.Logger())

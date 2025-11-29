@@ -110,6 +110,10 @@ func (m *mockMobileRepository) GetApplicationDetailByID(ctx context.Context, id 
 	return model.Application{}, errors.New("application not found")
 }
 
+func (m *mockMobileRepository) DeleteApplicationDocumentsByApplicationID(ctx context.Context, applicationID int) error {
+	return nil
+}
+
 func (m *mockMobileRepository) GetProgramByID(ctx context.Context, id int) (model.Program, error) {
 	if prog, exists := m.programs[id]; exists && prog.IsActive {
 		return prog, nil
@@ -251,11 +255,10 @@ func TestGetTrainingPrograms(t *testing.T) {
 
 	t.Run("Get training programs when empty", func(t *testing.T) {
 		result, err := service.GetTrainingPrograms(ctx)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected 0 programs, got %d", len(result))
 		}
@@ -282,11 +285,10 @@ func TestGetTrainingPrograms(t *testing.T) {
 		}
 
 		result, err := service.GetTrainingPrograms(ctx)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 2 {
 			t.Errorf("Expected 2 training programs, got %d", len(result))
 		}
@@ -301,11 +303,10 @@ func TestGetTrainingPrograms(t *testing.T) {
 		}
 
 		result, err := service.GetTrainingPrograms(ctx)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		// Should still be 2 from previous test
 		if len(result) != 2 {
 			t.Errorf("Expected 2 active programs, got %d", len(result))
@@ -327,15 +328,14 @@ func TestGetCertificationPrograms(t *testing.T) {
 
 	t.Run("Get certification programs", func(t *testing.T) {
 		result, err := service.GetCertificationPrograms(ctx)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 1 {
 			t.Errorf("Expected 1 certification program, got %d", len(result))
 		}
-		
+
 		if result[0].Title != "Halal Certification" {
 			t.Errorf("Expected title 'Halal Certification', got '%s'", result[0].Title)
 		}
@@ -361,15 +361,14 @@ func TestGetFundingPrograms(t *testing.T) {
 
 	t.Run("Get funding programs", func(t *testing.T) {
 		result, err := service.GetFundingPrograms(ctx)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 1 {
 			t.Errorf("Expected 1 funding program, got %d", len(result))
 		}
-		
+
 		if result[0].Type != "funding" {
 			t.Errorf("Expected type 'funding', got '%s'", result[0].Type)
 		}
@@ -391,11 +390,10 @@ func TestGetProgramDetail(t *testing.T) {
 
 	t.Run("Get existing program detail", func(t *testing.T) {
 		result, err := service.GetProgramDetail(ctx, 1)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.ID != 1 {
 			t.Errorf("Expected ID 1, got %d", result.ID)
 		}
@@ -403,14 +401,14 @@ func TestGetProgramDetail(t *testing.T) {
 
 	t.Run("Get non-existing program", func(t *testing.T) {
 		_, err := service.GetProgramDetail(ctx, 999)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existing program, got none")
 		}
 	})
 }
 
-// Test GetUMKMProfile  
+// Test GetUMKMProfile
 func TestGetUMKMProfile(t *testing.T) {
 	service, mockRepo := setupMobileService()
 	ctx := context.Background()
@@ -434,7 +432,7 @@ func TestGetUMKMProfile(t *testing.T) {
 		// Note: This will fail decryption in real scenario
 		// In actual implementation, mock the vault service
 		_, err := service.GetUMKMProfile(ctx, 1)
-		
+
 		// We expect error because vault decryption will fail in test
 		if err == nil {
 			// If no error, check the result
@@ -444,7 +442,7 @@ func TestGetUMKMProfile(t *testing.T) {
 
 	t.Run("Get non-existing UMKM profile", func(t *testing.T) {
 		_, err := service.GetUMKMProfile(ctx, 999)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existing profile, got none")
 		}
@@ -484,7 +482,6 @@ func TestUpdateUMKMProfile(t *testing.T) {
 		// This will fail due to vault decryption
 		// In production, mock vault service
 		_, err := service.UpdateUMKMProfile(ctx, 1, request)
-		
 		// Expected to fail in test due to vault
 		if err != nil {
 			// Expected in test environment
@@ -505,7 +502,7 @@ func TestUpdateUMKMProfile(t *testing.T) {
 		}
 
 		_, err := service.UpdateUMKMProfile(ctx, 1, request)
-		
+
 		if err == nil {
 			t.Error("Expected error for invalid birth date, got none")
 		}
@@ -538,15 +535,14 @@ func TestGetApplicationList(t *testing.T) {
 
 	t.Run("Get application list for UMKM", func(t *testing.T) {
 		result, err := service.GetApplicationList(ctx, 1)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 1 {
 			t.Errorf("Expected 1 application, got %d", len(result))
 		}
-		
+
 		if result[0].Type != "training" {
 			t.Errorf("Expected type 'training', got '%s'", result[0].Type)
 		}
@@ -559,11 +555,10 @@ func TestGetApplicationList(t *testing.T) {
 		}
 
 		result, err := service.GetApplicationList(ctx, 2)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected 0 applications, got %d", len(result))
 		}
@@ -593,15 +588,14 @@ func TestGetApplicationDetail(t *testing.T) {
 
 	t.Run("Get existing application detail", func(t *testing.T) {
 		result, err := service.GetApplicationDetail(ctx, 1)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.ID != 1 {
 			t.Errorf("Expected ID 1, got %d", result.ID)
 		}
-		
+
 		if result.Type != "training" {
 			t.Errorf("Expected type 'training', got '%s'", result.Type)
 		}
@@ -609,7 +603,7 @@ func TestGetApplicationDetail(t *testing.T) {
 
 	t.Run("Get non-existing application", func(t *testing.T) {
 		_, err := service.GetApplicationDetail(ctx, 999)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existing application, got none")
 		}
@@ -646,15 +640,14 @@ func TestGetPublishedNews(t *testing.T) {
 		}
 
 		result, total, err := service.GetPublishedNews(ctx, params)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if total != 1 {
 			t.Errorf("Expected 1 published news, got %d", total)
 		}
-		
+
 		if len(result) != 1 {
 			t.Errorf("Expected 1 news item, got %d", len(result))
 		}
@@ -684,15 +677,14 @@ func TestGetNewsDetail(t *testing.T) {
 
 	t.Run("Get news detail and increment views", func(t *testing.T) {
 		result, err := service.GetNewsDetail(ctx, "test-news")
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.Title != "Test News" {
 			t.Errorf("Expected title 'Test News', got '%s'", result.Title)
 		}
-		
+
 		// Check if views incremented
 		if result.ViewsCount != 11 {
 			t.Errorf("Expected views count 11, got %d", result.ViewsCount)
@@ -701,7 +693,7 @@ func TestGetNewsDetail(t *testing.T) {
 
 	t.Run("Get non-existing news", func(t *testing.T) {
 		_, err := service.GetNewsDetail(ctx, "non-existing")
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existing news, got none")
 		}
@@ -724,11 +716,10 @@ func TestGetUMKMDocuments(t *testing.T) {
 
 	t.Run("Get UMKM documents", func(t *testing.T) {
 		result, err := service.GetUMKMDocuments(ctx, 1)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		// Should return 3 documents (NIB, NPWP, RevenueRecord)
 		if len(result) != 3 {
 			t.Errorf("Expected 3 documents, got %d", len(result))
@@ -737,7 +728,7 @@ func TestGetUMKMDocuments(t *testing.T) {
 
 	t.Run("Get documents for non-existing UMKM", func(t *testing.T) {
 		_, err := service.GetUMKMDocuments(ctx, 999)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existing UMKM, got none")
 		}
@@ -777,11 +768,10 @@ func TestMobileServiceEdgeCases(t *testing.T) {
 		}
 
 		result, err := service.GetUMKMDocuments(ctx, 2)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected 0 documents, got %d", len(result))
 		}

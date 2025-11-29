@@ -29,13 +29,14 @@ unit_test:
     reports:
       junit: report.xml # Upload JUnit test report to GitLab Pipelines
     paths:
-      - coverage.out    # Upload coverage report to GitLab Artifacts
+      - coverage.out # Upload coverage report to GitLab Artifacts
 
 build_backend:
   stage: build
   image: docker:latest
   needs:
     - job: unit_test
+      artifacts: true
   services:
     - docker:dind
   rules:
@@ -50,6 +51,7 @@ build_backend:
   artifacts:
     paths:
       - umkmgo-backend_build_job_id.txt
+      - coverage.out
 
 build_migrate:
   stage: build
@@ -71,22 +73,40 @@ build_migrate:
 
 release:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image: registry.gitlab.com/gitlab-org/cli:latest
   needs:
+    - job: unit_test
+      artifacts: true
     - job: build_backend
       artifacts: true
     - job: build_migrate
       artifacts: true
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]{4}\.[0-9]{1,3}$/
-  variables:
-    RELEASE_TITLE: "Release ${CI_COMMIT_TAG}"
-    RELEASE_DESC: "Tagged after commit ${CI_COMMIT_SHORT_SHA}, message ${CI_COMMIT_TAG_MESSAGE}"
   script:
     - export BACKEND_BUILD_JOB_ID="$(cat umkmgo-backend_build_job_id.txt)"
     - export MIGRATE_BUILD_JOB_ID="$(cat umkmgo-migrate_build_job_id.txt)"
-    - echo "create release ${CI_COMMIT_TAG} from jobs $BACKEND_BUILD_JOB_ID and $MIGRATE_BUILD_JOB_ID"
-    - release-cli create --name "${RELEASE_TITLE}" --description "${RELEASE_DESC}" --tag-name "${CI_COMMIT_TAG}"
+    - echo "Creating release ${CI_COMMIT_TAG}"
+    # Upload coverage.out sebagai generic package
+    - |
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+           --upload-file coverage.out \
+           "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/coverage/${CI_COMMIT_TAG}/coverage.out"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "Release ${CI_COMMIT_TAG}"
+    description: "Tagged after commit ${CI_COMMIT_SHORT_SHA}, message: ${CI_COMMIT_TAG_MESSAGE}"
+    assets:
+      links:
+        - name: "Backend Image Artifacts"
+          url: "${CI_PROJECT_URL}/-/jobs/${BACKEND_BUILD_JOB_ID}/artifacts/download"
+          link_type: package
+        - name: "Migration Image Artifacts"
+          url: "${CI_PROJECT_URL}/-/jobs/${MIGRATE_BUILD_JOB_ID}/artifacts/download"
+          link_type: package
+        - name: "Coverage Report"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/coverage/${CI_COMMIT_TAG}/coverage.out"
+          link_type: other
 
 deploy-staging:
   stage: deploy

@@ -825,7 +825,6 @@ func (s *mobileService) ReviseApplication(ctx context.Context, userID, applicati
 	if err := s.createNotification(ctx, umkm.ID, application.ID, constant.NotificationSubmitted, constant.NotificationTitleResubmitted, constant.NotificationMessageResubmitted); err != nil {
 		return err
 	}
-	
 
 	// Delete previous documents
 	if err := s.mobileRepo.DeleteApplicationDocumentsByApplicationID(ctx, application.ID); err != nil {

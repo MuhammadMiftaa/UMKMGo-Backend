@@ -197,6 +197,22 @@ func setupMobileServiceForTests() (*mobileService, *mockMobileRepository) {
 		NPWP:     "http://example.com/npwp.pdf",
 	}
 
+	mockMobileRepo.umkms[2] = model.UMKM{
+		ID:           2,
+		UserID:       2,
+		BusinessName: "Second Business",
+		NIK:          "vault:v1:encrypted_nik",
+		KartuNumber:  "vault:v1:encrypted_kartu",
+		BirthDate:    birthDate,
+		User: model.User{
+			ID:    2,
+			Name:  "Test User 2",
+			Email: "test2@example.com",
+		},
+		Province: model.Province{ID: 1, Name: "DKI Jakarta"},
+		City:     model.City{ID: 1, Name: "Jakarta Pusat"},
+	}
+
 	// Setup programs
 	mockMobileRepo.programs[1] = model.Program{
 		ID:          1,

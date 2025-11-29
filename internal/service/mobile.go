@@ -169,10 +169,16 @@ func (s *mobileService) GetProgramDetail(ctx context.Context, id int) (dto.Progr
 	for _, b := range benefits {
 		benefitNames = append(benefitNames, b.Name)
 	}
+	if benefitNames == nil {
+		benefitNames = []string{}
+	}
 
 	var requirementNames []string
 	for _, r := range requirements {
 		requirementNames = append(requirementNames, r.Name)
+	}
+	if requirementNames == nil {
+		requirementNames = []string{}
 	}
 
 	return dto.ProgramDetailMobile{

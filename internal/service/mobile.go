@@ -810,14 +810,14 @@ func (s *mobileService) ReviseApplication(ctx context.Context, userID, applicati
 		return err
 	}
 
-	// Create history
-	if err := s.createApplicationHistory(ctx, application.ID, userID, "submit", "Application resubmitted after revision"); err != nil {
-		return err
+	// Get UMKM with decryption
+	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_revise")
+	if err != nil {
+		return errors.New("UMKM profile not found, please complete your profile first")
 	}
 
-	// Create notification
-	umkm, err := s.mobileRepo.GetUMKMProfileByID(ctx, application.UMKMID)
-	if err != nil {
+	// Create history
+	if err := s.createApplicationHistory(ctx, application.ID, umkm.ID, "submit", "Application resubmitted after revision"); err != nil {
 		return err
 	}
 

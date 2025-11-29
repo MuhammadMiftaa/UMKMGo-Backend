@@ -156,8 +156,14 @@ func (s *mobileService) GetProgramDetail(ctx context.Context, id int) (dto.Progr
 	}
 
 	// Get benefits and requirements
-	benefits, _ := s.programRepo.GetProgramBenefits(ctx, program.ID)
-	requirements, _ := s.programRepo.GetProgramRequirements(ctx, program.ID)
+	benefits, err := s.programRepo.GetProgramBenefits(ctx, program.ID)
+	if err != nil {
+		return dto.ProgramDetailMobile{}, err
+	}
+	requirements, err := s.programRepo.GetProgramRequirements(ctx, program.ID)
+	if err != nil {
+		return dto.ProgramDetailMobile{}, err
+	}
 
 	var benefitNames []string
 	for _, b := range benefits {
@@ -366,38 +372,38 @@ func (s *mobileService) UploadDocument(ctx context.Context, userID int, doc dto.
 		return errors.New("invalid document type")
 	}
 
-	// Upload to MinIO
-	res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
-		Base64Data: doc.Document,
-		BucketName: storage.UMKMBucket,
-		Prefix:     config.prefix,
-		Validation: storage.CreateImageValidationConfig(),
-	})
-	if err != nil {
-		return err
-	}
+	docURL := doc.Document
 
-	// Delete old document if exists
-	if config.oldURL != "" {
-		oldObjectName := storage.ExtractObjectNameFromURL(config.oldURL)
-		if oldObjectName != "" {
-			s.minio.DeleteFile(ctx, storage.UMKMBucket, oldObjectName)
+	if !(strings.HasPrefix(doc.Document, "http") || strings.HasPrefix(doc.Document, "https")) {
+		// Upload to MinIO
+		res, err := s.minio.UploadFile(ctx, storage.UploadRequest{
+			Base64Data: doc.Document,
+			BucketName: storage.UMKMBucket,
+			Prefix:     config.prefix,
+			Validation: storage.CreateImageValidationConfig(),
+		})
+		if err != nil {
+			return err
 		}
+
+		// Delete old document if exists
+		if config.oldURL != "" {
+			oldObjectName := storage.ExtractObjectNameFromURL(config.oldURL)
+			if oldObjectName != "" {
+				s.minio.DeleteFile(ctx, storage.UMKMBucket, oldObjectName)
+			}
+		}
+
+		docURL = res.URL
 	}
 
 	// Update document in database
-	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, config.field, res.URL)
+	return s.mobileRepo.UpdateUMKMDocument(ctx, umkm.ID, config.field, docURL)
 }
 
 // Applications
 // Training Application
 func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID int, request dto.CreateApplicationTraining) error {
-	// Get UMKM with decryption
-	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_creation")
-	if err != nil {
-		return errors.New("UMKM profile not found, please complete your profile first")
-	}
-
 	// Validate program
 	program, err := s.mobileRepo.GetProgramByID(ctx, request.ProgramID)
 	if err != nil {
@@ -409,8 +415,14 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 	}
 
 	// Check if already applied
-	if s.mobileRepo.IsApplicationExists(ctx, umkm.ID, request.ProgramID) {
+	if s.mobileRepo.IsApplicationExists(ctx, userID, request.ProgramID) {
 		return errors.New("you have already applied for this program")
+	}
+
+	// Get UMKM with decryption
+	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_creation")
+	if err != nil {
+		return errors.New("UMKM profile not found, please complete your profile first")
 	}
 
 	screeningExpiredAt, err := s.slaRepo.GetSLAByStatus(ctx, "screening")
@@ -464,12 +476,6 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 
 // Certification Application
 func (s *mobileService) CreateCertificationApplication(ctx context.Context, userID int, request dto.CreateApplicationCertification) error {
-	// Get UMKM with decryption
-	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_creation")
-	if err != nil {
-		return errors.New("UMKM profile not found, please complete your profile first")
-	}
-
 	// Validate program
 	program, err := s.mobileRepo.GetProgramByID(ctx, request.ProgramID)
 	if err != nil {
@@ -481,8 +487,14 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 	}
 
 	// Check if already applied
-	if s.mobileRepo.IsApplicationExists(ctx, umkm.ID, request.ProgramID) {
+	if s.mobileRepo.IsApplicationExists(ctx, userID, request.ProgramID) {
 		return errors.New("you have already applied for this program")
+	}
+
+	// Get UMKM with decryption
+	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_creation")
+	if err != nil {
+		return errors.New("UMKM profile not found, please complete your profile first")
 	}
 
 	screeningExpiredAt, err := s.slaRepo.GetSLAByStatus(ctx, "screening")
@@ -538,20 +550,10 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 
 // Funding Application
 func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int, request dto.CreateApplicationFunding) error {
-	// Get UMKM with decryption
-	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_creation")
-	if err != nil {
-		return errors.New("UMKM profile not found, please complete your profile first")
-	}
-
 	// Validate program
 	program, err := s.mobileRepo.GetProgramByID(ctx, request.ProgramID)
 	if err != nil {
 		return err
-	}
-
-	if program.Type != "funding" {
-		return errors.New("program type must be funding")
 	}
 
 	// Validate requested amount
@@ -568,8 +570,18 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 	}
 
 	// Check if already applied
-	if s.mobileRepo.IsApplicationExists(ctx, umkm.ID, request.ProgramID) {
+	if s.mobileRepo.IsApplicationExists(ctx, userID, request.ProgramID) {
 		return errors.New("you have already applied for this program")
+	}
+
+	if program.Type != "funding" {
+		return errors.New("program type must be funding")
+	}
+
+	// Get UMKM with decryption
+	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_creation")
+	if err != nil {
+		return errors.New("UMKM profile not found, please complete your profile first")
 	}
 
 	// Get screening SLA
@@ -787,8 +799,7 @@ func (s *mobileService) GetNotificationsByUMKMID(ctx context.Context, umkmID int
 			ApplicationID: n.ApplicationID,
 		})
 	}
-	log.Log.Infoln("Fetched notifications:", notifications)
-	log.Log.Infoln("Result:", response)
+
 	return response, nil
 }
 

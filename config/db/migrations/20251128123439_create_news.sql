@@ -3,13 +3,7 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TYPE news_category AS ENUM (
-    'announcement',
-    'event',
-    'program_update',
-    'success_story',
-    'tips',
-    'regulation',
-    'general'
+    'announcement', 'success_story', 'event', 'article'
 );
 -- +goose StatementEnd
 
@@ -21,7 +15,7 @@ CREATE TABLE news (
     excerpt TEXT,
     content TEXT NOT NULL,
     thumbnail TEXT,
-    category news_category NOT NULL DEFAULT 'general',
+    category news_category NOT NULL DEFAULT 'article',
     author_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     is_published BOOLEAN NOT NULL DEFAULT false,
     published_at TIMESTAMPTZ,

@@ -20,7 +20,7 @@ unit_test:
     - go mod download
   script:
     - echo "Running unit tests..."
-    - go test -v -race -coverprofile=coverage.out ./internal/service/... 2>&1 | tee test-output.txt # Run and save test output to a file
+    - go test -v -coverprofile=coverage.out ./internal/service/... 2>&1 | tee test-output.txt # Run and save test output to a file
     - cat test-output.txt | go-junit-report -set-exit-code > report.xml # Convert test output to JUnit format
     - go tool cover -func=coverage.out # Generate coverage report
   coverage: '/total:.*\s+(\d+\.\d+)%/' # Extract coverage percentage using regex

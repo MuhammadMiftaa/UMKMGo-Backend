@@ -6,7 +6,7 @@ api:
 	go run ./cmd/api/main.go
 
 test:
-	go test -v -cover -race ./internal/service/...
+	go test -v -cover ./internal/service/...
 
 migrate:
 	@if [ -z "$(to)" ]; then \

@@ -427,6 +427,50 @@ func (h *MobileHandler) GetApplicationDetail(c *fiber.Ctx) error {
 	})
 }
 
+func (h *MobileHandler) ReviseApplication(c *fiber.Ctx) error {
+	userData, ok := c.Locals("user_data").(dto.UserData)
+	if !ok {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"statusCode": 401,
+			"status":     false,
+			"message":    "Unauthorized",
+		})
+	}
+	
+	id := c.Params("id")
+	intID, err := strconv.Atoi(id)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    "Invalid application ID",
+		})
+	}
+
+	var request []dto.UploadDocumentRequest
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	if err := h.mobileService.ReviseApplication(c.Context(), int(userData.ID), intID, request); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": 400,
+			"status":     false,
+			"message":    err.Error(),
+		})
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Application revised successfully",
+	})
+}
+
 // GetNotificationsByUMKMID retrieves notifications for a specific UMKM ID.
 func (h *MobileHandler) GetNotificationsByUMKMID(c *fiber.Ctx) error {
 	umkmID, ok := c.Locals("userID").(float64)

@@ -34,6 +34,7 @@ const (
 	NotificationGeneralInfo      = "general_info"
 
 	NotificationTitleSubmitted        = "Pengajuan Dikirim"
+	NotificationTitleResubmitted      = "Pengajuan Dikirim Ulang"
 	NotificationTitleApproved         = "Pengajuan Disetujui pada Tahap Screening"
 	NotificationTitleRejected         = "Pengajuan Ditolak pada Tahap Screening"
 	NotificationTitleRevised          = "Pengajuan Direvisi pada Tahap Screening"
@@ -44,6 +45,7 @@ const (
 	NotificationTitleGeneralInfo      = "Informasi Umum"
 
 	NotificationMessageSubmitted        = "Pengajuan Anda telah berhasil dikirim. Silakan tunggu proses screening."
+	NotificationMessageResubmitted      = "Pengajuan ulang Anda telah berhasil dikirim. Silakan tunggu proses screening."
 	NotificationMessageApproved         = "Pengajuan Anda telah disetujui pada tahap screening. Silakan menunggu lanjut ke tahap final."
 	NotificationMessageRejected         = "Pengajuan Anda telah ditolak pada tahap screening. Karena %s. Silakan periksa kembali data yang Anda kirim."
 	NotificationMessageRevised          = "Pengajuan Anda perlu direvisi pada tahap screening. Karena %s. Silakan periksa kembali data yang Anda kirim."
@@ -53,8 +55,8 @@ const (
 	NotificationMessageDocumentRequired = "Dokumen tambahan diperlukan untuk melanjutkan proses pengajuan."
 	NotificationMessageGeneralInfo      = "Informasi umum terkait program atau aplikasi."
 
-	DocumentTypeNib          = "nib"
-	DocumentTypeNPWP        = "npwp"
-	DocumentTypeRevenueRecord = "revenue_record"
+	DocumentTypeNib            = "nib"
+	DocumentTypeNPWP           = "npwp"
+	DocumentTypeRevenueRecord  = "revenue_record"
 	DocumentTypeBusinessPermit = "business_permit"
 )

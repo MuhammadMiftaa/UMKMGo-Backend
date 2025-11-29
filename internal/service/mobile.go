@@ -44,6 +44,7 @@ type MobileService interface {
 	GetApplicationList(ctx context.Context, userID int) ([]dto.ApplicationListMobile, error)
 	GetApplicationDetail(ctx context.Context, id int) (dto.ApplicationDetailMobile, error)
 	GetUMKMProfileWithDecryption(ctx context.Context, userID int, purpose string) (dto.UMKMProfile, error)
+	ReviseApplication(ctx context.Context, userID, applicationID int, documents []dto.UploadDocumentRequest) error
 
 	// Notifications
 	GetNotificationsByUMKMID(ctx context.Context, umkmID int) ([]dto.NotificationResponse, error)
@@ -475,7 +476,7 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 	}
 
 	// Process and save documents
-	go s.processAndSaveDocuments(createdApp.ID, request.Documents)
+	go s.processAndSaveDocuments(ctx, createdApp.ID, request.Documents)
 
 	return nil
 }
@@ -549,7 +550,7 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 	}
 
 	// Process and save documents
-	go s.processAndSaveDocuments(createdApp.ID, request.Documents)
+	go s.processAndSaveDocuments(ctx, createdApp.ID, request.Documents)
 
 	return nil
 }
@@ -641,7 +642,7 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 	}
 
 	// Process and save documents
-	go s.processAndSaveDocuments(createdApp.ID, request.Documents)
+	go s.processAndSaveDocuments(ctx, createdApp.ID, request.Documents)
 
 	return nil
 }
@@ -780,6 +781,58 @@ func (s *mobileService) GetApplicationDetail(ctx context.Context, id int) (dto.A
 	}
 
 	return detail, nil
+}
+
+func (s *mobileService) ReviseApplication(ctx context.Context, userID, applicationID int, documents []dto.UploadDocumentRequest) error {
+	application, err := s.mobileRepo.GetApplicationDetailByID(ctx, applicationID)
+	if err != nil {
+		return err
+	}
+
+	if application.Status != constant.ApplicationStatusRevised {
+		return errors.New("application is not in a revisable state")
+	}
+
+	documentsMap := make(map[string]string)
+	for _, doc := range documents {
+		documentsMap[doc.Type] = doc.Document
+	}
+
+	// Process and save documents
+	go s.processAndSaveDocuments(ctx, applicationID, documentsMap)
+
+	// Update application status to 'resubmitted'
+	application.Status = constant.ApplicationStatusScreening
+	application.SubmittedAt = time.Now()
+
+	_, err = s.applicationRepo.UpdateApplication(ctx, application)
+	if err != nil {
+		return err
+	}
+
+	// Create history
+	if err := s.createApplicationHistory(ctx, application.ID, userID, "resubmit", "Application resubmitted after revision"); err != nil {
+		return err
+	}
+
+	// Create notification
+	umkm, err := s.mobileRepo.GetUMKMProfileByID(ctx, application.UMKMID)
+	if err != nil {
+		return err
+	}
+
+	// Create notification
+	if err := s.createNotification(ctx, umkm.ID, application.ID, constant.NotificationSubmitted, constant.NotificationTitleResubmitted, constant.NotificationMessageResubmitted); err != nil {
+		return err
+	}
+	
+
+	// Delete previous documents
+	if err := s.mobileRepo.DeleteApplicationDocumentsByApplicationID(ctx, application.ID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *mobileService) GetNotificationsByUMKMID(ctx context.Context, umkmID int) ([]dto.NotificationResponse, error) {
@@ -960,7 +1013,7 @@ func (s *mobileService) mapProgramToDTO(p model.Program) dto.ProgramListMobile {
 	}
 }
 
-func (s *mobileService) processAndSaveDocuments(applicationID int, providedDocs map[string]string) {
+func (s *mobileService) processAndSaveDocuments(ctx context.Context, applicationID int, providedDocs map[string]string) {
 	var appDocuments []model.ApplicationDocument
 	var url string
 
@@ -988,6 +1041,11 @@ func (s *mobileService) processAndSaveDocuments(applicationID int, providedDocs 
 			Type:          docType,
 			File:          url,
 		})
+	}
+
+	err := s.mobileRepo.CreateApplicationDocuments(ctx, appDocuments)
+	if err != nil {
+		log.Log.Errorf("failed to save application documents for application ID %d: %v", applicationID, err)
 	}
 }
 

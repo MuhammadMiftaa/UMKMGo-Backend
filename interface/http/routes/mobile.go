@@ -64,6 +64,7 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 			applications.Post("/funding", mobileHandler.CreateFundingApplication)
 			applications.Get("/", mobileHandler.GetApplicationList)
 			applications.Get("/:id", mobileHandler.GetApplicationDetail)
+			applications.Put("/:id", mobileHandler.ReviseApplication)
 		}
 
 		// Notifications

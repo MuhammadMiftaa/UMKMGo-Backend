@@ -31,6 +31,7 @@ type MobileRepository interface {
 	CreateFundingApplication(ctx context.Context, funding model.FundingApplication) error
 	GetApplicationsByUMKMID(ctx context.Context, umkmID int) ([]model.Application, error)
 	GetApplicationDetailByID(ctx context.Context, id int) (model.Application, error)
+	DeleteApplicationDocumentsByApplicationID(ctx context.Context, applicationID int) error
 
 	// Validations
 	GetProgramByID(ctx context.Context, id int) (model.Program, error)
@@ -207,6 +208,16 @@ func (r *mobileRepository) GetApplicationDetailByID(ctx context.Context, id int)
 		return model.Application{}, errors.New("application not found")
 	}
 	return application, nil
+}
+
+func (r *mobileRepository) DeleteApplicationDocumentsByApplicationID(ctx context.Context, applicationID int) error {
+	err := r.db.WithContext(ctx).
+		Where("application_id = ?", applicationID).
+		Delete(&model.ApplicationDocument{}).Error
+	if err != nil {
+		return errors.New("failed to delete application documents")
+	}
+	return nil
 }
 
 // Validations

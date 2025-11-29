@@ -811,13 +811,13 @@ func (s *mobileService) ReviseApplication(ctx context.Context, userID, applicati
 	}
 
 	// Get UMKM with decryption
-	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_revise")
+	umkm, err := s.getUMKMWithDecryption(ctx, userID, "application_creation")
 	if err != nil {
 		return errors.New("UMKM profile not found, please complete your profile first")
 	}
 
 	// Create history
-	if err := s.createApplicationHistory(ctx, application.ID, umkm.ID, "submit", "Application resubmitted after revision"); err != nil {
+	if err := s.createApplicationHistory(ctx, application.ID, umkm.UserID, "submit", "Application resubmitted after revision"); err != nil {
 		return err
 	}
 

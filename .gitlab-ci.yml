@@ -12,14 +12,16 @@ variables:
 
 unit_test:
   stage: test
-  image: golang:1.24.4-alpine
+  image: golang:1.24.4
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]{4}\.[0-9]{1,3}$/
   before_script:
+    - go install github.com/jstemmer/go-junit-report/v2@latest
     - go mod download
   script:
     - echo "Running unit tests..."
-    - go test -v -race -coverprofile=coverage.out ./internal/service/...
+    - go test -v -race -coverprofile=coverage.out ./internal/service/... 2>&1 | tee test-output.txt
+    - cat test-output.txt | go-junit-report -set-exit-code > report.xml
     - go tool cover -func=coverage.out
   coverage: '/total:.*\s+(\d+\.\d+)%/'
   artifacts:

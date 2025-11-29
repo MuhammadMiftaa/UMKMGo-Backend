@@ -811,7 +811,7 @@ func (s *mobileService) ReviseApplication(ctx context.Context, userID, applicati
 	}
 
 	// Create history
-	if err := s.createApplicationHistory(ctx, application.ID, userID, "resubmit", "Application resubmitted after revision"); err != nil {
+	if err := s.createApplicationHistory(ctx, application.ID, userID, "submit", "Application resubmitted after revision"); err != nil {
 		return err
 	}
 

@@ -145,7 +145,7 @@ func (s *slaService) ExportPrograms(ctx context.Context, request dto.ExportReque
 // Helper functions for PDF generation
 func (s *slaService) generateApplicationsPDF(applications []model.Application, appType string) ([]byte, string, error) {
 	// Simple text-based PDF content
-	content := fmt.Sprintf("LAPORAN PENGAJUAN UMKM\n")
+	content := "LAPORAN PENGAJUAN UMKM\n"
 	content += fmt.Sprintf("Tanggal: %s\n\n", time.Now().Format("2006-01-02 15:04:05"))
 	content += fmt.Sprintf("Tipe: %s\n\n", appType)
 	content += fmt.Sprintf("Total Pengajuan: %d\n\n", len(applications))
@@ -163,7 +163,7 @@ func (s *slaService) generateApplicationsPDF(applications []model.Application, a
 }
 
 func (s *slaService) generateProgramsPDF(programs []model.Program, appType string) ([]byte, string, error) {
-	content := fmt.Sprintf("LAPORAN PROGRAM UMKM\n")
+	content := "LAPORAN PROGRAM UMKM\n"
 	content += fmt.Sprintf("Tanggal: %s\n\n", time.Now().Format("2006-01-02 15:04:05"))
 	content += fmt.Sprintf("Tipe: %s\n\n", appType)
 	content += fmt.Sprintf("Total Program: %d\n\n", len(programs))

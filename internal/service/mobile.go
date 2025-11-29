@@ -457,7 +457,7 @@ func (s *mobileService) CreateTrainingApplication(ctx context.Context, userID in
 	}
 
 	// Process and save documents
-	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
+	go s.processAndSaveDocuments(createdApp.ID, request.Documents)
 
 	return nil
 }
@@ -531,7 +531,7 @@ func (s *mobileService) CreateCertificationApplication(ctx context.Context, user
 	}
 
 	// Process and save documents
-	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
+	go s.processAndSaveDocuments(createdApp.ID, request.Documents)
 
 	return nil
 }
@@ -623,7 +623,7 @@ func (s *mobileService) CreateFundingApplication(ctx context.Context, userID int
 	}
 
 	// Process and save documents
-	go s.processAndSaveDocuments(createdApp.ID, umkm, request.Documents)
+	go s.processAndSaveDocuments(createdApp.ID, request.Documents)
 
 	return nil
 }
@@ -943,7 +943,7 @@ func (s *mobileService) mapProgramToDTO(p model.Program) dto.ProgramListMobile {
 	}
 }
 
-func (s *mobileService) processAndSaveDocuments(applicationID int, umkm model.UMKM, providedDocs map[string]string) {
+func (s *mobileService) processAndSaveDocuments(applicationID int, providedDocs map[string]string) {
 	var appDocuments []model.ApplicationDocument
 	var url string
 
@@ -957,7 +957,7 @@ func (s *mobileService) processAndSaveDocuments(applicationID int, umkm model.UM
 				Validation: storage.CreateImageValidationConfig(),
 			})
 			if err != nil {
-				log.Log.Errorf("failed to upload %s document, %w, for application ID %d", docType, err, applicationID)
+				log.Log.Errorf("failed to upload %s document, %v, for application ID %d", docType, err, applicationID)
 			}
 
 			log.Log.Infof("uploaded %s document for application ID %d: %s", docType, applicationID, res.URL)
@@ -972,8 +972,6 @@ func (s *mobileService) processAndSaveDocuments(applicationID int, umkm model.UM
 			File:          url,
 		})
 	}
-
-	return
 }
 
 func (s *mobileService) createApplicationHistory(ctx context.Context, applicationID, userID int, status, notes string) error {

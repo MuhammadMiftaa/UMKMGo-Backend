@@ -3,6 +3,7 @@ module UMKMGo-backend
 go 1.24.4
 
 require (
+	github.com/MuhammadMiftaa/Internal/golang/otp-whatsapp v0.0.0-20251117114631-0352972af49f
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofiber/fiber/v2 v2.52.9
@@ -10,13 +11,13 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/minio/minio-go/v7 v7.0.97
 	github.com/sirupsen/logrus v1.9.3
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	golang.org/x/crypto v0.40.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.30.3
 )
 
 require (
-	github.com/MuhammadMiftaa/Internal/golang/otp-whatsapp v0.0.0-20251117114631-0352972af49f // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -56,7 +57,6 @@ require (
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
-	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e // indirect
 	github.com/tinylib/msgp v1.3.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect

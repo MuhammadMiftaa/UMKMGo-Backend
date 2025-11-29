@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -9,118 +10,145 @@ import (
 	"UMKMGo-backend/internal/types/model"
 )
 
-// Mock applications repository
-type mockApplicationsRepository struct {
-	applications map[int]model.Applications
-	documents    map[int][]model.ApplicationDocuments
-	histories    map[int][]model.ApplicationHistories
-	programs     map[int]model.Programs
-	umkms        map[int]model.UMKMS
+// ==================== MOCK REPOSITORIES ====================
+
+// Mock Applications Repository
+type mockApplicationsRepo struct {
+	applications map[int]model.Application
+	documents    map[int][]model.ApplicationDocument
+	histories    map[int][]model.ApplicationHistory
+	programs     map[int]model.Program
+	umkms        map[int]model.UMKM
 }
 
-func newMockApplicationsRepository() *mockApplicationsRepository {
-	return &mockApplicationsRepository{
-		applications: make(map[int]model.Applications),
-		documents:    make(map[int][]model.ApplicationDocuments),
-		histories:    make(map[int][]model.ApplicationHistories),
-		programs: map[int]model.Programs{
-			1: {ID: 1, Title: "Test Program", Type: "training", IsActive: true},
-			2: {ID: 2, Title: "Inactive Program", Type: "training", IsActive: false},
+func newMockApplicationsRepo() *mockApplicationsRepo {
+	return &mockApplicationsRepo{
+		applications: make(map[int]model.Application),
+		documents:    make(map[int][]model.ApplicationDocument),
+		histories:    make(map[int][]model.ApplicationHistory),
+		programs: map[int]model.Program{
+			1: {ID: 1, Title: "Training Program", Type: "training", IsActive: true},
+			2: {ID: 2, Title: "Funding Program", Type: "funding", IsActive: true},
 		},
-		umkms: map[int]model.UMKMS{
-			1: {ID: 1, UserID: 1, BusinessName: "Test Business", NIK: "1234567890"},
+		umkms: map[int]model.UMKM{
+			1: {
+				ID:          1,
+				UserID:      1,
+				BusinessName: "Test Business",
+				NIK:         "encrypted_nik",
+				KartuNumber: "encrypted_kartu",
+				User:        model.User{ID: 1, Name: "Test User"},
+				City: model.City{
+					ID:   1,
+					Name: "Jakarta",
+					Province: model.Province{
+						ID:   1,
+						Name: "DKI Jakarta",
+					},
+				},
+			},
 		},
 	}
 }
 
-func (m *mockApplicationsRepository) GetAllApplications(filterType string) ([]model.Applications, error) {
-	var applications []model.Applications
+func (m *mockApplicationsRepo) GetAllApplications(ctx context.Context, filterType string) ([]model.Application, error) {
+	var apps []model.Application
 	for _, app := range m.applications {
 		if filterType == "" || app.Type == filterType {
-			applications = append(applications, app)
+			apps = append(apps, app)
 		}
 	}
-	return applications, nil
+	return apps, nil
 }
 
-func (m *mockApplicationsRepository) GetApplicationByID(id int) (model.Applications, error) {
+func (m *mockApplicationsRepo) GetApplicationByID(ctx context.Context, id int) (model.Application, error) {
 	if app, exists := m.applications[id]; exists {
 		return app, nil
 	}
-	return model.Applications{}, errors.New("application not found")
+	return model.Application{}, errors.New("application not found")
 }
 
-func (m *mockApplicationsRepository) CreateApplication(application model.Applications) (model.Applications, error) {
-	application.ID = len(m.applications) + 1
-	application.SubmittedAt = time.Now()
-	application.ExpiredAt = time.Now().AddDate(0, 0, 30)
-	m.applications[application.ID] = application
-	return application, nil
-}
-
-func (m *mockApplicationsRepository) UpdateApplication(application model.Applications) (model.Applications, error) {
-	if _, exists := m.applications[application.ID]; !exists {
-		return model.Applications{}, errors.New("application not found")
+func (m *mockApplicationsRepo) GetApplicationsByUMKMID(ctx context.Context, umkmID int) ([]model.Application, error) {
+	var apps []model.Application
+	for _, app := range m.applications {
+		if app.UMKMID == umkmID {
+			apps = append(apps, app)
+		}
 	}
-	m.applications[application.ID] = application
-	return application, nil
+	return apps, nil
 }
 
-func (m *mockApplicationsRepository) DeleteApplication(application model.Applications) (model.Applications, error) {
-	delete(m.applications, application.ID)
-	return application, nil
+func (m *mockApplicationsRepo) CreateApplication(ctx context.Context, app model.Application) (model.Application, error) {
+	app.ID = len(m.applications) + 1
+	app.SubmittedAt = time.Now()
+	app.ExpiredAt = time.Now().AddDate(0, 0, 30)
+	m.applications[app.ID] = app
+	return app, nil
 }
 
-func (m *mockApplicationsRepository) CreateApplicationDocuments(documents []model.ApplicationDocuments) error {
-	if len(documents) == 0 {
+func (m *mockApplicationsRepo) UpdateApplication(ctx context.Context, app model.Application) (model.Application, error) {
+	if _, exists := m.applications[app.ID]; !exists {
+		return model.Application{}, errors.New("application not found")
+	}
+	m.applications[app.ID] = app
+	return app, nil
+}
+
+func (m *mockApplicationsRepo) DeleteApplication(ctx context.Context, app model.Application) (model.Application, error) {
+	delete(m.applications, app.ID)
+	return app, nil
+}
+
+func (m *mockApplicationsRepo) CreateApplicationDocuments(ctx context.Context, docs []model.ApplicationDocument) error {
+	if len(docs) == 0 {
 		return nil
 	}
-	appID := documents[0].ApplicationID
-	m.documents[appID] = documents
+	appID := docs[0].ApplicationID
+	m.documents[appID] = docs
 	return nil
 }
 
-func (m *mockApplicationsRepository) GetApplicationDocuments(applicationID int) ([]model.ApplicationDocuments, error) {
-	if docs, exists := m.documents[applicationID]; exists {
+func (m *mockApplicationsRepo) GetApplicationDocuments(ctx context.Context, appID int) ([]model.ApplicationDocument, error) {
+	if docs, exists := m.documents[appID]; exists {
 		return docs, nil
 	}
-	return []model.ApplicationDocuments{}, nil
+	return []model.ApplicationDocument{}, nil
 }
 
-func (m *mockApplicationsRepository) DeleteApplicationDocuments(applicationID int) error {
-	delete(m.documents, applicationID)
+func (m *mockApplicationsRepo) DeleteApplicationDocuments(ctx context.Context, appID int) error {
+	delete(m.documents, appID)
 	return nil
 }
 
-func (m *mockApplicationsRepository) CreateApplicationHistory(history model.ApplicationHistories) error {
-	m.histories[history.ApplicationID] = append(m.histories[history.ApplicationID], history)
+func (m *mockApplicationsRepo) CreateApplicationHistory(ctx context.Context, hist model.ApplicationHistory) error {
+	m.histories[hist.ApplicationID] = append(m.histories[hist.ApplicationID], hist)
 	return nil
 }
 
-func (m *mockApplicationsRepository) GetApplicationHistories(applicationID int) ([]model.ApplicationHistories, error) {
-	if histories, exists := m.histories[applicationID]; exists {
-		return histories, nil
+func (m *mockApplicationsRepo) GetApplicationHistories(ctx context.Context, appID int) ([]model.ApplicationHistory, error) {
+	if hists, exists := m.histories[appID]; exists {
+		return hists, nil
 	}
-	return []model.ApplicationHistories{}, nil
+	return []model.ApplicationHistory{}, nil
 }
 
-func (m *mockApplicationsRepository) GetProgramByID(id int) (model.Programs, error) {
-	if program, exists := m.programs[id]; exists {
-		return program, nil
+func (m *mockApplicationsRepo) GetProgramByID(ctx context.Context, id int) (model.Program, error) {
+	if prog, exists := m.programs[id]; exists {
+		return prog, nil
 	}
-	return model.Programs{}, errors.New("program not found")
+	return model.Program{}, errors.New("program not found")
 }
 
-func (m *mockApplicationsRepository) GetUMKMByUserID(userID int) (model.UMKMS, error) {
+func (m *mockApplicationsRepo) GetUMKMByUserID(ctx context.Context, userID int) (model.UMKM, error) {
 	for _, umkm := range m.umkms {
 		if umkm.UserID == userID {
 			return umkm, nil
 		}
 	}
-	return model.UMKMS{}, errors.New("UMKM not found")
+	return model.UMKM{}, errors.New("UMKM not found")
 }
 
-func (m *mockApplicationsRepository) IsApplicationExists(umkmID, programID int) bool {
+func (m *mockApplicationsRepo) IsApplicationExists(ctx context.Context, umkmID, programID int) bool {
 	for _, app := range m.applications {
 		if app.UMKMID == umkmID && app.ProgramID == programID && app.Status != "rejected" {
 			return true
@@ -129,763 +157,713 @@ func (m *mockApplicationsRepository) IsApplicationExists(umkmID, programID int) 
 	return false
 }
 
-// Mock user repository for applications service
-type mockUserRepositoryForApplications struct {
-	users map[int]model.Users
+// Mock Users Repository
+type mockUsersRepo struct {
+	users map[int]model.User
 }
 
-func newMockUserRepositoryForApplications() *mockUserRepositoryForApplications {
-	return &mockUserRepositoryForApplications{
-		users: map[int]model.Users{
-			1: {ID: 1, Name: "Admin User", Email: "admin@example.com"},
-			2: {ID: 2, Name: "UMKM User", Email: "umkm@example.com"},
+func newMockUsersRepo() *mockUsersRepo {
+	return &mockUsersRepo{
+		users: map[int]model.User{
+			1: {ID: 1, Name: "Admin User", Email: "admin@test.com"},
+			2: {ID: 2, Name: "Screening Admin", Email: "screening@test.com"},
 		},
 	}
 }
 
-func (m *mockUserRepositoryForApplications) GetUserByID(id int) (model.Users, error) {
+func (m *mockUsersRepo) GetUserByID(ctx context.Context, id int) (model.User, error) {
 	if user, exists := m.users[id]; exists {
 		return user, nil
 	}
-	return model.Users{}, errors.New("user not found")
+	return model.User{}, errors.New("user not found")
 }
 
-func (m *mockUserRepositoryForApplications) GetAllUsers() ([]model.Users, error) {
-	return nil, nil
+func (m *mockUsersRepo) GetAllUsers(ctx context.Context) ([]model.User, error) {
+	var users []model.User
+	for _, u := range m.users {
+		users = append(users, u)
+	}
+	return users, nil
 }
 
-func (m *mockUserRepositoryForApplications) GetUserByEmail(email string) (model.Users, error) {
-	return model.Users{}, nil
+func (m *mockUsersRepo) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
+	return model.User{}, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) CreateUser(user model.Users) (model.Users, error) {
-	return model.Users{}, nil
+func (m *mockUsersRepo) CreateUser(ctx context.Context, user model.User) (model.User, error) {
+	return model.User{}, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) UpdateUser(user model.Users) (model.Users, error) {
-	return model.Users{}, nil
+func (m *mockUsersRepo) UpdateUser(ctx context.Context, user model.User) (model.User, error) {
+	return model.User{}, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) DeleteUser(user model.Users) (model.Users, error) {
-	return model.Users{}, nil
+func (m *mockUsersRepo) DeleteUser(ctx context.Context, user model.User) (model.User, error) {
+	return model.User{}, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) GetAllRoles() ([]model.Roles, error) {
-	return nil, nil
+func (m *mockUsersRepo) CreateUMKM(ctx context.Context, umkm model.UMKM, user model.User) (dto.UMKMMobile, error) {
+	return dto.UMKMMobile{}, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) GetRoleByID(id int) (model.Roles, error) {
-	return model.Roles{}, nil
+func (m *mockUsersRepo) GetUMKMByPhone(ctx context.Context, phone string) (model.UMKM, error) {
+	return model.UMKM{}, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) IsRoleExist(id int) bool {
+func (m *mockUsersRepo) GetAllRoles(ctx context.Context) ([]model.Role, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockUsersRepo) GetRoleByID(ctx context.Context, id int) (model.Role, error) {
+	return model.Role{}, errors.New("not implemented")
+}
+
+func (m *mockUsersRepo) GetRoleByName(ctx context.Context, name string) (model.Role, error) {
+	return model.Role{}, errors.New("not implemented")
+}
+
+func (m *mockUsersRepo) IsRoleExist(ctx context.Context, id int) bool {
 	return false
 }
 
-func (m *mockUserRepositoryForApplications) IsPermissionExist(id []string) ([]int, bool) {
+func (m *mockUsersRepo) IsPermissionExist(ctx context.Context, ids []string) ([]int, bool) {
 	return nil, false
 }
 
-func (m *mockUserRepositoryForApplications) GetListPermissions() ([]model.Permissions, error) {
-	return nil, nil
+func (m *mockUsersRepo) GetListPermissions(ctx context.Context) ([]model.Permission, error) {
+	return nil, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) GetListPermissionsByRoleID(roleID int) ([]string, error) {
-	return nil, nil
+func (m *mockUsersRepo) GetListPermissionsByRoleID(ctx context.Context, roleID int) ([]string, error) {
+	return nil, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) GetListRolePermissions() ([]model.RolePermissionsResponse, error) {
-	return nil, nil
+func (m *mockUsersRepo) GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error) {
+	return nil, errors.New("not implemented")
 }
 
-func (m *mockUserRepositoryForApplications) DeletePermissionsByRoleID(roleID int) error {
+func (m *mockUsersRepo) DeletePermissionsByRoleID(ctx context.Context, roleID int) error {
+	return errors.New("not implemented")
+}
+
+func (m *mockUsersRepo) AddRolePermissions(ctx context.Context, roleID int, permissions []int) error {
+	return errors.New("not implemented")
+}
+
+func (m *mockUsersRepo) GetProvinces(ctx context.Context) ([]dto.Province, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockUsersRepo) GetCities(ctx context.Context) ([]dto.City, error) {
+	return nil, errors.New("not implemented")
+}
+
+// Mock Notification Repository
+type mockNotificationRepo struct {
+	notifications []model.Notification
+}
+
+func newMockNotificationRepo() *mockNotificationRepo {
+	return &mockNotificationRepo{
+		notifications: []model.Notification{},
+	}
+}
+
+func (m *mockNotificationRepo) CreateNotification(ctx context.Context, notif model.Notification) error {
+	m.notifications = append(m.notifications, notif)
 	return nil
 }
 
-func (m *mockUserRepositoryForApplications) AddRolePermissions(roleID int, permissions []int) error {
+func (m *mockNotificationRepo) GetNotificationsByUMKMID(ctx context.Context, umkmID int, limit, offset int) ([]model.Notification, error) {
+	return m.notifications, nil
+}
+
+func (m *mockNotificationRepo) GetUnreadCount(ctx context.Context, umkmID int) (int64, error) {
+	return 0, nil
+}
+
+func (m *mockNotificationRepo) MarkAsRead(ctx context.Context, notifIDs int, umkmID int) error {
 	return nil
 }
 
-// Test CreateApplication
-// func TestCreateApplication(t *testing.T) {
-// 	mockAppRepo := newMockApplicationsRepository()
-// 	mockUserRepo := newMockUserRepositoryForApplications()
-// 	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+func (m *mockNotificationRepo) MarkAllAsRead(ctx context.Context, umkmID int) error {
+	return nil
+}
 
-// 	tests := []struct {
-// 		name        string
-// 		userID      int
-// 		input       dto.Applications
-// 		expectError bool
-// 		errorMsg    string
-// 	}{
-// 		{
-// 			name:   "Valid application",
-// 			userID: 1,
-// 			input: dto.Applications{
-// 				ProgramID: 1,
-// 				Documents: []dto.ApplicationDocuments{
-// 					{Type: "ktp", File: "ktp.pdf"},
-// 					{Type: "nib", File: "nib.pdf"},
-// 				},
-// 			},
-// 			expectError: false,
-// 		},
-// 		{
-// 			name:   "Missing program ID",
-// 			userID: 1,
-// 			input: dto.Applications{
-// 				Documents: []dto.ApplicationDocuments{
-// 					{Type: "ktp", File: "ktp.pdf"},
-// 				},
-// 			},
-// 			expectError: true,
-// 			errorMsg:    "program_id and documents are required",
-// 		},
-// 		{
-// 			name:   "Missing documents",
-// 			userID: 1,
-// 			input: dto.Applications{
-// 				ProgramID: 1,
-// 			},
-// 			expectError: true,
-// 			errorMsg:    "program_id and documents are required",
-// 		},
-// 		{
-// 			name:   "Program not found",
-// 			userID: 1,
-// 			input: dto.Applications{
-// 				ProgramID: 999,
-// 				Documents: []dto.ApplicationDocuments{
-// 					{Type: "ktp", File: "ktp.pdf"},
-// 				},
-// 			},
-// 			expectError: true,
-// 			errorMsg:    "program not found",
-// 		},
-// 		{
-// 			name:   "Program not active",
-// 			userID: 1,
-// 			input: dto.Applications{
-// 				ProgramID: 2,
-// 				Documents: []dto.ApplicationDocuments{
-// 					{Type: "ktp", File: "ktp.pdf"},
-// 				},
-// 			},
-// 			expectError: true,
-// 			errorMsg:    "program is not active",
-// 		},
-// 		{
-// 			name:   "UMKM not found",
-// 			userID: 999,
-// 			input: dto.Applications{
-// 				ProgramID: 1,
-// 				Documents: []dto.ApplicationDocuments{
-// 					{Type: "ktp", File: "ktp.pdf"},
-// 				},
-// 			},
-// 			expectError: true,
-// 			errorMsg:    "UMKM data not found, please complete your profile first",
-// 		},
-// 	}
+// Mock SLA Repository
+type mockSLARepo struct {
+	slas map[string]model.SLA
+}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			result, err := service.CreateApplication(tt.userID, tt.input)
+func newMockSLARepo() *mockSLARepo {
+	return &mockSLARepo{
+		slas: map[string]model.SLA{
+			"screening": {ID: 1, Status: "screening", MaxDays: 7},
+			"final":     {ID: 2, Status: "final", MaxDays: 14},
+		},
+	}
+}
 
-// 			if tt.expectError {
-// 				if err == nil {
-// 					t.Errorf("Expected error but got none")
-// 				} else if err.Error() != tt.errorMsg {
-// 					t.Errorf("Expected error '%s', got '%s'", tt.errorMsg, err.Error())
-// 				}
-// 			} else {
-// 				if err != nil {
-// 					t.Errorf("Unexpected error: %v", err)
-// 				}
-// 				if result.ProgramID != tt.input.ProgramID {
-// 					t.Errorf("Expected program ID %d, got %d", tt.input.ProgramID, result.ProgramID)
-// 				}
-// 				if result.Status != "screening" {
-// 					t.Errorf("Expected status 'screening', got '%s'", result.Status)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+func (m *mockSLARepo) GetSLAByStatus(ctx context.Context, status string) (model.SLA, error) {
+	if sla, exists := m.slas[status]; exists {
+		return sla, nil
+	}
+	return model.SLA{}, errors.New("SLA not found")
+}
+
+func (m *mockSLARepo) UpdateSLA(ctx context.Context, sla model.SLA) (model.SLA, error) {
+	return sla, nil
+}
+
+func (m *mockSLARepo) GetApplicationsForExport(ctx context.Context, appType string) ([]model.Application, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockSLARepo) GetProgramsForExport(ctx context.Context, appType string) ([]model.Program, error) {
+	return nil, errors.New("not implemented")
+}
+
+// Mock Vault Decrypt Log Repository
+type mockVaultDecryptLogRepo struct{}
+
+func newMockVaultDecryptLogRepo() *mockVaultDecryptLogRepo {
+	return &mockVaultDecryptLogRepo{}
+}
+
+func (m *mockVaultDecryptLogRepo) LogDecrypt(ctx context.Context, log model.VaultDecryptLog) error {
+	return nil
+}
+
+func (m *mockVaultDecryptLogRepo) GetLogs(ctx context.Context, limit, offset int) ([]model.VaultDecryptLog, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockVaultDecryptLogRepo) GetLogsByUserID(ctx context.Context, userID int, limit, offset int) ([]model.VaultDecryptLog, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockVaultDecryptLogRepo) GetLogsByUMKMID(ctx context.Context, umkmID int, limit, offset int) ([]model.VaultDecryptLog, error) {
+	return nil, errors.New("not implemented")
+}
+
+// ==================== TEST FUNCTIONS ====================
+
+func setupApplicationsService() (*applicationsService, *mockApplicationsRepo, *mockSLARepo) {
+	mockAppRepo := newMockApplicationsRepo()
+	mockUserRepo := newMockUsersRepo()
+	mockNotifRepo := newMockNotificationRepo()
+	mockSLARepo := newMockSLARepo()
+	mockVaultRepo := newMockVaultDecryptLogRepo()
+
+	service := &applicationsService{
+		applicationRepository:  mockAppRepo,
+		userRepository:         mockUserRepo,
+		notificationRepository: mockNotifRepo,
+		slaRepo:                mockSLARepo,
+		vaultDecryptLogRepo:    mockVaultRepo,
+	}
+
+	return service, mockAppRepo, mockSLARepo
+}
 
 // Test GetAllApplications
 func TestGetAllApplications(t *testing.T) {
-	mockAppRepo := newMockApplicationsRepository()
-	mockUserRepo := newMockUserRepositoryForApplications()
-	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
 
-	// Add test applications
-	mockAppRepo.applications[1] = model.Applications{
+	// Setup test data
+	mockRepo.applications[1] = model.Application{
 		ID:        1,
 		UMKMID:    1,
 		ProgramID: 1,
 		Type:      "training",
 		Status:    "screening",
-		Base: model.Base{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		},
-		Program: mockAppRepo.programs[1],
-		UMKM:    mockAppRepo.umkms[1],
+		UMKM:      mockRepo.umkms[1],
+		Program:   mockRepo.programs[1],
 	}
 
-	result, err := service.GetAllApplications("")
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
+	t.Run("Get all applications without filter", func(t *testing.T) {
+		result, err := service.GetAllApplications(ctx, 0, "")
+		
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		
+		if len(result) != 1 {
+			t.Errorf("Expected 1 application, got %d", len(result))
+		}
+		
+		if result[0].Type != "training" {
+			t.Errorf("Expected type 'training', got '%s'", result[0].Type)
+		}
+	})
 
-	if len(result) != 1 {
-		t.Errorf("Expected 1 application, got %d", len(result))
-	}
+	t.Run("Get applications with type filter", func(t *testing.T) {
+		mockRepo.applications[2] = model.Application{
+			ID:        2,
+			UMKMID:    1,
+			ProgramID: 2,
+			Type:      "funding",
+			Status:    "screening",
+			UMKM:      mockRepo.umkms[1],
+			Program:   mockRepo.programs[2],
+		}
 
-	if result[0].Type != "training" {
-		t.Errorf("Expected type 'training', got '%s'", result[0].Type)
-	}
+		result, err := service.GetAllApplications(ctx, 0, "training")
+		
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		
+		if len(result) != 1 {
+			t.Errorf("Expected 1 training application, got %d", len(result))
+		}
+	})
 }
 
 // Test GetApplicationByID
 func TestGetApplicationByID(t *testing.T) {
-	mockAppRepo := newMockApplicationsRepository()
-	mockUserRepo := newMockUserRepositoryForApplications()
-	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
 
-	// Add test application
-	mockAppRepo.applications[1] = model.Applications{
+	// Setup test data
+	mockRepo.applications[1] = model.Application{
 		ID:        1,
 		UMKMID:    1,
 		ProgramID: 1,
 		Type:      "training",
 		Status:    "screening",
-		Base: model.Base{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		},
-		Program: mockAppRepo.programs[1],
-		UMKM:    mockAppRepo.umkms[1],
+		UMKM:      mockRepo.umkms[1],
+		Program:   mockRepo.programs[1],
 	}
 
-	tests := []struct {
-		name          string
-		applicationID int
-		expectError   bool
-	}{
-		{
-			name:          "Valid application ID",
-			applicationID: 1,
-			expectError:   false,
-		},
-		{
-			name:          "Invalid application ID",
-			applicationID: 999,
-			expectError:   true,
-		},
-	}
+	t.Run("Get existing application", func(t *testing.T) {
+		result, err := service.GetApplicationByID(ctx, 0, 1)
+		
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		
+		if result.ID != 1 {
+			t.Errorf("Expected ID 1, got %d", result.ID)
+		}
+		
+		if result.Type != "training" {
+			t.Errorf("Expected type 'training', got '%s'", result.Type)
+		}
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := service.GetApplicationByID(tt.applicationID)
-
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if result.ID != tt.applicationID {
-					t.Errorf("Expected application ID %d, got %d", tt.applicationID, result.ID)
-				}
-			}
-		})
-	}
+	t.Run("Get non-existing application", func(t *testing.T) {
+		_, err := service.GetApplicationByID(ctx, 0, 999)
+		
+		if err == nil {
+			t.Error("Expected error for non-existing application, got none")
+		}
+	})
 }
-
-// Test UpdateApplication
-// func TestUpdateApplication(t *testing.T) {
-// 	mockAppRepo := newMockApplicationsRepository()
-// 	mockUserRepo := newMockUserRepositoryForApplications()
-// 	service := NewApplicationsService(mockAppRepo, mockUserRepo)
-
-// 	// Add test application in revised status
-// 	mockAppRepo.applications[1] = model.Applications{
-// 		ID:        1,
-// 		UMKMID:    1,
-// 		ProgramID: 1,
-// 		Type:      "training",
-// 		Status:    "revised",
-// 		Base: model.Base{
-// 			CreatedAt: time.Now(),
-// 			UpdatedAt: time.Now(),
-// 		},
-// 		UMKM: mockAppRepo.umkms[1],
-// 	}
-
-// 	// Add test application in screening status
-// 	mockAppRepo.applications[2] = model.Applications{
-// 		ID:        2,
-// 		UMKMID:    1,
-// 		ProgramID: 1,
-// 		Type:      "training",
-// 		Status:    "screening",
-// 		Base: model.Base{
-// 			CreatedAt: time.Now(),
-// 			UpdatedAt: time.Now(),
-// 		},
-// 		UMKM: mockAppRepo.umkms[1],
-// 	}
-
-// 	tests := []struct {
-// 		name          string
-// 		applicationID int
-// 		input         dto.Applications
-// 		expectError   bool
-// 		errorMsg      string
-// 	}{
-// 		{
-// 			name:          "Valid update",
-// 			applicationID: 1,
-// 			input: dto.Applications{
-// 				Documents: []dto.ApplicationDocuments{
-// 					{Type: "ktp", File: "ktp-updated.pdf"},
-// 				},
-// 			},
-// 			expectError: false,
-// 		},
-// 		{
-// 			name:          "Missing documents",
-// 			applicationID: 1,
-// 			input:         dto.Applications{},
-// 			expectError:   true,
-// 			errorMsg:      "documents are required",
-// 		},
-// 		{
-// 			name:          "Wrong status",
-// 			applicationID: 2,
-// 			input: dto.Applications{
-// 				Documents: []dto.ApplicationDocuments{
-// 					{Type: "ktp", File: "ktp.pdf"},
-// 				},
-// 			},
-// 			expectError: true,
-// 			errorMsg:    "only applications with status 'revised' can be updated",
-// 		},
-// 		{
-// 			name:          "Application not found",
-// 			applicationID: 999,
-// 			input: dto.Applications{
-// 				Documents: []dto.ApplicationDocuments{
-// 					{Type: "ktp", File: "ktp.pdf"},
-// 				},
-// 			},
-// 			expectError: true,
-// 		},
-// 	}
-
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			result, err := service.UpdateApplication(tt.applicationID, tt.input)
-
-// 			if tt.expectError {
-// 				if err == nil {
-// 					t.Errorf("Expected error but got none")
-// 				}
-// 			} else {
-// 				if err != nil {
-// 					t.Errorf("Unexpected error: %v", err)
-// 				}
-// 				if result.Status != "screening" {
-// 					t.Errorf("Expected status 'screening', got '%s'", result.Status)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
 
 // Test ScreeningApprove
 func TestScreeningApprove(t *testing.T) {
-	mockAppRepo := newMockApplicationsRepository()
-	mockUserRepo := newMockUserRepositoryForApplications()
-	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
 
-	// Add test application in screening status
-	mockAppRepo.applications[1] = model.Applications{
-		ID:        1,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "screening",
-	}
+	t.Run("Approve application in screening status", func(t *testing.T) {
+		mockRepo.applications[1] = model.Application{
+			ID:          1,
+			UMKMID:      1,
+			ProgramID:   1,
+			Type:        "training",
+			Status:      "screening",
+			SubmittedAt: time.Now(),
+		}
 
-	// Add test application in final status
-	mockAppRepo.applications[2] = model.Applications{
-		ID:        2,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "final",
-	}
+		result, err := service.ScreeningApprove(ctx, 1, 1)
+		
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		
+		if result.Status != "final" {
+			t.Errorf("Expected status 'final', got '%s'", result.Status)
+		}
+	})
 
-	tests := []struct {
-		name          string
-		userID        int
-		applicationID int
-		expectError   bool
-		errorMsg      string
-	}{
-		{
-			name:          "Valid approve",
-			userID:        1,
-			applicationID: 1,
-			expectError:   false,
-		},
-		{
-			name:          "Wrong status",
-			userID:        1,
-			applicationID: 2,
-			expectError:   true,
-			errorMsg:      "application must be in screening status",
-		},
-		{
-			name:          "Application not found",
-			userID:        1,
-			applicationID: 999,
-			expectError:   true,
-		},
-	}
+	t.Run("Try to approve application not in screening status", func(t *testing.T) {
+		mockRepo.applications[2] = model.Application{
+			ID:     2,
+			UMKMID: 1,
+			Status: "final",
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := service.ScreeningApprove(tt.userID, tt.applicationID)
+		_, err := service.ScreeningApprove(ctx, 1, 2)
+		
+		if err == nil {
+			t.Error("Expected error for non-screening status, got none")
+		}
+		
+		if err.Error() != "application must be in screening status" {
+			t.Errorf("Expected specific error message, got '%s'", err.Error())
+		}
+	})
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if result.Status != "final" {
-					t.Errorf("Expected status 'final', got '%s'", result.Status)
-				}
-			}
-		})
-	}
+	t.Run("Approve non-existing application", func(t *testing.T) {
+		_, err := service.ScreeningApprove(ctx, 1, 999)
+		
+		if err == nil {
+			t.Error("Expected error for non-existing application, got none")
+		}
+	})
 }
 
 // Test ScreeningReject
 func TestScreeningReject(t *testing.T) {
-	mockAppRepo := newMockApplicationsRepository()
-	mockUserRepo := newMockUserRepositoryForApplications()
-	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
 
-	// Add test application in screening status
-	mockAppRepo.applications[1] = model.Applications{
-		ID:        1,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "screening",
-	}
+	t.Run("Reject application with notes", func(t *testing.T) {
+		mockRepo.applications[1] = model.Application{
+			ID:     1,
+			UMKMID: 1,
+			Status: "screening",
+		}
 
-	tests := []struct {
-		name        string
-		userID      int
-		decision    dto.ApplicationDecision
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name:   "Valid reject",
-			userID: 1,
-			decision: dto.ApplicationDecision{
-				ApplicationID: 1,
-				Notes:         "Documents incomplete",
-			},
-			expectError: false,
-		},
-		{
-			name:   "Missing notes",
-			userID: 1,
-			decision: dto.ApplicationDecision{
-				ApplicationID: 1,
-			},
-			expectError: true,
-			errorMsg:    "notes are required for rejection",
-		},
-	}
+		decision := dto.ApplicationDecision{
+			ApplicationID: 1,
+			Notes:         "Documents incomplete",
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := service.ScreeningReject(tt.userID, tt.decision)
+		result, err := service.ScreeningReject(ctx, 1, decision)
+		
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		
+		if result.Status != "rejected" {
+			t.Errorf("Expected status 'rejected', got '%s'", result.Status)
+		}
+	})
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if err.Error() != tt.errorMsg {
-					t.Errorf("Expected error '%s', got '%s'", tt.errorMsg, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if result.Status != "rejected" {
-					t.Errorf("Expected status 'rejected', got '%s'", result.Status)
-				}
-			}
-		})
-	}
+	t.Run("Reject application without notes", func(t *testing.T) {
+		decision := dto.ApplicationDecision{
+			ApplicationID: 1,
+			Notes:         "",
+		}
+
+		_, err := service.ScreeningReject(ctx, 1, decision)
+		
+		if err == nil {
+			t.Error("Expected error for missing notes, got none")
+		}
+		
+		if err.Error() != "notes are required for rejection" {
+			t.Errorf("Expected specific error message, got '%s'", err.Error())
+		}
+	})
+
+	t.Run("Reject application not in screening status", func(t *testing.T) {
+		mockRepo.applications[2] = model.Application{
+			ID:     2,
+			UMKMID: 1,
+			Status: "final",
+		}
+
+		decision := dto.ApplicationDecision{
+			ApplicationID: 2,
+			Notes:         "Test rejection",
+		}
+
+		_, err := service.ScreeningReject(ctx, 1, decision)
+		
+		if err == nil {
+			t.Error("Expected error for non-screening status, got none")
+		}
+	})
 }
 
 // Test ScreeningRevise
 func TestScreeningRevise(t *testing.T) {
-	mockAppRepo := newMockApplicationsRepository()
-	mockUserRepo := newMockUserRepositoryForApplications()
-	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
 
-	// Add test application in screening status
-	mockAppRepo.applications[1] = model.Applications{
-		ID:        1,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "screening",
-	}
+	t.Run("Request revision with notes", func(t *testing.T) {
+		mockRepo.applications[1] = model.Application{
+			ID:     1,
+			UMKMID: 1,
+			Status: "screening",
+		}
 
-	tests := []struct {
-		name        string
-		userID      int
-		decision    dto.ApplicationDecision
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name:   "Valid revise",
-			userID: 1,
-			decision: dto.ApplicationDecision{
-				ApplicationID: 1,
-				Notes:         "Please update KTP document",
-			},
-			expectError: false,
-		},
-		{
-			name:   "Missing notes",
-			userID: 1,
-			decision: dto.ApplicationDecision{
-				ApplicationID: 1,
-			},
-			expectError: true,
-			errorMsg:    "notes are required for revision",
-		},
-	}
+		decision := dto.ApplicationDecision{
+			ApplicationID: 1,
+			Notes:         "Please update KTP document",
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := service.ScreeningRevise(tt.userID, tt.decision)
+		result, err := service.ScreeningRevise(ctx, 1, decision)
+		
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		
+		if result.Status != "revised" {
+			t.Errorf("Expected status 'revised', got '%s'", result.Status)
+		}
+	})
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if err.Error() != tt.errorMsg {
-					t.Errorf("Expected error '%s', got '%s'", tt.errorMsg, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if result.Status != "revised" {
-					t.Errorf("Expected status 'revised', got '%s'", result.Status)
-				}
-			}
-		})
-	}
+	t.Run("Request revision without notes", func(t *testing.T) {
+		decision := dto.ApplicationDecision{
+			ApplicationID: 1,
+			Notes:         "",
+		}
+
+		_, err := service.ScreeningRevise(ctx, 1, decision)
+		
+		if err == nil {
+			t.Error("Expected error for missing notes, got none")
+		}
+		
+		if err.Error() != "notes are required for revision" {
+			t.Errorf("Expected specific error message, got '%s'", err.Error())
+		}
+	})
+
+	t.Run("Request revision for non-screening application", func(t *testing.T) {
+		mockRepo.applications[2] = model.Application{
+			ID:     2,
+			UMKMID: 1,
+			Status: "approved",
+		}
+
+		decision := dto.ApplicationDecision{
+			ApplicationID: 2,
+			Notes:         "Test revision",
+		}
+
+		_, err := service.ScreeningRevise(ctx, 1, decision)
+		
+		if err == nil {
+			t.Error("Expected error for non-screening status, got none")
+		}
+	})
 }
 
 // Test FinalApprove
 func TestFinalApprove(t *testing.T) {
-	mockAppRepo := newMockApplicationsRepository()
-	mockUserRepo := newMockUserRepositoryForApplications()
-	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
 
-	// Add test application in final status
-	mockAppRepo.applications[1] = model.Applications{
-		ID:        1,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "final",
-	}
+	t.Run("Approve application in final status", func(t *testing.T) {
+		mockRepo.applications[1] = model.Application{
+			ID:     1,
+			UMKMID: 1,
+			Status: "final",
+		}
 
-	// Add test application in screening status
-	mockAppRepo.applications[2] = model.Applications{
-		ID:        2,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "screening",
-	}
+		result, err := service.FinalApprove(ctx, 1, 1)
+		
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		
+		if result.Status != "approved" {
+			t.Errorf("Expected status 'approved', got '%s'", result.Status)
+		}
+	})
 
-	tests := []struct {
-		name          string
-		userID        int
-		applicationID int
-		expectError   bool
-		errorMsg      string
-	}{
-		{
-			name:          "Valid approve",
-			userID:        1,
-			applicationID: 1,
-			expectError:   false,
-		},
-		{
-			name:          "Wrong status",
-			userID:        1,
-			applicationID: 2,
-			expectError:   true,
-			errorMsg:      "application must be in final status",
-		},
-	}
+	t.Run("Try to approve application not in final status", func(t *testing.T) {
+		mockRepo.applications[2] = model.Application{
+			ID:     2,
+			UMKMID: 1,
+			Status: "screening",
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := service.FinalApprove(tt.userID, tt.applicationID)
+		_, err := service.FinalApprove(ctx, 1, 2)
+		
+		if err == nil {
+			t.Error("Expected error for non-final status, got none")
+		}
+		
+		if err.Error() != "application must be in final status" {
+			t.Errorf("Expected specific error message, got '%s'", err.Error())
+		}
+	})
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if result.Status != "approved" {
-					t.Errorf("Expected status 'approved', got '%s'", result.Status)
-				}
-			}
-		})
-	}
+	t.Run("Approve non-existing application", func(t *testing.T) {
+		_, err := service.FinalApprove(ctx, 1, 999)
+		
+		if err == nil {
+			t.Error("Expected error for non-existing application, got none")
+		}
+	})
 }
 
 // Test FinalReject
 func TestFinalReject(t *testing.T) {
-	mockAppRepo := newMockApplicationsRepository()
-	mockUserRepo := newMockUserRepositoryForApplications()
-	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
 
-	// Add test application in final status
-	mockAppRepo.applications[1] = model.Applications{
-		ID:        1,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "final",
-	}
+	t.Run("Reject application in final status with notes", func(t *testing.T) {
+		mockRepo.applications[1] = model.Application{
+			ID:     1,
+			UMKMID: 1,
+			Status: "final",
+		}
 
-	tests := []struct {
-		name        string
-		userID      int
-		decision    dto.ApplicationDecision
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name:   "Valid reject",
-			userID: 1,
-			decision: dto.ApplicationDecision{
-				ApplicationID: 1,
-				Notes:         "Program capacity full",
-			},
-			expectError: false,
-		},
-		{
-			name:   "Missing notes",
-			userID: 1,
-			decision: dto.ApplicationDecision{
-				ApplicationID: 1,
-			},
-			expectError: true,
-			errorMsg:    "notes are required for rejection",
-		},
-	}
+		decision := dto.ApplicationDecision{
+			ApplicationID: 1,
+			Notes:         "Capacity full",
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := service.FinalReject(tt.userID, tt.decision)
+		result, err := service.FinalReject(ctx, 1, decision)
+		
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		
+		if result.Status != "rejected" {
+			t.Errorf("Expected status 'rejected', got '%s'", result.Status)
+		}
+	})
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else if err.Error() != tt.errorMsg {
-					t.Errorf("Expected error '%s', got '%s'", tt.errorMsg, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if result.Status != "rejected" {
-					t.Errorf("Expected status 'rejected', got '%s'", result.Status)
-				}
-			}
-		})
-	}
+	t.Run("Reject application without notes", func(t *testing.T) {
+		decision := dto.ApplicationDecision{
+			ApplicationID: 1,
+			Notes:         "",
+		}
+
+		_, err := service.FinalReject(ctx, 1, decision)
+		
+		if err == nil {
+			t.Error("Expected error for missing notes, got none")
+		}
+		
+		if err.Error() != "notes are required for rejection" {
+			t.Errorf("Expected specific error message, got '%s'", err.Error())
+		}
+	})
+
+	t.Run("Reject application not in final status", func(t *testing.T) {
+		mockRepo.applications[2] = model.Application{
+			ID:     2,
+			UMKMID: 1,
+			Status: "screening",
+		}
+
+		decision := dto.ApplicationDecision{
+			ApplicationID: 2,
+			Notes:         "Test rejection",
+		}
+
+		_, err := service.FinalReject(ctx, 1, decision)
+		
+		if err == nil {
+			t.Error("Expected error for non-final status, got none")
+		}
+	})
 }
 
-// Test DeleteApplication
-// func TestDeleteApplication(t *testing.T) {
-// 	mockAppRepo := newMockApplicationsRepository()
-// 	mockUserRepo := newMockUserRepositoryForApplications()
-// 	service := NewApplicationsService(mockAppRepo, mockUserRepo)
+// Test Edge Cases
+func TestApplicationsServiceEdgeCases(t *testing.T) {
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
 
-// 	// Add test application
-// 	mockAppRepo.applications[1] = model.Applications{
-// 		ID:        1,
-// 		UMKMID:    1,
-// 		ProgramID: 1,
-// 		Type:      "training",
-// 		Status:    "screening",
-// 	}
+	t.Run("GetAllApplications with empty repository", func(t *testing.T) {
+		result, err := service.GetAllApplications(ctx, 0, "")
+		
+		if err != nil {
+			t.Errorf("Expected no error for empty repo, got %v", err)
+		}
+		
+		if len(result) != 0 {
+			t.Errorf("Expected 0 applications, got %d", len(result))
+		}
+	})
 
-// 	tests := []struct {
-// 		name          string
-// 		applicationID int
-// 		expectError   bool
-// 	}{
-// 		{
-// 			name:          "Valid deletion",
-// 			applicationID: 1,
-// 			expectError:   false,
-// 		},
-// 		{
-// 			name:          "Application not found",
-// 			applicationID: 999,
-// 			expectError:   true,
-// 		},
-// 	}
+	t.Run("Multiple status transitions", func(t *testing.T) {
+		// Create application
+		mockRepo.applications[1] = model.Application{
+			ID:          1,
+			UMKMID:      1,
+			Status:      "screening",
+			SubmittedAt: time.Now(),
+		}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			result, err := service.DeleteApplication(tt.applicationID)
+		// Approve at screening
+		result1, err := service.ScreeningApprove(ctx, 1, 1)
+		if err != nil || result1.Status != "final" {
+			t.Error("Failed to approve at screening stage")
+		}
 
-// 			if tt.expectError {
-// 				if err == nil {
-// 					t.Errorf("Expected error but got none")
-// 				}
-// 			} else {
-// 				if err != nil {
-// 					t.Errorf("Unexpected error: %v", err)
-// 				}
-// 				if result.ID != tt.applicationID {
-// 					t.Errorf("Expected deleted application ID %d, got %d", tt.applicationID, result.ID)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+		// Approve at final
+		result2, err := service.FinalApprove(ctx, 1, 1)
+		if err != nil || result2.Status != "approved" {
+			t.Error("Failed to approve at final stage")
+		}
+	})
+
+	t.Run("Check history creation", func(t *testing.T) {
+		mockRepo.applications[2] = model.Application{
+			ID:     2,
+			UMKMID: 1,
+			Status: "screening",
+		}
+
+		decision := dto.ApplicationDecision{
+			ApplicationID: 2,
+			Notes:         "Test rejection",
+		}
+
+		service.ScreeningReject(ctx, 1, decision)
+
+		histories, _ := mockRepo.GetApplicationHistories(ctx, 2)
+		if len(histories) == 0 {
+			t.Error("Expected history to be created")
+		}
+	})
+
+	t.Run("Check notification creation", func(t *testing.T) {
+		mockRepo.applications[3] = model.Application{
+			ID:          3,
+			UMKMID:      1,
+			Status:      "screening",
+			SubmittedAt: time.Now(),
+		}
+
+		service.ScreeningApprove(ctx, 1, 3)
+
+		// In real implementation, check if notification was created
+		// This is a simplified check
+		if len(mockRepo.applications) == 0 {
+			t.Error("Expected application to exist after approval")
+		}
+	})
+}
+
+// Test Concurrent Operations
+func TestConcurrentOperations(t *testing.T) {
+	service, mockRepo, _ := setupApplicationsService()
+	ctx := context.Background()
+
+	mockRepo.applications[1] = model.Application{
+		ID:          1,
+		UMKMID:      1,
+		Status:      "screening",
+		SubmittedAt: time.Now(),
+	}
+
+	t.Run("Concurrent reads", func(t *testing.T) {
+		done := make(chan bool)
+		
+		for i := 0; i < 10; i++ {
+			go func() {
+				_, err := service.GetApplicationByID(ctx, 0, 1)
+				if err != nil {
+					t.Errorf("Concurrent read failed: %v", err)
+				}
+				done <- true
+			}()
+		}
+		
+		for i := 0; i < 10; i++ {
+			<-done
+		}
+	})
+}

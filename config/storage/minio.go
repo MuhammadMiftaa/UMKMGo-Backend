@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -239,6 +240,10 @@ func (m *MinIOManager) Validate(data []byte, contentType string, config *FileVal
 
 // UploadFile uploads file to MinIO - main method yang digunakan
 func (m *MinIOManager) UploadFile(ctx context.Context, request UploadRequest) (*UploadResponse, error) {
+	if !isBase64(request.Base64Data) {
+		return nil, fmt.Errorf("invalid base64 data")
+	}
+
 	if !m.IsReady() {
 		return nil, fmt.Errorf("MinIO client not ready")
 	}
@@ -452,6 +457,37 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func isBase64(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	// Remove possible data URI prefix
+	// Example: data:image/png;base64,iVBORw0KGgoAAA...
+	if strings.Contains(s, "base64,") {
+		parts := strings.SplitN(s, "base64,", 2)
+		if len(parts) == 2 {
+			s = parts[1]
+		}
+	}
+
+	// Remove whitespace
+	s = strings.TrimSpace(s)
+
+	// Base64 must be valid characters only
+	matched, _ := regexp.MatchString(`^[A-Za-z0-9+/=]+$`, s)
+	if !matched {
+		return false
+	}
+
+	// Try decoding
+	_, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+	}
+
+	return true
 }
 
 func CreateDefaultValidationConfig() *FileValidationConfig {

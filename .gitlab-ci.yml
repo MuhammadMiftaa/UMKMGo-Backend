@@ -71,7 +71,7 @@ build_migrate:
     paths:
       - umkmgo-migrate_build_job_id.txt
 
-release:
+prepare_release:
   stage: release
   image: registry.gitlab.com/gitlab-org/cli:latest
   needs:
@@ -86,41 +86,44 @@ release:
   before_script:
     - apk add --no-cache curl
   script:
-    # Upload coverage.out sebagai generic package
+    # Upload coverage sebagai generic package
     - |
       curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
            --upload-file coverage.out \
            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/coverage/${CI_COMMIT_TAG}/coverage.out"
+    
+    # Export job IDs untuk job berikutnya
+    - echo "BACKEND_JOB_ID=$(cat umkmgo-backend_build_job_id.txt)" >> build.env
+    - echo "MIGRATE_JOB_ID=$(cat umkmgo-migrate_build_job_id.txt)" >> build.env
+    - echo "Backend Job ID:$(cat umkmgo-backend_build_job_id.txt)"
+    - echo "Migrate Job ID:$(cat umkmgo-migrate_build_job_id.txt)"
+  artifacts:
+    reports:
+      dotenv: build.env
 
-    # Baca job IDs
-    - |
-      export BACKEND_JOB_ID=$(cat umkmgo-backend_build_job_id.txt)
-      export MIGRATE_JOB_ID=$(cat umkmgo-migrate_build_job_id.txt)
-      echo "Backend Job ID: $BACKEND_JOB_ID"
-      echo "Migrate Job ID: $MIGRATE_JOB_ID"
-
-    # Buat release menggunakan glab CLI
-    - |
-      glab release create ${CI_COMMIT_TAG} \
-        --name "Release ${CI_COMMIT_TAG}" \
-        --notes "Tagged after commit ${CI_COMMIT_SHORT_SHA}, message: ${CI_COMMIT_TAG_MESSAGE}" \
-        --assets-links='[
-          {
-            "name": "Backend Image Artifacts",
-            "url": "'"${CI_PROJECT_URL}"'/-/jobs/'"${BACKEND_JOB_ID}"'/artifacts/download",
-            "link_type": "package"
-          },
-          {
-            "name": "Migration Image Artifacts",
-            "url": "'"${CI_PROJECT_URL}"'/-/jobs/'"${MIGRATE_JOB_ID}"'/artifacts/download",
-            "link_type": "package"
-          },
-          {
-            "name": "Coverage Report",
-            "url": "'"${CI_API_V4_URL}"'/projects/'"${CI_PROJECT_ID}"'/packages/generic/coverage/'"${CI_COMMIT_TAG}"'/coverage.out",
-            "link_type": "other"
-          }
-        ]'
+create_release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/cli:latest
+  needs:
+    - job: prepare_release
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]{4}\.[0-9]{1,3}$/
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "Release ${CI_COMMIT_TAG}"
+    description: "Tagged after commit ${CI_COMMIT_SHORT_SHA}, message: ${CI_COMMIT_TAG_MESSAGE}"
+    assets:
+      links:
+        - name: "Backend Image Artifacts"
+          url: "${CI_PROJECT_URL}/-/jobs/${BACKEND_JOB_ID}/artifacts/download"
+          link_type: package
+        - name: "Migration Image Artifacts"
+          url: "${CI_PROJECT_URL}/-/jobs/${MIGRATE_JOB_ID}/artifacts/download"
+          link_type: package
+        - name: "Coverage Report"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/coverage/${CI_COMMIT_TAG}/coverage.out"
+          link_type: other
 
 deploy-staging:
   stage: deploy

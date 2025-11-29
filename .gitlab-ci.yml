@@ -103,11 +103,14 @@ prepare_release:
 
 create_release:
   stage: release
+  image: registry.gitlab.com/gitlab-org/cli:latest
   needs:
     - job: prepare_release
       artifacts: true
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]{4}\.[0-9]{1,3}$/
+  script:
+    - echo "Creating release ${CI_COMMIT_TAG}"
   release:
     tag_name: $CI_COMMIT_TAG
     name: "Release ${CI_COMMIT_TAG}"

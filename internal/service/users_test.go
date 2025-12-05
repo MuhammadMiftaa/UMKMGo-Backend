@@ -6,391 +6,453 @@ import (
 	"testing"
 	"time"
 
+	"UMKMGo-backend/config/redis"
 	"UMKMGo-backend/internal/types/dto"
 	"UMKMGo-backend/internal/types/model"
 	"UMKMGo-backend/internal/utils"
+	"UMKMGo-backend/internal/utils/constant"
+
+	redisPackage "github.com/go-redis/redis/v8"
 )
 
-// ==================== MOCK REPOSITORIES FOR MOBILE ====================
+// ==================== Additional Mock Repositories ====================
 
-// Mock Mobile Repository
-type mockMobileRepository struct {
-	programs     map[int]model.Program
-	umkms        map[int]model.UMKM
-	applications map[int]model.Application
-	news         map[int]model.News
+type mockRedisRepository struct {
+	data  map[string]string
+	hdata map[string]map[string]string
 }
 
-func newMockMobileRepository() *mockMobileRepository {
-	return &mockMobileRepository{
-		programs:     make(map[int]model.Program),
-		umkms:        make(map[int]model.UMKM),
-		applications: make(map[int]model.Application),
-		news:         make(map[int]model.News),
+func newMockRedisRepository() redis.RedisRepository {
+	return &mockRedisRepository{
+		data:  make(map[string]string),
+		hdata: make(map[string]map[string]string),
 	}
 }
 
-func (m *mockMobileRepository) GetProgramsByType(ctx context.Context, programType string) ([]model.Program, error) {
-	var programs []model.Program
-	for _, p := range m.programs {
-		if p.Type == programType && p.IsActive {
-			programs = append(programs, p)
+func (m *mockRedisRepository) Set(ctx context.Context, key, value string, exp time.Duration) error {
+	m.data[key] = value
+	return nil
+}
+
+func (m *mockRedisRepository) SetNX(ctx context.Context, key, value string, exp time.Duration) (bool, error) {
+	if _, exists := m.data[key]; exists {
+		return false, nil
+	}
+	m.data[key] = value
+	return true, nil
+}
+
+func (m *mockRedisRepository) HSet(ctx context.Context, key string, value map[string]any, exp time.Duration) error {
+	if m.hdata[key] == nil {
+		m.hdata[key] = make(map[string]string)
+	}
+	for k, v := range value {
+		m.hdata[key][k] = v.(string)
+	}
+	return nil
+}
+
+func (m *mockRedisRepository) HGet(ctx context.Context, key, field string) (string, error) {
+	if hmap, exists := m.hdata[key]; exists {
+		if val, ok := hmap[field]; ok {
+			return val, nil
 		}
 	}
-	return programs, nil
+	return "", errors.New("field not found")
 }
 
-func (m *mockMobileRepository) GetProgramDetailByID(ctx context.Context, id int) (model.Program, error) {
-	if prog, exists := m.programs[id]; exists && prog.IsActive {
-		return prog, nil
+func (m *mockRedisRepository) Publish(ctx context.Context, channel, message string) error {
+	return nil
+}
+
+func (m *mockRedisRepository) Subscribe(ctx context.Context, channel string) *redisPackage.PubSub {
+	return nil
+}
+
+func (m *mockRedisRepository) Get(ctx context.Context, key string) (string, error) {
+	if val, exists := m.data[key]; exists {
+		return val, nil
 	}
-	return model.Program{}, errors.New("program not found")
+	return "", errors.New("key not found")
 }
 
-func (m *mockMobileRepository) GetUMKMProfileByID(ctx context.Context, userID int) (model.UMKM, error) {
-	if umkm, exists := m.umkms[userID]; exists {
-		return umkm, nil
-	}
-	return model.UMKM{}, errors.New("UMKM profile not found")
-}
-
-func (m *mockMobileRepository) UpdateUMKMProfile(ctx context.Context, umkm model.UMKM) (model.UMKM, error) {
-	m.umkms[umkm.ID] = umkm
-	return umkm, nil
-}
-
-func (m *mockMobileRepository) UpdateUMKMDocument(ctx context.Context, umkmID int, field, value string) error {
-	if umkm, exists := m.umkms[umkmID]; exists {
-		// Simulate document update
-		_ = umkm
-		return nil
-	}
-	return errors.New("UMKM not found")
-}
-
-func (m *mockMobileRepository) CreateApplication(ctx context.Context, app model.Application) (model.Application, error) {
-	app.ID = len(m.applications) + 1
-	m.applications[app.ID] = app
-	return app, nil
-}
-
-func (m *mockMobileRepository) CreateApplicationDocuments(ctx context.Context, docs []model.ApplicationDocument) error {
-	return nil
-}
-
-func (m *mockMobileRepository) CreateApplicationHistory(ctx context.Context, hist model.ApplicationHistory) error {
-	return nil
-}
-
-func (m *mockMobileRepository) CreateTrainingApplication(ctx context.Context, training model.TrainingApplication) error {
-	return nil
-}
-
-func (m *mockMobileRepository) CreateCertificationApplication(ctx context.Context, cert model.CertificationApplication) error {
-	return nil
-}
-
-func (m *mockMobileRepository) CreateFundingApplication(ctx context.Context, funding model.FundingApplication) error {
-	return nil
-}
-
-func (m *mockMobileRepository) GetApplicationsByUMKMID(ctx context.Context, umkmID int) ([]model.Application, error) {
-	var apps []model.Application
-	for _, app := range m.applications {
-		if app.UMKMID == umkmID {
-			apps = append(apps, app)
+func (m *mockRedisRepository) Del(ctx context.Context, keys ...string) (int64, error) {
+	var count int64
+	for _, key := range keys {
+		if _, exists := m.data[key]; exists {
+			delete(m.data, key)
+			count++
 		}
 	}
-	return apps, nil
+	return count, nil
 }
 
-func (m *mockMobileRepository) GetApplicationDetailByID(ctx context.Context, id int) (model.Application, error) {
-	if app, exists := m.applications[id]; exists {
-		return app, nil
+func (m *mockRedisRepository) Exists(ctx context.Context, keys ...string) (int64, error) {
+	var count int64
+	for _, key := range keys {
+		if _, exists := m.data[key]; exists {
+			count++
+		}
 	}
-	return model.Application{}, errors.New("application not found")
+	return count, nil
 }
 
-func (m *mockMobileRepository) DeleteApplicationDocumentsByApplicationID(ctx context.Context, applicationID int) error {
+func (m *mockRedisRepository) Incr(ctx context.Context, key string) (int64, error) {
+	return 1, nil
+}
+
+func (m *mockRedisRepository) Expire(ctx context.Context, key string, exp time.Duration) error {
 	return nil
 }
 
-func (m *mockMobileRepository) GetProgramByID(ctx context.Context, id int) (model.Program, error) {
-	if prog, exists := m.programs[id]; exists && prog.IsActive {
-		return prog, nil
-	}
-	return model.Program{}, errors.New("program not found")
-}
-
-func (m *mockMobileRepository) GetProgramRequirements(ctx context.Context, programID int) ([]model.ProgramRequirement, error) {
-	return []model.ProgramRequirement{}, nil
-}
-
-func (m *mockMobileRepository) IsApplicationExists(ctx context.Context, umkmID, programID int) bool {
-	for _, app := range m.applications {
-		if app.UMKMID == umkmID && app.ProgramID == programID && app.Status != "rejected" {
-			return true
+func (m *mockRedisRepository) MGet(ctx context.Context, keys []string) ([]any, error) {
+	var values []any
+	for _, key := range keys {
+		if val, exists := m.data[key]; exists {
+			values = append(values, val)
+		} else {
+			values = append(values, nil)
 		}
 	}
-	return false
+	return values, nil
 }
 
-func (m *mockMobileRepository) GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]model.News, int64, error) {
-	var news []model.News
-	for _, n := range m.news {
-		if n.IsPublished {
-			news = append(news, n)
+func (m *mockRedisRepository) MSet(ctx context.Context, data map[string]any) error {
+	for key, value := range data {
+		m.data[key] = value.(string)
+	}
+	return nil
+}
+
+func (m *mockRedisRepository) Scan(ctx context.Context, match string, count int64) ([]string, error) {
+	var keys []string
+	for key := range m.data {
+		keys = append(keys, key)
+	}
+	return keys, nil
+}
+
+func (m *mockRedisRepository) Keys(ctx context.Context, pattern string) ([]string, error) {
+	var keys []string
+	for key := range m.data {
+		keys = append(keys, key)
+	}
+	return keys, nil
+}
+
+type mockOTPRepository struct {
+	otps map[string]*model.OTP
+}
+
+func newMockOTPRepository() *mockOTPRepository {
+	return &mockOTPRepository{
+		otps: make(map[string]*model.OTP),
+	}
+}
+
+func (m *mockOTPRepository) CreateOTP(ctx context.Context, otp model.OTP) error {
+	m.otps[otp.PhoneNumber] = &otp
+	return nil
+}
+
+func (m *mockOTPRepository) GetOTPByPhone(ctx context.Context, phone string) (*model.OTP, error) {
+	if otp, exists := m.otps[phone]; exists {
+		return otp, nil
+	}
+	return nil, errors.New("OTP not found")
+}
+
+func (m *mockOTPRepository) GetOTPByTempToken(ctx context.Context, tempToken string) (*model.OTP, error) {
+	for _, otp := range m.otps {
+		if otp.TempToken != nil && *otp.TempToken == tempToken {
+			return otp, nil
 		}
 	}
-	return news, int64(len(news)), nil
+	return nil, errors.New("OTP not found")
 }
 
-func (m *mockMobileRepository) GetPublishedNewsBySlug(ctx context.Context, slug string) (model.News, error) {
-	for _, n := range m.news {
-		if n.Slug == slug && n.IsPublished {
-			return n, nil
-		}
-	}
-	return model.News{}, errors.New("news not found")
+func (m *mockOTPRepository) UpdateOTP(ctx context.Context, otp model.OTP) error {
+	m.otps[otp.PhoneNumber] = &otp
+	return nil
 }
 
-func (m *mockMobileRepository) IncrementViews(ctx context.Context, newsID int) error {
-	if n, exists := m.news[newsID]; exists {
-		n.ViewsCount++
-		m.news[newsID] = n
-		return nil
-	}
-	return errors.New("news not found")
-}
-
-// Mock Program Repository for Mobile
-type mockProgramRepoForMobile struct {
-	benefits     map[int][]model.ProgramBenefit
-	requirements map[int][]model.ProgramRequirement
-}
-
-func newMockProgramRepoForMobile() *mockProgramRepoForMobile {
-	return &mockProgramRepoForMobile{
-		benefits:     make(map[int][]model.ProgramBenefit),
-		requirements: make(map[int][]model.ProgramRequirement),
-	}
-}
-
-func (m *mockProgramRepoForMobile) GetAllPrograms(ctx context.Context) ([]model.Program, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockProgramRepoForMobile) GetProgramByID(ctx context.Context, id int) (model.Program, error) {
-	return model.Program{}, errors.New("not implemented")
-}
-
-func (m *mockProgramRepoForMobile) CreateProgram(ctx context.Context, program model.Program) (model.Program, error) {
-	return model.Program{}, errors.New("not implemented")
-}
-
-func (m *mockProgramRepoForMobile) UpdateProgram(ctx context.Context, program model.Program) (model.Program, error) {
-	return model.Program{}, errors.New("not implemented")
-}
-
-func (m *mockProgramRepoForMobile) DeleteProgram(ctx context.Context, program model.Program) (model.Program, error) {
-	return model.Program{}, errors.New("not implemented")
-}
-
-func (m *mockProgramRepoForMobile) CreateProgramBenefits(ctx context.Context, benefits []model.ProgramBenefit) error {
-	return errors.New("not implemented")
-}
-
-func (m *mockProgramRepoForMobile) CreateProgramRequirements(ctx context.Context, requirements []model.ProgramRequirement) error {
-	return errors.New("not implemented")
-}
-
-func (m *mockProgramRepoForMobile) GetProgramBenefits(ctx context.Context, programID int) ([]model.ProgramBenefit, error) {
-	if benefits, exists := m.benefits[programID]; exists {
-		return benefits, nil
-	}
-	return []model.ProgramBenefit{}, nil
-}
-
-func (m *mockProgramRepoForMobile) GetProgramRequirements(ctx context.Context, programID int) ([]model.ProgramRequirement, error) {
-	if reqs, exists := m.requirements[programID]; exists {
-		return reqs, nil
-	}
-	return []model.ProgramRequirement{}, nil
-}
-
-func (m *mockProgramRepoForMobile) DeleteProgramBenefits(ctx context.Context, programID int) error {
-	return errors.New("not implemented")
-}
-
-func (m *mockProgramRepoForMobile) DeleteProgramRequirements(ctx context.Context, programID int) error {
-	return errors.New("not implemented")
-}
-
-// ==================== TEST FUNCTIONS FOR MOBILE ====================
-
-func setupMobileService() (*mobileService, *mockMobileRepository) {
-	mockMobileRepo := newMockMobileRepository()
-	mockProgramRepo := newMockProgramRepoForMobile()
-	mockNotifRepo := newMockNotificationRepo()
-	mockVaultRepo := newMockVaultDecryptLogRepo()
-	mockAppRepo := newMockApplicationsRepo()
-	mockSLARepo := newMockSLARepo()
-
-	service := &mobileService{
-		mobileRepo:       mockMobileRepo,
-		programRepo:      mockProgramRepo,
-		notificationRepo: mockNotifRepo,
-		vaultLogRepo:     mockVaultRepo,
-		applicationRepo:  mockAppRepo,
-		slaRepo:          mockSLARepo,
-		minio:            nil,
+// Update the setup function to include all dependencies
+func setupUsersServiceComplete() (*usersService, *mockUsersRepositoryForTests, redis.RedisRepository, *mockOTPRepository) {
+	mockUserRepo := &mockUsersRepositoryForTests{
+		users: make(map[int]model.User),
+		roles: make(map[int]model.Role),
+		umkms: make(map[string]model.UMKM),
+		permissions: []model.Permission{
+			{ID: 1, Code: "VIEW_DASHBOARD", Name: "View Dashboard"},
+			{ID: 2, Code: "MANAGE_USERS", Name: "Manage Users"},
+		},
+		rolePermissions: make(map[int][]string),
+		provinces: []dto.Province{
+			{ID: 1, Name: "DKI Jakarta"},
+			{ID: 2, Name: "Jawa Barat"},
+		},
+		cities: []dto.City{
+			{ID: 1, Name: "Jakarta Pusat", ProvinceID: 1},
+			{ID: 2, Name: "Bandung", ProvinceID: 2},
+		},
 	}
 
-	return service, mockMobileRepo
+	mockRedisRepo := newMockRedisRepository()
+	mockOTPRepo := newMockOTPRepository()
+
+	// Setup default roles
+	mockUserRepo.roles[1] = model.Role{ID: 1, Name: "superadmin"}
+	mockUserRepo.roles[2] = model.Role{ID: 2, Name: "admin_screening"}
+	mockUserRepo.roles[3] = model.Role{ID: 3, Name: "admin_vendor"}
+	mockUserRepo.roles[4] = model.Role{ID: 4, Name: constant.RoleUMKM}
+
+	service := &usersService{
+		userRepository:  mockUserRepo,
+		otpRepository:   mockOTPRepo,
+		redisRepository: mockRedisRepo,
+		minio:           nil,
+	}
+
+	return service, mockUserRepo, mockRedisRepo, mockOTPRepo
 }
 
-// Test GetTrainingPrograms
-func TestGetTrainingPrograms(t *testing.T) {
-	service, mockRepo := setupMobileService()
+// ==================== TEST UpdateProfile ====================
+
+func TestUsersServiceUpdateProfile(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
-	t.Run("Get training programs when empty", func(t *testing.T) {
-		result, err := service.GetTrainingPrograms(ctx)
+	mockRepo.users[1] = model.User{
+		ID:    1,
+		Name:  "Old Name",
+		Email: "old@example.com",
+	}
+
+	t.Run("Update profile successfully", func(t *testing.T) {
+		request := dto.Users{
+			Name:  "New Name",
+			Email: "new@example.com",
+		}
+
+		result, err := service.UpdateProfile(ctx, 1, request)
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
 
-		if len(result) != 0 {
-			t.Errorf("Expected 0 programs, got %d", len(result))
+		if result.Name != "New Name" {
+			t.Errorf("Expected name 'New Name', got '%s'", result.Name)
+		}
+
+		if result.Email != "new@example.com" {
+			t.Errorf("Expected email 'new@example.com', got '%s'", result.Email)
 		}
 	})
 
-	t.Run("Get active training programs", func(t *testing.T) {
-		mockRepo.programs[1] = model.Program{
-			ID:       1,
-			Title:    "Training 1",
-			Type:     "training",
-			IsActive: true,
-		}
-		mockRepo.programs[2] = model.Program{
-			ID:       2,
-			Title:    "Training 2",
-			Type:     "training",
-			IsActive: true,
-		}
-		mockRepo.programs[3] = model.Program{
-			ID:       3,
-			Title:    "Certification 1",
-			Type:     "certification",
-			IsActive: true,
+	t.Run("Update profile with empty name", func(t *testing.T) {
+		request := dto.Users{
+			Name:  "",
+			Email: "test@example.com",
 		}
 
-		result, err := service.GetTrainingPrograms(ctx)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-
-		if len(result) != 2 {
-			t.Errorf("Expected 2 training programs, got %d", len(result))
+		_, err := service.UpdateProfile(ctx, 1, request)
+		if err == nil {
+			t.Error("Expected error for empty name, got none")
 		}
 	})
 
-	t.Run("Inactive programs should not be returned", func(t *testing.T) {
-		mockRepo.programs[4] = model.Program{
-			ID:       4,
-			Title:    "Inactive Training",
-			Type:     "training",
-			IsActive: false,
+	t.Run("Update profile with invalid email", func(t *testing.T) {
+		request := dto.Users{
+			Name:  "Test Name",
+			Email: "invalid-email",
 		}
 
-		result, err := service.GetTrainingPrograms(ctx)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
+		_, err := service.UpdateProfile(ctx, 1, request)
+		if err == nil {
+			t.Error("Expected error for invalid email, got none")
+		}
+	})
+
+	t.Run("Update profile with existing email", func(t *testing.T) {
+		mockRepo.users[2] = model.User{
+			ID:    2,
+			Email: "existing@example.com",
 		}
 
-		// Should still be 2 from previous test
-		if len(result) != 2 {
-			t.Errorf("Expected 2 active programs, got %d", len(result))
+		request := dto.Users{
+			Name:  "Test Name",
+			Email: "existing@example.com",
+		}
+
+		_, err := service.UpdateProfile(ctx, 1, request)
+		if err == nil {
+			t.Error("Expected error for existing email, got none")
+		}
+	})
+
+	t.Run("Update profile for non-existent user", func(t *testing.T) {
+		request := dto.Users{
+			Name:  "Test Name",
+			Email: "test@example.com",
+		}
+
+		_, err := service.UpdateProfile(ctx, 999, request)
+		if err == nil {
+			t.Error("Expected error for non-existent user, got none")
 		}
 	})
 }
 
-// Test GetCertificationPrograms
-func TestGetCertificationPrograms(t *testing.T) {
-	service, mockRepo := setupMobileService()
+// ==================== TEST SetOTP ====================
+
+func TestUsersServiceSetOTP(t *testing.T) {
+	service, mockRepo, mockRedis, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
-	mockRepo.programs[1] = model.Program{
+	mockRepo.users[1] = model.User{
+		ID:    1,
+		Email: "test@example.com",
+	}
+
+	t.Run("Set OTP successfully", func(t *testing.T) {
+		err := service.SetOTP(ctx, "test@example.com", "123456", 5*time.Minute)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		// Verify OTP is stored in Redis
+		storedOTP, err := mockRedis.Get(ctx, "test@example.com")
+		if err != nil {
+			t.Errorf("Expected OTP to be stored, got error: %v", err)
+		}
+		if storedOTP != "123456" {
+			t.Errorf("Expected OTP '123456', got '%s'", storedOTP)
+		}
+	})
+
+	t.Run("Set OTP with empty email", func(t *testing.T) {
+		err := service.SetOTP(ctx, "", "123456", 5*time.Minute)
+		if err == nil {
+			t.Error("Expected error for empty email, got none")
+		}
+	})
+
+	t.Run("Set OTP with invalid email", func(t *testing.T) {
+		err := service.SetOTP(ctx, "invalid-email", "123456", 5*time.Minute)
+		if err == nil {
+			t.Error("Expected error for invalid email, got none")
+		}
+	})
+
+	t.Run("Set OTP for non-existent user", func(t *testing.T) {
+		err := service.SetOTP(ctx, "nonexistent@example.com", "123456", 5*time.Minute)
+		if err == nil {
+			t.Error("Expected error for non-existent user, got none")
+		}
+	})
+}
+
+// ==================== TEST ValidateOTP ====================
+
+func TestUsersServiceValidateOTP(t *testing.T) {
+	service, mockRepo, mockRedis, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	mockRepo.users[1] = model.User{
+		ID:    1,
+		Email: "test@example.com",
+	}
+
+	t.Run("Validate OTP successfully", func(t *testing.T) {
+		mockRedis.Set(ctx, "test@example.com", "123456", 5*time.Minute)
+
+		valid, err := service.ValidateOTP(ctx, "test@example.com", "123456")
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		if !valid {
+			t.Error("Expected OTP to be valid")
+		}
+	})
+
+	t.Run("Validate OTP with wrong code", func(t *testing.T) {
+		mockRedis.Set(ctx, "test@example.com", "123456", 5*time.Minute)
+
+		valid, err := service.ValidateOTP(ctx, "test@example.com", "wrong")
+		if err == nil {
+			t.Error("Expected error for wrong OTP, got none")
+		}
+		if valid {
+			t.Error("Expected OTP to be invalid")
+		}
+	})
+
+	t.Run("Validate OTP with empty email", func(t *testing.T) {
+		_, err := service.ValidateOTP(ctx, "", "123456")
+		if err == nil {
+			t.Error("Expected error for empty email, got none")
+		}
+	})
+
+	t.Run("Validate OTP with invalid email", func(t *testing.T) {
+		_, err := service.ValidateOTP(ctx, "invalid-email", "123456")
+		if err == nil {
+			t.Error("Expected error for invalid email, got none")
+		}
+	})
+}
+
+// ==================== TEST VerifyUser ====================
+
+func TestUsersServiceVerifyUser(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	mockRepo.users[1] = model.User{
 		ID:       1,
-		Title:    "Halal Certification",
-		Type:     "certification",
-		IsActive: true,
+		Name:     "Test User",
+		Email:    "test@example.com",
+		IsActive: false,
 	}
 
-	t.Run("Get certification programs", func(t *testing.T) {
-		result, err := service.GetCertificationPrograms(ctx)
+	t.Run("Verify user successfully", func(t *testing.T) {
+		result, err := service.VerifyUser(ctx, "test@example.com")
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
 
-		if len(result) != 1 {
-			t.Errorf("Expected 1 certification program, got %d", len(result))
+		if result.ID != 1 {
+			t.Errorf("Expected ID 1, got %d", result.ID)
 		}
 
-		if result[0].Title != "Halal Certification" {
-			t.Errorf("Expected title 'Halal Certification', got '%s'", result[0].Title)
+		// Check if user is now active
+		user, _ := mockRepo.GetUserByEmail(ctx, "test@example.com")
+		if !user.IsActive {
+			t.Error("Expected user to be active")
+		}
+	})
+
+	t.Run("Verify non-existent user", func(t *testing.T) {
+		_, err := service.VerifyUser(ctx, "nonexistent@example.com")
+		if err == nil {
+			t.Error("Expected error for non-existent user, got none")
 		}
 	})
 }
 
-// Test GetFundingPrograms
-func TestGetFundingPrograms(t *testing.T) {
-	service, mockRepo := setupMobileService()
+// ==================== TEST GetUserByID and GetUserByEmail ====================
+
+func TestUsersServiceGetUserByID(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
-	minAmt := 10000000.0
-	maxAmt := 50000000.0
-
-	mockRepo.programs[1] = model.Program{
-		ID:        1,
-		Title:     "Business Loan",
-		Type:      "funding",
-		IsActive:  true,
-		MinAmount: &minAmt,
-		MaxAmount: &maxAmt,
+	mockRepo.users[1] = model.User{
+		ID:    1,
+		Name:  "Test User",
+		Email: "test@example.com",
 	}
 
-	t.Run("Get funding programs", func(t *testing.T) {
-		result, err := service.GetFundingPrograms(ctx)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-
-		if len(result) != 1 {
-			t.Errorf("Expected 1 funding program, got %d", len(result))
-		}
-
-		if result[0].Type != "funding" {
-			t.Errorf("Expected type 'funding', got '%s'", result[0].Type)
-		}
-	})
-}
-
-// Test GetProgramDetail
-func TestGetProgramDetail(t *testing.T) {
-	service, mockRepo := setupMobileService()
-	ctx := context.Background()
-
-	mockRepo.programs[1] = model.Program{
-		ID:          1,
-		Title:       "Test Program",
-		Description: "Test Description",
-		Type:        "training",
-		IsActive:    true,
-	}
-
-	t.Run("Get existing program detail", func(t *testing.T) {
-		result, err := service.GetProgramDetail(ctx, 1)
+	t.Run("Get existing user by ID", func(t *testing.T) {
+		result, err := service.GetUserByID(ctx, 1)
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
@@ -400,389 +462,550 @@ func TestGetProgramDetail(t *testing.T) {
 		}
 	})
 
-	t.Run("Get non-existing program", func(t *testing.T) {
-		_, err := service.GetProgramDetail(ctx, 999)
-
+	t.Run("Get non-existent user by ID", func(t *testing.T) {
+		_, err := service.GetUserByID(ctx, 999)
 		if err == nil {
-			t.Error("Expected error for non-existing program, got none")
+			t.Error("Expected error for non-existent user, got none")
 		}
 	})
 }
 
-// Test GetUMKMProfile
-func TestGetUMKMProfile(t *testing.T) {
-	service, mockRepo := setupMobileService()
+func TestUsersServiceGetUserByEmail(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
-	mockRepo.umkms[1] = model.UMKM{
-		ID:           1,
-		UserID:       1,
-		BusinessName: "Test Business",
-		NIK:          "vault:v1:encrypted_nik",
-		KartuNumber:  "vault:v1:encrypted_kartu",
-		User: model.User{
+	mockRepo.users[1] = model.User{
+		ID:    1,
+		Name:  "Test User",
+		Email: "test@example.com",
+	}
+
+	t.Run("Get existing user by email", func(t *testing.T) {
+		result, err := service.GetUserByEmail(ctx, "test@example.com")
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if result.Email != "test@example.com" {
+			t.Errorf("Expected email 'test@example.com', got '%s'", result.Email)
+		}
+	})
+
+	t.Run("Get non-existent user by email", func(t *testing.T) {
+		_, err := service.GetUserByEmail(ctx, "nonexistent@example.com")
+		if err == nil {
+			t.Error("Expected error for non-existent user, got none")
+		}
+	})
+}
+
+// ==================== TEST Permission Functions ====================
+
+func TestUsersServiceGetListPermissions(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	t.Run("Get list of permissions", func(t *testing.T) {
+		result, err := service.GetListPermissions(ctx)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if len(result) != len(mockRepo.permissions) {
+			t.Errorf("Expected %d permissions, got %d", len(mockRepo.permissions), len(result))
+		}
+	})
+}
+
+func TestUsersServiceGetListRolePermissions(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	mockRepo.rolePermissions[1] = []string{"VIEW_DASHBOARD", "MANAGE_USERS"}
+
+	t.Run("Get list of role permissions", func(t *testing.T) {
+		result, err := service.GetListRolePermissions(ctx)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if len(result) == 0 {
+			t.Error("Expected role permissions, got empty list")
+		}
+	})
+}
+
+func TestUsersServiceUpdateRolePermissions(t *testing.T) {
+	service, _, _, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	t.Run("Update role permissions successfully", func(t *testing.T) {
+		request := dto.RolePermissions{
+			RoleID:      1,
+			Permissions: []string{"VIEW_DASHBOARD", "MANAGE_USERS"},
+		}
+
+		err := service.UpdateRolePermissions(ctx, request)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+	})
+
+	t.Run("Update with invalid role ID", func(t *testing.T) {
+		request := dto.RolePermissions{
+			RoleID:      999,
+			Permissions: []string{"VIEW_DASHBOARD"},
+		}
+
+		err := service.UpdateRolePermissions(ctx, request)
+		if err == nil {
+			t.Error("Expected error for invalid role ID, got none")
+		}
+	})
+
+	t.Run("Update with invalid permissions", func(t *testing.T) {
+		request := dto.RolePermissions{
+			RoleID:      1,
+			Permissions: []string{"INVALID_PERMISSION"},
+		}
+
+		err := service.UpdateRolePermissions(ctx, request)
+		if err == nil {
+			t.Error("Expected error for invalid permissions, got none")
+		}
+	})
+}
+
+// ==================== TEST Mobile Functions ====================
+
+func TestUsersServiceMetaCityAndProvince(t *testing.T) {
+	service, _, _, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	t.Run("Get meta city and province", func(t *testing.T) {
+		result, err := service.MetaCityAndProvince(ctx)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if len(result) == 0 {
+			t.Error("Expected meta data, got empty list")
+		}
+
+		if len(result[0].Provinces) == 0 {
+			t.Error("Expected provinces, got empty list")
+		}
+
+		if len(result[0].Cities) == 0 {
+			t.Error("Expected cities, got empty list")
+		}
+	})
+}
+
+func TestUsersServiceRegisterMobile(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	t.Run("Register mobile with empty email", func(t *testing.T) {
+		err := service.RegisterMobile(ctx, "", "81234567890")
+		if err == nil {
+			t.Error("Expected error for empty email, got none")
+		}
+	})
+
+	t.Run("Register mobile with invalid email", func(t *testing.T) {
+		err := service.RegisterMobile(ctx, "invalid-email", "81234567890")
+		if err == nil {
+			t.Error("Expected error for invalid email, got none")
+		}
+	})
+
+	t.Run("Register mobile with invalid phone", func(t *testing.T) {
+		err := service.RegisterMobile(ctx, "test@example.com", "123")
+		if err == nil {
+			t.Error("Expected error for invalid phone, got none")
+		}
+	})
+
+	t.Run("Register mobile with existing email", func(t *testing.T) {
+		mockRepo.users[1] = model.User{
 			ID:    1,
-			Name:  "Test User",
+			Email: "existing@example.com",
+		}
+
+		err := service.RegisterMobile(ctx, "existing@example.com", "81234567890")
+		if err == nil {
+			t.Error("Expected error for existing email, got none")
+		}
+	})
+}
+
+func TestUsersServiceLoginMobile(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	hashedPass, _ := utils.PasswordHashing("Password123")
+	mockRepo.umkms["81234567890"] = model.UMKM{
+		ID:           1,
+		BusinessName: "Test Business",
+		Phone:        "81234567890",
+		KartuType:    "produktif",
+		User: model.User{
+			ID:       1,
+			Name:     "Test User",
+			Email:    "test@example.com",
+			Password: hashedPass,
+		},
+	}
+
+	t.Run("Login mobile successfully", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Phone:    "081234567890",
+			Password: "Password123",
+		}
+
+		token, err := service.LoginMobile(ctx, request)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if token == nil || *token == "" {
+			t.Error("Expected token to be generated")
+		}
+	})
+
+	t.Run("Login mobile with empty phone", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Phone:    "",
+			Password: "Password123",
+		}
+
+		_, err := service.LoginMobile(ctx, request)
+		if err == nil {
+			t.Error("Expected error for empty phone, got none")
+		}
+	})
+
+	t.Run("Login mobile with wrong password", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Phone:    "081234567890",
+			Password: "WrongPassword",
+		}
+
+		_, err := service.LoginMobile(ctx, request)
+		if err == nil {
+			t.Error("Expected error for wrong password, got none")
+		}
+	})
+
+	t.Run("Login mobile with non-existent user", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Phone:    "089999999999",
+			Password: "Password123",
+		}
+
+		_, err := service.LoginMobile(ctx, request)
+		if err == nil {
+			t.Error("Expected error for non-existent user, got none")
+		}
+	})
+}
+
+func TestUsersServiceForgotPassword(t *testing.T) {
+	service, mockRepo, _, _ := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	mockRepo.umkms["81234567890"] = model.UMKM{
+		ID:    1,
+		Phone: "81234567890",
+		User: model.User{
 			Email: "test@example.com",
 		},
-		Province: model.Province{ID: 1, Name: "DKI Jakarta"},
-		City:     model.City{ID: 1, Name: "Jakarta Pusat"},
 	}
 
-	t.Run("Get existing UMKM profile", func(t *testing.T) {
-		// Note: This will fail decryption in real scenario
-		// In actual implementation, mock the vault service
-		_, err := service.GetUMKMProfile(ctx, 1)
-
-		// We expect error because vault decryption will fail in test
+	t.Run("Forgot password with empty phone", func(t *testing.T) {
+		err := service.ForgotPassword(ctx, "")
 		if err == nil {
-			// If no error, check the result
-			// In production, this would work with proper vault mock
+			t.Error("Expected error for empty phone, got none")
 		}
 	})
 
-	t.Run("Get non-existing UMKM profile", func(t *testing.T) {
-		_, err := service.GetUMKMProfile(ctx, 999)
-
+	t.Run("Forgot password with invalid phone", func(t *testing.T) {
+		err := service.ForgotPassword(ctx, "123")
 		if err == nil {
-			t.Error("Expected error for non-existing profile, got none")
-		}
-	})
-}
-
-// Test UpdateUMKMProfile
-func TestUpdateUMKMProfile(t *testing.T) {
-	service, mockRepo := setupMobileService()
-	ctx := context.Background()
-
-	birthDate, _ := time.Parse("2006-01-02", "1990-01-01")
-	mockRepo.umkms[1] = model.UMKM{
-		ID:           1,
-		UserID:       1,
-		BusinessName: "Old Business",
-		BirthDate:    birthDate,
-		User: model.User{
-			ID:   1,
-			Name: "Old Name",
-		},
-	}
-
-	t.Run("Update UMKM profile successfully", func(t *testing.T) {
-		request := dto.UpdateUMKMProfile{
-			BusinessName: "New Business",
-			Gender:       "male",
-			BirthDate:    "1990-01-01",
-			Address:      "New Address",
-			ProvinceID:   1,
-			CityID:       1,
-			District:     "District",
-			PostalCode:   "12345",
-			Name:         "New Name",
-		}
-
-		// This will fail due to vault decryption
-		// In production, mock vault service
-		_, err := service.UpdateUMKMProfile(ctx, 1, request)
-		// Expected to fail in test due to vault
-		if err != nil {
-			// Expected in test environment
+			t.Error("Expected error for invalid phone, got none")
 		}
 	})
 
-	t.Run("Update with invalid birth date", func(t *testing.T) {
-		request := dto.UpdateUMKMProfile{
-			BusinessName: "New Business",
-			Gender:       "male",
-			BirthDate:    "invalid-date",
-			Address:      "New Address",
-			ProvinceID:   1,
-			CityID:       1,
-			District:     "District",
-			PostalCode:   "12345",
-			Name:         "New Name",
-		}
-
-		_, err := service.UpdateUMKMProfile(ctx, 1, request)
-
+	t.Run("Forgot password for non-existent user", func(t *testing.T) {
+		err := service.ForgotPassword(ctx, "089999999999")
 		if err == nil {
-			t.Error("Expected error for invalid birth date, got none")
+			t.Error("Expected error for non-existent user, got none")
 		}
 	})
 }
 
-// Test GetApplicationList
-func TestGetApplicationList(t *testing.T) {
-	service, mockRepo := setupMobileService()
+func TestUsersServiceResetPassword(t *testing.T) {
+	service, mockRepo, _, mockOTPRepo := setupUsersServiceComplete()
 	ctx := context.Background()
 
-	mockRepo.umkms[1] = model.UMKM{
-		ID:     1,
-		UserID: 1,
+	tempToken := "temptoken123"
+	mockRepo.users[1] = model.User{
+		ID:    1,
+		Email: "test@example.com",
 	}
 
-	mockRepo.applications[1] = model.Application{
-		ID:        1,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "screening",
-		Program: model.Program{
-			ID:    1,
-			Title: "Training Program",
-		},
-		SubmittedAt: time.Now(),
-		ExpiredAt:   time.Now().AddDate(0, 0, 30),
+	mockOTPRepo.otps["81234567890"] = &model.OTP{
+		PhoneNumber: "81234567890",
+		Email:       "test@example.com",
+		TempToken:   &tempToken,
+		Status:      constant.OTPStatusActive,
+		ExpiresAt:   time.Now().Add(5 * time.Minute),
 	}
 
-	t.Run("Get application list for UMKM", func(t *testing.T) {
-		result, err := service.GetApplicationList(ctx, 1)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
+	t.Run("Reset password with empty password", func(t *testing.T) {
+		request := dto.ResetPasswordMobile{
+			Password:        "",
+			ConfirmPassword: "",
 		}
 
-		if len(result) != 1 {
-			t.Errorf("Expected 1 application, got %d", len(result))
-		}
-
-		if result[0].Type != "training" {
-			t.Errorf("Expected type 'training', got '%s'", result[0].Type)
-		}
-	})
-
-	t.Run("Get empty list for UMKM with no applications", func(t *testing.T) {
-		mockRepo.umkms[2] = model.UMKM{
-			ID:     2,
-			UserID: 2,
-		}
-
-		result, err := service.GetApplicationList(ctx, 2)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-
-		if len(result) != 0 {
-			t.Errorf("Expected 0 applications, got %d", len(result))
-		}
-	})
-}
-
-// Test GetApplicationDetail
-func TestGetApplicationDetail(t *testing.T) {
-	service, mockRepo := setupMobileService()
-	ctx := context.Background()
-
-	mockRepo.applications[1] = model.Application{
-		ID:        1,
-		UMKMID:    1,
-		ProgramID: 1,
-		Type:      "training",
-		Status:    "screening",
-		Program: model.Program{
-			ID:          1,
-			Title:       "Training Program",
-			Description: "Description",
-			IsActive:    true,
-		},
-		SubmittedAt: time.Now(),
-		ExpiredAt:   time.Now().AddDate(0, 0, 30),
-	}
-
-	t.Run("Get existing application detail", func(t *testing.T) {
-		result, err := service.GetApplicationDetail(ctx, 1)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-
-		if result.ID != 1 {
-			t.Errorf("Expected ID 1, got %d", result.ID)
-		}
-
-		if result.Type != "training" {
-			t.Errorf("Expected type 'training', got '%s'", result.Type)
-		}
-	})
-
-	t.Run("Get non-existing application", func(t *testing.T) {
-		_, err := service.GetApplicationDetail(ctx, 999)
-
+		err := service.ResetPassword(ctx, request, tempToken)
 		if err == nil {
-			t.Error("Expected error for non-existing application, got none")
-		}
-	})
-}
-
-// Test GetPublishedNews
-func TestGetPublishedNews(t *testing.T) {
-	service, mockRepo := setupMobileService()
-	ctx := context.Background()
-
-	now := time.Now()
-	mockRepo.news[1] = model.News{
-		ID:          1,
-		Title:       "Published News 1",
-		Slug:        "published-news-1",
-		IsPublished: true,
-		PublishedAt: &now,
-		Author:      model.User{Name: "Author 1"},
-	}
-
-	mockRepo.news[2] = model.News{
-		ID:          2,
-		Title:       "Draft News",
-		Slug:        "draft-news",
-		IsPublished: false,
-		Author:      model.User{Name: "Author 2"},
-	}
-
-	t.Run("Get published news only", func(t *testing.T) {
-		params := dto.NewsQueryParams{
-			Page:  1,
-			Limit: 10,
-		}
-
-		result, total, err := service.GetPublishedNews(ctx, params)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-
-		if total != 1 {
-			t.Errorf("Expected 1 published news, got %d", total)
-		}
-
-		if len(result) != 1 {
-			t.Errorf("Expected 1 news item, got %d", len(result))
-		}
-	})
-}
-
-// Test GetNewsDetail
-func TestGetNewsDetail(t *testing.T) {
-	service, mockRepo := setupMobileService()
-	ctx := context.Background()
-
-	now := time.Now()
-	mockRepo.news[1] = model.News{
-		ID:          1,
-		Title:       "Test News",
-		Slug:        "test-news",
-		Content:     "Full content here",
-		IsPublished: true,
-		PublishedAt: &now,
-		ViewsCount:  10,
-		Author:      model.User{Name: "Author"},
-		Tags: []model.NewsTag{
-			{TagName: "tag1"},
-			{TagName: "tag2"},
-		},
-	}
-
-	t.Run("Get news detail and increment views", func(t *testing.T) {
-		result, err := service.GetNewsDetail(ctx, "test-news")
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-
-		if result.Title != "Test News" {
-			t.Errorf("Expected title 'Test News', got '%s'", result.Title)
-		}
-
-		// Check if views incremented
-		if result.ViewsCount != 11 {
-			t.Errorf("Expected views count 11, got %d", result.ViewsCount)
+			t.Error("Expected error for empty password, got none")
 		}
 	})
 
-	t.Run("Get non-existing news", func(t *testing.T) {
-		_, err := service.GetNewsDetail(ctx, "non-existing")
+	t.Run("Reset password with weak password", func(t *testing.T) {
+		request := dto.ResetPasswordMobile{
+			Password:        "weak",
+			ConfirmPassword: "weak",
+		}
 
+		err := service.ResetPassword(ctx, request, tempToken)
 		if err == nil {
-			t.Error("Expected error for non-existing news, got none")
-		}
-	})
-}
-
-// Test GetUMKMDocuments
-func TestGetUMKMDocuments(t *testing.T) {
-	service, mockRepo := setupMobileService()
-	ctx := context.Background()
-
-	mockRepo.umkms[1] = model.UMKM{
-		ID:             1,
-		UserID:         1,
-		NIB:            "http://example.com/nib.pdf",
-		NPWP:           "http://example.com/npwp.pdf",
-		RevenueRecord:  "http://example.com/revenue.pdf",
-		BusinessPermit: "",
-	}
-
-	t.Run("Get UMKM documents", func(t *testing.T) {
-		result, err := service.GetUMKMDocuments(ctx, 1)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-
-		// Should return 3 documents (NIB, NPWP, RevenueRecord)
-		if len(result) != 3 {
-			t.Errorf("Expected 3 documents, got %d", len(result))
+			t.Error("Expected error for weak password, got none")
 		}
 	})
 
-	t.Run("Get documents for non-existing UMKM", func(t *testing.T) {
-		_, err := service.GetUMKMDocuments(ctx, 999)
+	t.Run("Reset password with mismatched passwords", func(t *testing.T) {
+		request := dto.ResetPasswordMobile{
+			Password:        "Password123",
+			ConfirmPassword: "DifferentPassword123",
+		}
 
+		err := service.ResetPassword(ctx, request, tempToken)
 		if err == nil {
-			t.Error("Expected error for non-existing UMKM, got none")
-		}
-	})
-}
-
-// Test Edge Cases
-func TestMobileServiceEdgeCases(t *testing.T) {
-	service, mockRepo := setupMobileService()
-	ctx := context.Background()
-
-	t.Run("Get programs with mixed types and statuses", func(t *testing.T) {
-		mockRepo.programs[1] = model.Program{Type: "training", IsActive: true}
-		mockRepo.programs[2] = model.Program{Type: "training", IsActive: false}
-		mockRepo.programs[3] = model.Program{Type: "certification", IsActive: true}
-		mockRepo.programs[4] = model.Program{Type: "funding", IsActive: true}
-
-		trainings, _ := service.GetTrainingPrograms(ctx)
-		certs, _ := service.GetCertificationPrograms(ctx)
-		fundings, _ := service.GetFundingPrograms(ctx)
-
-		if len(trainings) != 1 {
-			t.Errorf("Expected 1 active training, got %d", len(trainings))
-		}
-		if len(certs) != 1 {
-			t.Errorf("Expected 1 certification, got %d", len(certs))
-		}
-		if len(fundings) != 1 {
-			t.Errorf("Expected 1 funding, got %d", len(fundings))
+			t.Error("Expected error for mismatched passwords, got none")
 		}
 	})
 
-	t.Run("Empty document list", func(t *testing.T) {
-		mockRepo.umkms[2] = model.UMKM{
-			ID:     2,
-			UserID: 2,
+	t.Run("Reset password successfully", func(t *testing.T) {
+		request := dto.ResetPasswordMobile{
+			Password:        "NewPassword123",
+			ConfirmPassword: "NewPassword123",
 		}
 
-		result, err := service.GetUMKMDocuments(ctx, 2)
+		err := service.ResetPassword(ctx, request, tempToken)
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
 
-		if len(result) != 0 {
-			t.Errorf("Expected 0 documents, got %d", len(result))
+		// Verify OTP status is updated
+		otp, _ := mockOTPRepo.GetOTPByPhone(ctx, "81234567890")
+		if otp.Status != constant.OTPStatusUsed {
+			t.Error("Expected OTP status to be 'used'")
+		}
+	})
+
+	t.Run("Reset password with invalid temp token", func(t *testing.T) {
+		request := dto.ResetPasswordMobile{
+			Password:        "NewPassword123",
+			ConfirmPassword: "NewPassword123",
+		}
+
+		err := service.ResetPassword(ctx, request, "invalid_token")
+		if err == nil {
+			t.Error("Expected error for invalid temp token, got none")
 		}
 	})
 }
 
-// ==================== TEST USERS SERVICE METHODS ====================
+// ==================== Enhanced Mock Repository ====================
+
+type mockUsersRepositoryForTests struct {
+	users           map[int]model.User
+	roles           map[int]model.Role
+	umkms           map[string]model.UMKM
+	permissions     []model.Permission
+	rolePermissions map[int][]string
+	provinces       []dto.Province
+	cities          []dto.City
+}
+
+func (m *mockUsersRepositoryForTests) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
+	for _, user := range m.users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return model.User{}, errors.New("user not found")
+}
+
+func (m *mockUsersRepositoryForTests) CreateUser(ctx context.Context, user model.User) (model.User, error) {
+	user.ID = len(m.users) + 1
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
+	m.users[user.ID] = user
+	return user, nil
+}
+
+func (m *mockUsersRepositoryForTests) GetUserByID(ctx context.Context, id int) (model.User, error) {
+	if user, exists := m.users[id]; exists {
+		return user, nil
+	}
+	return model.User{}, errors.New("user not found")
+}
+
+func (m *mockUsersRepositoryForTests) UpdateUser(ctx context.Context, user model.User) (model.User, error) {
+	user.UpdatedAt = time.Now()
+	m.users[user.ID] = user
+	return user, nil
+}
+
+func (m *mockUsersRepositoryForTests) DeleteUser(ctx context.Context, user model.User) (model.User, error) {
+	delete(m.users, user.ID)
+	return user, nil
+}
+
+func (m *mockUsersRepositoryForTests) GetAllUsers(ctx context.Context) ([]model.User, error) {
+	var users []model.User
+	for _, u := range m.users {
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+func (m *mockUsersRepositoryForTests) IsRoleExist(ctx context.Context, id int) bool {
+	_, exists := m.roles[id]
+	return exists
+}
+
+func (m *mockUsersRepositoryForTests) GetRoleByID(ctx context.Context, id int) (model.Role, error) {
+	if role, exists := m.roles[id]; exists {
+		return role, nil
+	}
+	return model.Role{}, errors.New("role not found")
+}
+
+func (m *mockUsersRepositoryForTests) GetListPermissionsByRoleID(ctx context.Context, roleID int) ([]string, error) {
+	if perms, exists := m.rolePermissions[roleID]; exists {
+		return perms, nil
+	}
+	return []string{"VIEW_DASHBOARD", "MANAGE_USERS"}, nil
+}
+
+func (m *mockUsersRepositoryForTests) GetRoleByName(ctx context.Context, name string) (model.Role, error) {
+	for _, role := range m.roles {
+		if role.Name == name {
+			return role, nil
+		}
+	}
+	return model.Role{}, errors.New("role not found")
+}
+
+func (m *mockUsersRepositoryForTests) GetAllRoles(ctx context.Context) ([]model.Role, error) {
+	var roles []model.Role
+	for _, r := range m.roles {
+		roles = append(roles, r)
+	}
+	return roles, nil
+}
+
+func (m *mockUsersRepositoryForTests) CreateUMKM(ctx context.Context, umkm model.UMKM, user model.User) (dto.UMKMMobile, error) {
+	user.ID = len(m.users) + 1
+	m.users[user.ID] = user
+	umkm.UserID = user.ID
+	umkm.ID = len(m.umkms) + 1
+	m.umkms[umkm.Phone] = umkm
+
+	return dto.UMKMMobile{
+		ID:           umkm.ID,
+		UserID:       user.ID,
+		Fullname:     user.Name,
+		BusinessName: umkm.BusinessName,
+		Email:        user.Email,
+		Phone:        umkm.Phone,
+	}, nil
+}
+
+func (m *mockUsersRepositoryForTests) GetUMKMByPhone(ctx context.Context, phone string) (model.UMKM, error) {
+	if umkm, exists := m.umkms[phone]; exists {
+		return umkm, nil
+	}
+	return model.UMKM{}, errors.New("UMKM not found")
+}
+
+func (m *mockUsersRepositoryForTests) IsPermissionExist(ctx context.Context, ids []string) ([]int, bool) {
+	var permIDs []int
+	for _, code := range ids {
+		for _, perm := range m.permissions {
+			if perm.Code == code {
+				permIDs = append(permIDs, perm.ID)
+				break
+			}
+		}
+	}
+	return permIDs, len(permIDs) == len(ids)
+}
+
+func (m *mockUsersRepositoryForTests) GetListPermissions(ctx context.Context) ([]model.Permission, error) {
+	return m.permissions, nil
+}
+
+func (m *mockUsersRepositoryForTests) GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error) {
+	var result []dto.RolePermissionsResponse
+	for roleID, perms := range m.rolePermissions {
+		role, _ := m.GetRoleByID(ctx, roleID)
+		result = append(result, dto.RolePermissionsResponse{
+			RoleID:   roleID,
+			RoleName: role.Name,
+		})
+		_ = perms
+	}
+	return result, nil
+}
+
+func (m *mockUsersRepositoryForTests) DeletePermissionsByRoleID(ctx context.Context, roleID int) error {
+	delete(m.rolePermissions, roleID)
+	return nil
+}
+
+func (m *mockUsersRepositoryForTests) AddRolePermissions(ctx context.Context, roleID int, permissions []int) error {
+	var codes []string
+	for _, permID := range permissions {
+		for _, perm := range m.permissions {
+			if perm.ID == permID {
+				codes = append(codes, perm.Code)
+				break
+			}
+		}
+	}
+	m.rolePermissions[roleID] = codes
+	return nil
+}
+
+func (m *mockUsersRepositoryForTests) GetProvinces(ctx context.Context) ([]dto.Province, error) {
+	return m.provinces, nil
+}
+
+func (m *mockUsersRepositoryForTests) GetCities(ctx context.Context) ([]dto.City, error) {
+	return m.cities, nil
+}
+
+// ==================== TEST Register ====================
 
 func TestUsersServiceRegister(t *testing.T) {
-	service, mockRepo := setupUsersServiceForTest()
+	service, mockRepo, _, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
 	t.Run("Register with valid data", func(t *testing.T) {
@@ -948,8 +1171,10 @@ func TestUsersServiceRegister(t *testing.T) {
 	})
 }
 
+// ==================== TEST Login ====================
+
 func TestUsersServiceLogin(t *testing.T) {
-	service, mockRepo := setupUsersServiceForTest()
+	service, mockRepo, _, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
 	// Setup user with hashed password
@@ -1024,10 +1249,36 @@ func TestUsersServiceLogin(t *testing.T) {
 			t.Error("Expected error for inactive user, got none")
 		}
 	})
+
+	t.Run("Login with empty email", func(t *testing.T) {
+		request := dto.Users{
+			Email:    "",
+			Password: "Password123",
+		}
+
+		_, err := service.Login(ctx, request)
+		if err == nil {
+			t.Error("Expected error for empty email, got none")
+		}
+	})
+
+	t.Run("Login with empty password", func(t *testing.T) {
+		request := dto.Users{
+			Email:    "test@example.com",
+			Password: "",
+		}
+
+		_, err := service.Login(ctx, request)
+		if err == nil {
+			t.Error("Expected error for empty password, got none")
+		}
+	})
 }
 
+// ==================== TEST GetAllUsers ====================
+
 func TestUsersServiceGetAllUsers(t *testing.T) {
-	service, mockRepo := setupUsersServiceForTest()
+	service, mockRepo, _, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
 	mockRepo.users[1] = model.User{
@@ -1036,6 +1287,12 @@ func TestUsersServiceGetAllUsers(t *testing.T) {
 		Email: "user1@example.com",
 		Roles: model.Role{Name: "admin"},
 	}
+	mockRepo.users[2] = model.User{
+		ID:    2,
+		Name:  "User 2",
+		Email: "user2@example.com",
+		Roles: model.Role{Name: "user"},
+	}
 
 	t.Run("Get all users", func(t *testing.T) {
 		result, err := service.GetAllUsers(ctx)
@@ -1043,14 +1300,29 @@ func TestUsersServiceGetAllUsers(t *testing.T) {
 			t.Errorf("Expected no error, got %v", err)
 		}
 
-		if len(result) != 1 {
-			t.Errorf("Expected 1 user, got %d", len(result))
+		if len(result) != 2 {
+			t.Errorf("Expected 2 users, got %d", len(result))
+		}
+	})
+
+	t.Run("Get all users when empty", func(t *testing.T) {
+		mockRepo.users = make(map[int]model.User)
+
+		result, err := service.GetAllUsers(ctx)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if len(result) != 0 {
+			t.Errorf("Expected 0 users, got %d", len(result))
 		}
 	})
 }
 
+// ==================== TEST UpdateUser ====================
+
 func TestUsersServiceUpdateUser(t *testing.T) {
-	service, mockRepo := setupUsersServiceForTest()
+	service, mockRepo, _, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
 	mockRepo.users[1] = model.User{
@@ -1077,10 +1349,54 @@ func TestUsersServiceUpdateUser(t *testing.T) {
 			t.Errorf("Expected name 'New Name', got '%s'", result.Name)
 		}
 	})
+
+	t.Run("Update user with empty fields", func(t *testing.T) {
+		roleID := 2
+		request := dto.Users{
+			Name:   "",
+			Email:  "test@example.com",
+			RoleID: &roleID,
+		}
+
+		_, err := service.UpdateUser(ctx, 1, request)
+		if err == nil {
+			t.Error("Expected error for empty fields, got none")
+		}
+	})
+
+	t.Run("Update user with invalid email", func(t *testing.T) {
+		roleID := 2
+		request := dto.Users{
+			Name:   "Test",
+			Email:  "invalid-email",
+			RoleID: &roleID,
+		}
+
+		_, err := service.UpdateUser(ctx, 1, request)
+		if err == nil {
+			t.Error("Expected error for invalid email, got none")
+		}
+	})
+
+	t.Run("Update user with invalid role", func(t *testing.T) {
+		roleID := 999
+		request := dto.Users{
+			Name:   "Test",
+			Email:  "test@example.com",
+			RoleID: &roleID,
+		}
+
+		_, err := service.UpdateUser(ctx, 1, request)
+		if err == nil {
+			t.Error("Expected error for invalid role, got none")
+		}
+	})
 }
 
+// ==================== TEST DeleteUser ====================
+
 func TestUsersServiceDeleteUser(t *testing.T) {
-	service, mockRepo := setupUsersServiceForTest()
+	service, mockRepo, _, _ := setupUsersServiceComplete()
 	ctx := context.Background()
 
 	mockRepo.users[1] = model.User{
@@ -1099,141 +1415,243 @@ func TestUsersServiceDeleteUser(t *testing.T) {
 			t.Errorf("Expected ID 1, got %d", result.ID)
 		}
 	})
-}
 
-// Setup helper for users service tests
-func setupUsersServiceForTest() (*usersService, *mockUsersRepositoryForTests) {
-	mockRepo := &mockUsersRepositoryForTests{
-		users: make(map[int]model.User),
-		roles: make(map[int]model.Role),
-	}
-
-	// Setup default roles
-	mockRepo.roles[1] = model.Role{ID: 1, Name: "superadmin"}
-	mockRepo.roles[2] = model.Role{ID: 2, Name: "admin_screening"}
-	mockRepo.roles[3] = model.Role{ID: 3, Name: "admin_vendor"}
-	mockRepo.roles[4] = model.Role{ID: 4, Name: "pelaku_usaha"}
-
-	service := &usersService{
-		userRepository: mockRepo,
-	}
-
-	return service, mockRepo
-}
-
-type mockUsersRepositoryForTests struct {
-	users map[int]model.User
-	roles map[int]model.Role
-}
-
-func (m *mockUsersRepositoryForTests) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
-	for _, user := range m.users {
-		if user.Email == email {
-			return user, nil
+	t.Run("Delete non-existent user", func(t *testing.T) {
+		_, err := service.DeleteUser(ctx, 999)
+		if err == nil {
+			t.Error("Expected error for non-existent user, got none")
 		}
+	})
+}
+
+// ==================== TEST VerifyOTP (Mobile) ====================
+
+func TestUsersServiceVerifyOTPMobile(t *testing.T) {
+	service, _, _, mockOTPRepo := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	validOTP := &model.OTP{
+		PhoneNumber: "81234567890",
+		Email:       "test@example.com",
+		OTPCode:     "123456",
+		Status:      constant.OTPStatusActive,
+		ExpiresAt:   time.Now().Add(5 * time.Minute),
 	}
-	return model.User{}, errors.New("user not found")
-}
+	mockOTPRepo.otps["81234567890"] = validOTP
 
-func (m *mockUsersRepositoryForTests) CreateUser(ctx context.Context, user model.User) (model.User, error) {
-	user.ID = len(m.users) + 1
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
-	m.users[user.ID] = user
-	return user, nil
-}
-
-func (m *mockUsersRepositoryForTests) GetUserByID(ctx context.Context, id int) (model.User, error) {
-	if user, exists := m.users[id]; exists {
-		return user, nil
-	}
-	return model.User{}, errors.New("user not found")
-}
-
-func (m *mockUsersRepositoryForTests) UpdateUser(ctx context.Context, user model.User) (model.User, error) {
-	user.UpdatedAt = time.Now()
-	m.users[user.ID] = user
-	return user, nil
-}
-
-func (m *mockUsersRepositoryForTests) DeleteUser(ctx context.Context, user model.User) (model.User, error) {
-	delete(m.users, user.ID)
-	return user, nil
-}
-
-func (m *mockUsersRepositoryForTests) GetAllUsers(ctx context.Context) ([]model.User, error) {
-	var users []model.User
-	for _, u := range m.users {
-		users = append(users, u)
-	}
-	return users, nil
-}
-
-func (m *mockUsersRepositoryForTests) IsRoleExist(ctx context.Context, id int) bool {
-	_, exists := m.roles[id]
-	return exists
-}
-
-func (m *mockUsersRepositoryForTests) GetRoleByID(ctx context.Context, id int) (model.Role, error) {
-	if role, exists := m.roles[id]; exists {
-		return role, nil
-	}
-	return model.Role{}, errors.New("role not found")
-}
-
-func (m *mockUsersRepositoryForTests) GetListPermissionsByRoleID(ctx context.Context, roleID int) ([]string, error) {
-	return []string{"VIEW_DASHBOARD", "MANAGE_USERS"}, nil
-}
-
-func (m *mockUsersRepositoryForTests) GetRoleByName(ctx context.Context, name string) (model.Role, error) {
-	for _, role := range m.roles {
-		if role.Name == name {
-			return role, nil
+	t.Run("Verify OTP successfully", func(t *testing.T) {
+		token, err := service.VerifyOTP(ctx, "081234567890", "123456")
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
 		}
+
+		if token == nil || *token == "" {
+			t.Error("Expected temp token to be generated")
+		}
+	})
+
+	t.Run("Verify OTP with wrong code", func(t *testing.T) {
+		_, err := service.VerifyOTP(ctx, "081234567890", "wrong")
+		if err == nil {
+			t.Error("Expected error for wrong OTP, got none")
+		}
+	})
+
+	t.Run("Verify OTP with expired OTP", func(t *testing.T) {
+		expiredOTP := &model.OTP{
+			PhoneNumber: "81234567891",
+			Email:       "test2@example.com",
+			OTPCode:     "123456",
+			Status:      constant.OTPStatusActive,
+			ExpiresAt:   time.Now().Add(-5 * time.Minute),
+		}
+		mockOTPRepo.otps["81234567891"] = expiredOTP
+
+		_, err := service.VerifyOTP(ctx, "081234567891", "123456")
+		if err == nil {
+			t.Error("Expected error for expired OTP, got none")
+		}
+	})
+
+	t.Run("Verify OTP with invalid phone", func(t *testing.T) {
+		_, err := service.VerifyOTP(ctx, "123", "123456")
+		if err == nil {
+			t.Error("Expected error for invalid phone, got none")
+		}
+	})
+}
+
+// ==================== TEST RegisterMobileProfile ====================
+
+func TestUsersServiceRegisterMobileProfile(t *testing.T) {
+	service, _, _, mockOTPRepo := setupUsersServiceComplete()
+	ctx := context.Background()
+
+	tempToken := "temptoken123"
+	mockOTPRepo.otps["81234567890"] = &model.OTP{
+		PhoneNumber: "81234567890",
+		Email:       "test@example.com",
+		TempToken:   &tempToken,
+		Status:      constant.OTPStatusActive,
+		ExpiresAt:   time.Now().Add(5 * time.Minute),
 	}
-	return model.Role{}, errors.New("role not found")
-}
 
-func (m *mockUsersRepositoryForTests) GetAllRoles(ctx context.Context) ([]model.Role, error) {
-	var roles []model.Role
-	for _, r := range m.roles {
-		roles = append(roles, r)
-	}
-	return roles, nil
-}
+	t.Run("Register with missing fullname", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname: "",
+		}
 
-func (m *mockUsersRepositoryForTests) CreateUMKM(ctx context.Context, umkm model.UMKM, user model.User) (dto.UMKMMobile, error) {
-	return dto.UMKMMobile{}, errors.New("not implemented")
-}
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing fullname, got none")
+		}
+	})
 
-func (m *mockUsersRepositoryForTests) GetUMKMByPhone(ctx context.Context, phone string) (model.UMKM, error) {
-	return model.UMKM{}, errors.New("not implemented")
-}
+	t.Run("Register with missing business name", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "",
+		}
 
-func (m *mockUsersRepositoryForTests) IsPermissionExist(ctx context.Context, ids []string) ([]int, bool) {
-	return nil, false
-}
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing business name, got none")
+		}
+	})
 
-func (m *mockUsersRepositoryForTests) GetListPermissions(ctx context.Context) ([]model.Permission, error) {
-	return nil, errors.New("not implemented")
-}
+	t.Run("Register with missing NIK", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "",
+		}
 
-func (m *mockUsersRepositoryForTests) GetListRolePermissions(ctx context.Context) ([]dto.RolePermissionsResponse, error) {
-	return nil, errors.New("not implemented")
-}
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing NIK, got none")
+		}
+	})
 
-func (m *mockUsersRepositoryForTests) DeletePermissionsByRoleID(ctx context.Context, roleID int) error {
-	return errors.New("not implemented")
-}
+	t.Run("Register with missing birth date", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "",
+		}
 
-func (m *mockUsersRepositoryForTests) AddRolePermissions(ctx context.Context, roleID int, permissions []int) error {
-	return errors.New("not implemented")
-}
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing birth date, got none")
+		}
+	})
 
-func (m *mockUsersRepositoryForTests) GetProvinces(ctx context.Context) ([]dto.Province, error) {
-	return nil, errors.New("not implemented")
-}
+	t.Run("Register with missing gender", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "",
+		}
 
-func (m *mockUsersRepositoryForTests) GetCities(ctx context.Context) ([]dto.City, error) {
-	return nil, errors.New("not implemented")
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing gender, got none")
+		}
+	})
+
+	t.Run("Register with missing address", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing address, got none")
+		}
+	})
+
+	t.Run("Register with invalid temp token", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, "invalid_token")
+		if err == nil {
+			t.Error("Expected error for invalid temp token, got none")
+		}
+	})
+
+	t.Run("Register with expired OTP", func(t *testing.T) {
+		expiredToken := "expired_token"
+		mockOTPRepo.otps["81234567891"] = &model.OTP{
+			PhoneNumber: "81234567891",
+			Email:       "test2@example.com",
+			TempToken:   &expiredToken,
+			Status:      constant.OTPStatusUsed,
+			ExpiresAt:   time.Now().Add(-5 * time.Minute),
+		}
+
+		request := dto.UMKMMobile{
+			Fullname: "Test User",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, expiredToken)
+		if err == nil {
+			t.Error("Expected error for expired OTP, got none")
+		}
+	})
+
+	t.Run("Register with weak password", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   1,
+			CityID:       1,
+			District:     "Test District",
+			PostalCode:   "12345",
+			KartuType:    "produktif",
+			KartuNumber:  "KUR123456",
+			Password:     "weak",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for weak password, got none")
+		}
+	})
+
+	t.Run("Register with invalid birth date format", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "invalid-date",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   1,
+			CityID:       1,
+			District:     "Test District",
+			PostalCode:   "12345",
+			KartuType:    "produktif",
+			KartuNumber:  "KUR123456",
+			Password:     "Password123",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for invalid birth date format, got none")
+		}
+	})
 }

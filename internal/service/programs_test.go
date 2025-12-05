@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"UMKMGo-backend/config/redis"
 	"UMKMGo-backend/internal/types/dto"
 	"UMKMGo-backend/internal/types/model"
 )
@@ -215,8 +214,8 @@ func setupProgramsService() (*programsService, *mockProgramsRepository) {
 	service := &programsService{
 		programRepository: mockProgramRepo,
 		userRepository:    mockUserRepo,
-		redisRepository:   redis.RedisRepository{}, // Not needed for these tests
-		minio:             nil,                     // Not needed for these tests
+		redisRepository:   nil, // Not needed for these tests
+		minio:             nil, // Not needed for these tests
 	}
 
 	return service, mockProgramRepo

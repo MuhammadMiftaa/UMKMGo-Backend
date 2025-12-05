@@ -7,13 +7,13 @@ import (
 	"UMKMGo-backend/config/log"
 	"UMKMGo-backend/internal/utils/constant"
 
-	"github.com/go-redis/redis/v8"
+	redisPackage "github.com/go-redis/redis/v8"
 )
 
-var RDB RedisRepository
+var redis redisInstance
 
-type RedisRepository struct {
-	Client *redis.Client
+type redisInstance struct {
+	Client *redisPackage.Client
 }
 
 func SetupRedisDatabase(cfg env.Redis) {
@@ -22,7 +22,7 @@ func SetupRedisDatabase(cfg env.Redis) {
 		db = 1
 	}
 
-	rdb := redis.NewClient(&redis.Options{
+	rdb := redisPackage.NewClient(&redisPackage.Options{
 		Addr: fmt.Sprintf("%s:%s", cfg.RHost, cfg.RPort),
 		DB:   db,
 	})
@@ -32,5 +32,12 @@ func SetupRedisDatabase(cfg env.Redis) {
 		log.Log.Fatalf("Gagal terhubung ke Redis: %v", err)
 	}
 
-	RDB.Client = rdb
+	redis.Client = rdb
+}
+
+func GetRedisRepository() RedisRepository {
+	if redis.Client == nil {
+		log.Log.Fatal("Redis client is not initialized. Please call SetupRedisDatabase first.")
+	}
+	return &redis
 }

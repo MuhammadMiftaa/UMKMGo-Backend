@@ -14,6 +14,219 @@ import (
 
 // ==================== ADDITIONAL MOCK REPOSITORIES ====================
 
+// Mock Mobile Repository
+type mockMobileRepository struct {
+	programs     map[int]model.Program
+	umkms        map[int]model.UMKM
+	applications map[int]model.Application
+	news         map[int]model.News
+}
+
+func newMockMobileRepository() *mockMobileRepository {
+	return &mockMobileRepository{
+		programs:     make(map[int]model.Program),
+		umkms:        make(map[int]model.UMKM),
+		applications: make(map[int]model.Application),
+		news:         make(map[int]model.News),
+	}
+}
+
+func (m *mockMobileRepository) GetProgramsByType(ctx context.Context, programType string) ([]model.Program, error) {
+	var programs []model.Program
+	for _, p := range m.programs {
+		if p.Type == programType && p.IsActive {
+			programs = append(programs, p)
+		}
+	}
+	return programs, nil
+}
+
+func (m *mockMobileRepository) GetProgramDetailByID(ctx context.Context, id int) (model.Program, error) {
+	if prog, exists := m.programs[id]; exists && prog.IsActive {
+		return prog, nil
+	}
+	return model.Program{}, errors.New("program not found")
+}
+
+func (m *mockMobileRepository) GetUMKMProfileByID(ctx context.Context, userID int) (model.UMKM, error) {
+	if umkm, exists := m.umkms[userID]; exists {
+		return umkm, nil
+	}
+	return model.UMKM{}, errors.New("UMKM profile not found")
+}
+
+func (m *mockMobileRepository) UpdateUMKMProfile(ctx context.Context, umkm model.UMKM) (model.UMKM, error) {
+	m.umkms[umkm.ID] = umkm
+	return umkm, nil
+}
+
+func (m *mockMobileRepository) UpdateUMKMDocument(ctx context.Context, umkmID int, field, value string) error {
+	if umkm, exists := m.umkms[umkmID]; exists {
+		// Simulate document update
+		_ = umkm
+		return nil
+	}
+	return errors.New("UMKM not found")
+}
+
+func (m *mockMobileRepository) CreateApplication(ctx context.Context, app model.Application) (model.Application, error) {
+	app.ID = len(m.applications) + 1
+	m.applications[app.ID] = app
+	return app, nil
+}
+
+func (m *mockMobileRepository) CreateApplicationDocuments(ctx context.Context, docs []model.ApplicationDocument) error {
+	return nil
+}
+
+func (m *mockMobileRepository) CreateApplicationHistory(ctx context.Context, hist model.ApplicationHistory) error {
+	return nil
+}
+
+func (m *mockMobileRepository) CreateTrainingApplication(ctx context.Context, training model.TrainingApplication) error {
+	return nil
+}
+
+func (m *mockMobileRepository) CreateCertificationApplication(ctx context.Context, cert model.CertificationApplication) error {
+	return nil
+}
+
+func (m *mockMobileRepository) CreateFundingApplication(ctx context.Context, funding model.FundingApplication) error {
+	return nil
+}
+
+func (m *mockMobileRepository) GetApplicationsByUMKMID(ctx context.Context, umkmID int) ([]model.Application, error) {
+	var apps []model.Application
+	for _, app := range m.applications {
+		if app.UMKMID == umkmID {
+			apps = append(apps, app)
+		}
+	}
+	return apps, nil
+}
+
+func (m *mockMobileRepository) GetApplicationDetailByID(ctx context.Context, id int) (model.Application, error) {
+	if app, exists := m.applications[id]; exists {
+		return app, nil
+	}
+	return model.Application{}, errors.New("application not found")
+}
+
+func (m *mockMobileRepository) DeleteApplicationDocumentsByApplicationID(ctx context.Context, applicationID int) error {
+	return nil
+}
+
+func (m *mockMobileRepository) GetProgramByID(ctx context.Context, id int) (model.Program, error) {
+	if prog, exists := m.programs[id]; exists && prog.IsActive {
+		return prog, nil
+	}
+	return model.Program{}, errors.New("program not found")
+}
+
+func (m *mockMobileRepository) GetProgramRequirements(ctx context.Context, programID int) ([]model.ProgramRequirement, error) {
+	return []model.ProgramRequirement{}, nil
+}
+
+func (m *mockMobileRepository) IsApplicationExists(ctx context.Context, umkmID, programID int) bool {
+	for _, app := range m.applications {
+		if app.UMKMID == umkmID && app.ProgramID == programID && app.Status != "rejected" {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *mockMobileRepository) GetPublishedNews(ctx context.Context, params dto.NewsQueryParams) ([]model.News, int64, error) {
+	var news []model.News
+	for _, n := range m.news {
+		if n.IsPublished {
+			news = append(news, n)
+		}
+	}
+	return news, int64(len(news)), nil
+}
+
+func (m *mockMobileRepository) GetPublishedNewsBySlug(ctx context.Context, slug string) (model.News, error) {
+	for _, n := range m.news {
+		if n.Slug == slug && n.IsPublished {
+			return n, nil
+		}
+	}
+	return model.News{}, errors.New("news not found")
+}
+
+func (m *mockMobileRepository) IncrementViews(ctx context.Context, newsID int) error {
+	if n, exists := m.news[newsID]; exists {
+		n.ViewsCount++
+		m.news[newsID] = n
+		return nil
+	}
+	return errors.New("news not found")
+}
+
+// Mock Program Repository for Mobile
+type mockProgramRepoForMobile struct {
+	benefits     map[int][]model.ProgramBenefit
+	requirements map[int][]model.ProgramRequirement
+}
+
+func newMockProgramRepoForMobile() *mockProgramRepoForMobile {
+	return &mockProgramRepoForMobile{
+		benefits:     make(map[int][]model.ProgramBenefit),
+		requirements: make(map[int][]model.ProgramRequirement),
+	}
+}
+
+func (m *mockProgramRepoForMobile) GetAllPrograms(ctx context.Context) ([]model.Program, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockProgramRepoForMobile) GetProgramByID(ctx context.Context, id int) (model.Program, error) {
+	return model.Program{}, errors.New("not implemented")
+}
+
+func (m *mockProgramRepoForMobile) CreateProgram(ctx context.Context, program model.Program) (model.Program, error) {
+	return model.Program{}, errors.New("not implemented")
+}
+
+func (m *mockProgramRepoForMobile) UpdateProgram(ctx context.Context, program model.Program) (model.Program, error) {
+	return model.Program{}, errors.New("not implemented")
+}
+
+func (m *mockProgramRepoForMobile) DeleteProgram(ctx context.Context, program model.Program) (model.Program, error) {
+	return model.Program{}, errors.New("not implemented")
+}
+
+func (m *mockProgramRepoForMobile) CreateProgramBenefits(ctx context.Context, benefits []model.ProgramBenefit) error {
+	return errors.New("not implemented")
+}
+
+func (m *mockProgramRepoForMobile) CreateProgramRequirements(ctx context.Context, requirements []model.ProgramRequirement) error {
+	return errors.New("not implemented")
+}
+
+func (m *mockProgramRepoForMobile) GetProgramBenefits(ctx context.Context, programID int) ([]model.ProgramBenefit, error) {
+	if benefits, exists := m.benefits[programID]; exists {
+		return benefits, nil
+	}
+	return []model.ProgramBenefit{}, nil
+}
+
+func (m *mockProgramRepoForMobile) GetProgramRequirements(ctx context.Context, programID int) ([]model.ProgramRequirement, error) {
+	if reqs, exists := m.requirements[programID]; exists {
+		return reqs, nil
+	}
+	return []model.ProgramRequirement{}, nil
+}
+
+func (m *mockProgramRepoForMobile) DeleteProgramBenefits(ctx context.Context, programID int) error {
+	return errors.New("not implemented")
+}
+
+func (m *mockProgramRepoForMobile) DeleteProgramRequirements(ctx context.Context, programID int) error {
+	return errors.New("not implemented")
+}
+
 // Mock Notification Repository for Mobile Tests
 type mockNotificationRepoForMobile struct {
 	notifications []model.Notification
@@ -1733,9 +1946,9 @@ func TestCreateNotification(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Create notification", func(t *testing.T) {
-		err := service.createNotification(ctx, 1, 1, 
-			constant.NotificationSubmitted, 
-			constant.NotificationTitleSubmitted, 
+		err := service.createNotification(ctx, 1, 1,
+			constant.NotificationSubmitted,
+			constant.NotificationTitleSubmitted,
 			constant.NotificationMessageSubmitted)
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
@@ -1771,7 +1984,7 @@ func TestProcessAndSaveDocuments(t *testing.T) {
 
 		// Should not panic or error
 		service.processAndSaveDocuments(ctx, 1, documents)
-		
+
 		// Give goroutine time to complete
 		time.Sleep(100 * time.Millisecond)
 	})

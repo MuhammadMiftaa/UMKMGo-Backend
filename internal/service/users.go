@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"UMKMGo-backend/config/env"
-	"UMKMGo-backend/config/log"
 	"UMKMGo-backend/config/redis"
 	"UMKMGo-backend/config/storage"
 	"UMKMGo-backend/config/vault"
@@ -537,8 +536,7 @@ func (user_serv *usersService) VerifyOTP(ctx context.Context, phone, code string
 	if err != nil {
 		return nil, errors.New("failed to get OTP")
 	}
-	log.Log.Debugln("Exp:", OTP.ExpiresAt)
-	log.Log.Debugln("Status:", OTP.Status)
+
 	if OTP == nil || OTP.ExpiresAt.Before(time.Now()) || OTP.Status != constant.OTPStatusActive {
 		return nil, errors.New("OTP expired or not found")
 	}

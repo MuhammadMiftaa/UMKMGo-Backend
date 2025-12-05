@@ -45,9 +45,9 @@ func SetupRouter() *fiber.App {
 
 	version := router.Group("/v1")
 
-	routes.UserRoutes(version, db.DB, redis.RDB, storage.MinioClient)
-	routes.ProgramRoutes(version, db.DB, redis.RDB, storage.MinioClient)
-	routes.ApplicationRoutes(version, db.DB, redis.RDB)
+	routes.UserRoutes(version, db.DB, redis.GetRedisRepository(), storage.MinioClient)
+	routes.ProgramRoutes(version, db.DB, redis.GetRedisRepository(), storage.MinioClient)
+	routes.ApplicationRoutes(version, db.DB, redis.GetRedisRepository())
 	routes.DashboardRoutes(version, db.DB)
 	routes.SLARoutes(version, db.DB)
 	routes.NewsRoutes(version, db.DB, storage.MinioClient)

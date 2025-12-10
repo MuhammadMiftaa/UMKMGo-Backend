@@ -495,9 +495,14 @@ func (user_serv *usersService) RegisterMobile(ctx context.Context, email, phone 
 		return errors.New("please enter a valid phone number")
 	}
 
-	// MENGECEK APAKAH USER SUDAH TERDAFTAR
-	userExist, err := user_serv.userRepository.GetUserByEmail(ctx, email)
-	if err == nil && (userExist.Email != "") {
+	// MENGECEK APAKAH USER SUDAH TERDAFTAR DAN NOMOr TELEPON SUDAH DIGUNAKAN
+	userExist, err := user_serv.userRepository.GetUMKMByPhone(ctx, validPhone)
+	if err == nil {
+		return errors.New("phone already exists")
+	}
+
+	// MENGECEK APAKAH EMAIL SUDAH DIGUNAKAN
+	if userExist.User.Email == email {
 		return errors.New("email already exists")
 	}
 

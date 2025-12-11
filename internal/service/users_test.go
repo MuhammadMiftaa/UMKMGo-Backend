@@ -1577,6 +1577,155 @@ func TestUsersServiceRegisterMobileProfile(t *testing.T) {
 		}
 	})
 
+	t.Run("Register with missing province", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   0,
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing province, got none")
+		}
+	})
+
+	t.Run("Register with missing city", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   1,
+			CityID:       0,
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing city, got none")
+		}
+	})
+
+	t.Run("Register with missing district", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   1,
+			CityID:       1,
+			District:     "",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing district, got none")
+		}
+	})
+
+	t.Run("Register with missing postal code", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   1,
+			CityID:       1,
+			District:     "Test District",
+			PostalCode:   "",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing postal code, got none")
+		}
+	})
+
+	t.Run("Register with missing kartu type", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   1,
+			CityID:       1,
+			District:     "Test District",
+			PostalCode:   "12345",
+			KartuType:    "",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing kartu type, got none")
+		}
+	})
+
+	t.Run("Register with missing kartu number", func(t *testing.T) {
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   1,
+			CityID:       1,
+			District:     "Test District",
+			PostalCode:   "12345",
+			KartuType:    "produktif",
+			KartuNumber:  "",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, tempToken)
+		if err == nil {
+			t.Error("Expected error for missing kartu number, got none")
+		}
+	})
+
+	t.Run("Register with invalid phone number", func(t *testing.T) {
+		invalidPhoneToken := "invalid_phone_token"
+		mockOTPRepo.otps["invalid"] = &model.OTP{
+			PhoneNumber: "",
+			Email:       "test3@example.com",
+			TempToken:   &invalidPhoneToken,
+			Status:      constant.OTPStatusActive,
+			ExpiresAt:   time.Now().Add(5 * time.Minute),
+		}
+
+		request := dto.UMKMMobile{
+			Fullname:     "Test User",
+			BusinessName: "Test Business",
+			NIK:          "1234567890123456",
+			BirthDate:    "1990-01-01",
+			Gender:       "male",
+			Address:      "Test Address",
+			ProvinceID:   1,
+			CityID:       1,
+			District:     "Test District",
+			PostalCode:   "12345",
+			KartuType:    "produktif",
+			KartuNumber:  "KUR123456",
+			Password:     "Password123",
+		}
+
+		_, err := service.RegisterMobileProfile(ctx, request, invalidPhoneToken)
+		if err == nil {
+			t.Error("Expected error for invalid phone number, got none")
+		}
+	})
+
 	t.Run("Register with invalid temp token", func(t *testing.T) {
 		request := dto.UMKMMobile{
 			Fullname:     "Test User",

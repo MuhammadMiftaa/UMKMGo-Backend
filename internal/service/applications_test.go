@@ -32,12 +32,12 @@ func newMockApplicationsRepo() *mockApplicationsRepo {
 		},
 		umkms: map[int]model.UMKM{
 			1: {
-				ID:          1,
-				UserID:      1,
+				ID:           1,
+				UserID:       1,
 				BusinessName: "Test Business",
-				NIK:         "encrypted_nik",
-				KartuNumber: "encrypted_kartu",
-				User:        model.User{ID: 1, Name: "Test User"},
+				NIK:          "encrypted_nik",
+				KartuNumber:  "encrypted_kartu",
+				User:         model.User{ID: 1, Name: "Test User"},
 				City: model.City{
 					ID:   1,
 					Name: "Jakarta",
@@ -384,15 +384,14 @@ func TestGetAllApplications(t *testing.T) {
 
 	t.Run("Get all applications without filter", func(t *testing.T) {
 		result, err := service.GetAllApplications(ctx, 0, "")
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 1 {
 			t.Errorf("Expected 1 application, got %d", len(result))
 		}
-		
+
 		if result[0].Type != "training" {
 			t.Errorf("Expected type 'training', got '%s'", result[0].Type)
 		}
@@ -410,11 +409,10 @@ func TestGetAllApplications(t *testing.T) {
 		}
 
 		result, err := service.GetAllApplications(ctx, 0, "training")
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if len(result) != 1 {
 			t.Errorf("Expected 1 training application, got %d", len(result))
 		}
@@ -427,6 +425,9 @@ func TestGetApplicationByID(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup test data
+	now := time.Now()
+	actionedBy := 1
+
 	mockRepo.applications[1] = model.Application{
 		ID:        1,
 		UMKMID:    1,
@@ -439,15 +440,14 @@ func TestGetApplicationByID(t *testing.T) {
 
 	t.Run("Get existing application", func(t *testing.T) {
 		result, err := service.GetApplicationByID(ctx, 0, 1)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.ID != 1 {
 			t.Errorf("Expected ID 1, got %d", result.ID)
 		}
-		
+
 		if result.Type != "training" {
 			t.Errorf("Expected type 'training', got '%s'", result.Type)
 		}
@@ -455,9 +455,258 @@ func TestGetApplicationByID(t *testing.T) {
 
 	t.Run("Get non-existing application", func(t *testing.T) {
 		_, err := service.GetApplicationByID(ctx, 0, 999)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existing application, got none")
+		}
+	})
+
+	t.Run("Get application with documents", func(t *testing.T) {
+		mockRepo.applications[2] = model.Application{
+			ID:        2,
+			UMKMID:    1,
+			ProgramID: 1,
+			Type:      "training",
+			Status:    "screening",
+			UMKM:      mockRepo.umkms[1],
+			Program:   mockRepo.programs[1],
+			Documents: []model.ApplicationDocument{
+				{
+					ID:            1,
+					ApplicationID: 2,
+					Type:          "ktp",
+					File:          "ktp.pdf",
+					Base: model.Base{
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+				{
+					ID:            2,
+					ApplicationID: 2,
+					Type:          "npwp",
+					File:          "npwp.pdf",
+					Base: model.Base{
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			},
+		}
+
+		result, err := service.GetApplicationByID(ctx, 0, 2)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if len(result.Documents) != 2 {
+			t.Errorf("Expected 2 documents, got %d", len(result.Documents))
+		}
+
+		if result.Documents[0].Type != "ktp" {
+			t.Errorf("Expected first document type 'ktp', got '%s'", result.Documents[0].Type)
+		}
+
+		if result.Documents[1].Type != "npwp" {
+			t.Errorf("Expected second document type 'npwp', got '%s'", result.Documents[1].Type)
+		}
+	})
+
+	t.Run("Get application with histories", func(t *testing.T) {
+		mockRepo.applications[3] = model.Application{
+			ID:        3,
+			UMKMID:    1,
+			ProgramID: 1,
+			Type:      "training",
+			Status:    "final",
+			UMKM:      mockRepo.umkms[1],
+			Program:   mockRepo.programs[1],
+			Histories: []model.ApplicationHistory{
+				{
+					ID:            1,
+					ApplicationID: 3,
+					Status:        "approve_by_admin_screening",
+					Notes:         "Approved by screening admin",
+					ActionedAt:    now,
+					ActionedBy:    &actionedBy,
+					Base: model.Base{
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					User: model.User{
+						ID:   1,
+						Name: "Admin User",
+					},
+				},
+				{
+					ID:            2,
+					ApplicationID: 3,
+					Status:        "approve_by_admin_vendor",
+					Notes:         "Approved by vendor admin",
+					ActionedAt:    now,
+					ActionedBy:    &actionedBy,
+					Base: model.Base{
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					User: model.User{
+						ID:   1,
+						Name: "Admin User",
+					},
+				},
+			},
+		}
+
+		result, err := service.GetApplicationByID(ctx, 0, 3)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if len(result.Histories) != 2 {
+			t.Errorf("Expected 2 histories, got %d", len(result.Histories))
+		}
+
+		if result.Histories[0].Status != "approve_by_admin_screening" {
+			t.Errorf("Expected first history status 'approve_by_admin_screening', got '%s'", result.Histories[0].Status)
+		}
+
+		if result.Histories[0].ActionedByName != "Admin User" {
+			t.Errorf("Expected actioned by name 'Admin User', got '%s'", result.Histories[0].ActionedByName)
+		}
+	})
+
+	t.Run("Get training application with specific data", func(t *testing.T) {
+		mockRepo.applications[4] = model.Application{
+			ID:        4,
+			UMKMID:    1,
+			ProgramID: 1,
+			Type:      "training",
+			Status:    "screening",
+			UMKM:      mockRepo.umkms[1],
+			Program:   mockRepo.programs[1],
+			TrainingApplication: &model.TrainingApplication{
+				ID:                 1,
+				ApplicationID:      4,
+				Motivation:         "I want to improve my business",
+				BusinessExperience: "5 years in retail",
+				LearningObjectives: "Learn digital marketing",
+				AvailabilityNotes:  "Available weekdays",
+			},
+		}
+
+		result, err := service.GetApplicationByID(ctx, 0, 4)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if result.TrainingData == nil {
+			t.Error("Expected training data to be present")
+		} else {
+			if result.TrainingData.Motivation != "I want to improve my business" {
+				t.Errorf("Expected motivation, got '%s'", result.TrainingData.Motivation)
+			}
+			if result.TrainingData.BusinessExperience != "5 years in retail" {
+				t.Errorf("Expected business experience, got '%s'", result.TrainingData.BusinessExperience)
+			}
+			if result.TrainingData.LearningObjectives != "Learn digital marketing" {
+				t.Errorf("Expected learning objectives, got '%s'", result.TrainingData.LearningObjectives)
+			}
+			if result.TrainingData.AvailabilityNotes != "Available weekdays" {
+				t.Errorf("Expected availability notes, got '%s'", result.TrainingData.AvailabilityNotes)
+			}
+		}
+	})
+
+	t.Run("Get certification application with specific data", func(t *testing.T) {
+		yearsOp := 3
+		mockRepo.applications[5] = model.Application{
+			ID:        5,
+			UMKMID:    1,
+			ProgramID: 1,
+			Type:      "certification",
+			Status:    "screening",
+			UMKM:      mockRepo.umkms[1],
+			Program:   mockRepo.programs[1],
+			CertificationApplication: &model.CertificationApplication{
+				ID:                  1,
+				ApplicationID:       5,
+				BusinessSector:      "Food & Beverage",
+				ProductOrService:    "Traditional Snacks",
+				BusinessDescription: "We produce traditional snacks",
+				YearsOperating:      &yearsOp,
+				CurrentStandards:    "HACCP",
+				CertificationGoals:  "Get halal certification",
+			},
+		}
+
+		result, err := service.GetApplicationByID(ctx, 0, 5)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if result.CertificationData == nil {
+			t.Error("Expected certification data to be present")
+		} else {
+			if result.CertificationData.BusinessSector != "Food & Beverage" {
+				t.Errorf("Expected business sector 'Food & Beverage', got '%s'", result.CertificationData.BusinessSector)
+			}
+			if result.CertificationData.ProductOrService != "Traditional Snacks" {
+				t.Errorf("Expected product/service 'Traditional Snacks', got '%s'", result.CertificationData.ProductOrService)
+			}
+			if result.CertificationData.CertificationGoals != "Get halal certification" {
+				t.Errorf("Expected certification goals, got '%s'", result.CertificationData.CertificationGoals)
+			}
+		}
+	})
+
+	t.Run("Get funding application with specific data", func(t *testing.T) {
+		yearsOp := 5
+		revenue := 100000000.0
+		monthlyRev := 10000000.0
+		mockRepo.applications[6] = model.Application{
+			ID:        6,
+			UMKMID:    1,
+			ProgramID: 2,
+			Type:      "funding",
+			Status:    "screening",
+			UMKM:      mockRepo.umkms[1],
+			Program:   mockRepo.programs[2],
+			FundingApplication: &model.FundingApplication{
+				ID:                    1,
+				ApplicationID:         6,
+				BusinessSector:        "Manufacturing",
+				BusinessDescription:   "We manufacture handicrafts",
+				YearsOperating:        &yearsOp,
+				RequestedAmount:       50000000.0,
+				FundPurpose:           "Expand production capacity",
+				BusinessPlan:          "Purchase new machinery",
+				RevenueProjection:     &revenue,
+				MonthlyRevenue:        &monthlyRev,
+				RequestedTenureMonths: 24,
+				CollateralDescription: "Land certificate",
+			},
+		}
+
+		result, err := service.GetApplicationByID(ctx, 0, 6)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if result.FundingData == nil {
+			t.Error("Expected funding data to be present")
+		} else {
+			if result.FundingData.BusinessSector != "Manufacturing" {
+				t.Errorf("Expected business sector 'Manufacturing', got '%s'", result.FundingData.BusinessSector)
+			}
+			if result.FundingData.RequestedAmount != 50000000.0 {
+				t.Errorf("Expected requested amount 50000000.0, got %f", result.FundingData.RequestedAmount)
+			}
+			if result.FundingData.FundPurpose != "Expand production capacity" {
+				t.Errorf("Expected fund purpose, got '%s'", result.FundingData.FundPurpose)
+			}
+			if result.FundingData.RequestedTenureMonths != 24 {
+				t.Errorf("Expected tenure 24 months, got %d", result.FundingData.RequestedTenureMonths)
+			}
 		}
 	})
 }
@@ -478,11 +727,10 @@ func TestScreeningApprove(t *testing.T) {
 		}
 
 		result, err := service.ScreeningApprove(ctx, 1, 1)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.Status != "final" {
 			t.Errorf("Expected status 'final', got '%s'", result.Status)
 		}
@@ -496,11 +744,11 @@ func TestScreeningApprove(t *testing.T) {
 		}
 
 		_, err := service.ScreeningApprove(ctx, 1, 2)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-screening status, got none")
 		}
-		
+
 		if err.Error() != "application must be in screening status" {
 			t.Errorf("Expected specific error message, got '%s'", err.Error())
 		}
@@ -508,7 +756,7 @@ func TestScreeningApprove(t *testing.T) {
 
 	t.Run("Approve non-existing application", func(t *testing.T) {
 		_, err := service.ScreeningApprove(ctx, 1, 999)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existing application, got none")
 		}
@@ -533,11 +781,10 @@ func TestScreeningReject(t *testing.T) {
 		}
 
 		result, err := service.ScreeningReject(ctx, 1, decision)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.Status != "rejected" {
 			t.Errorf("Expected status 'rejected', got '%s'", result.Status)
 		}
@@ -550,11 +797,11 @@ func TestScreeningReject(t *testing.T) {
 		}
 
 		_, err := service.ScreeningReject(ctx, 1, decision)
-		
+
 		if err == nil {
 			t.Error("Expected error for missing notes, got none")
 		}
-		
+
 		if err.Error() != "notes are required for rejection" {
 			t.Errorf("Expected specific error message, got '%s'", err.Error())
 		}
@@ -573,7 +820,7 @@ func TestScreeningReject(t *testing.T) {
 		}
 
 		_, err := service.ScreeningReject(ctx, 1, decision)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-screening status, got none")
 		}
@@ -598,11 +845,10 @@ func TestScreeningRevise(t *testing.T) {
 		}
 
 		result, err := service.ScreeningRevise(ctx, 1, decision)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.Status != "revised" {
 			t.Errorf("Expected status 'revised', got '%s'", result.Status)
 		}
@@ -615,11 +861,11 @@ func TestScreeningRevise(t *testing.T) {
 		}
 
 		_, err := service.ScreeningRevise(ctx, 1, decision)
-		
+
 		if err == nil {
 			t.Error("Expected error for missing notes, got none")
 		}
-		
+
 		if err.Error() != "notes are required for revision" {
 			t.Errorf("Expected specific error message, got '%s'", err.Error())
 		}
@@ -638,7 +884,7 @@ func TestScreeningRevise(t *testing.T) {
 		}
 
 		_, err := service.ScreeningRevise(ctx, 1, decision)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-screening status, got none")
 		}
@@ -658,11 +904,10 @@ func TestFinalApprove(t *testing.T) {
 		}
 
 		result, err := service.FinalApprove(ctx, 1, 1)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.Status != "approved" {
 			t.Errorf("Expected status 'approved', got '%s'", result.Status)
 		}
@@ -676,11 +921,11 @@ func TestFinalApprove(t *testing.T) {
 		}
 
 		_, err := service.FinalApprove(ctx, 1, 2)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-final status, got none")
 		}
-		
+
 		if err.Error() != "application must be in final status" {
 			t.Errorf("Expected specific error message, got '%s'", err.Error())
 		}
@@ -688,7 +933,7 @@ func TestFinalApprove(t *testing.T) {
 
 	t.Run("Approve non-existing application", func(t *testing.T) {
 		_, err := service.FinalApprove(ctx, 1, 999)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existing application, got none")
 		}
@@ -713,11 +958,10 @@ func TestFinalReject(t *testing.T) {
 		}
 
 		result, err := service.FinalReject(ctx, 1, decision)
-		
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
 		}
-		
+
 		if result.Status != "rejected" {
 			t.Errorf("Expected status 'rejected', got '%s'", result.Status)
 		}
@@ -730,11 +974,11 @@ func TestFinalReject(t *testing.T) {
 		}
 
 		_, err := service.FinalReject(ctx, 1, decision)
-		
+
 		if err == nil {
 			t.Error("Expected error for missing notes, got none")
 		}
-		
+
 		if err.Error() != "notes are required for rejection" {
 			t.Errorf("Expected specific error message, got '%s'", err.Error())
 		}
@@ -753,7 +997,7 @@ func TestFinalReject(t *testing.T) {
 		}
 
 		_, err := service.FinalReject(ctx, 1, decision)
-		
+
 		if err == nil {
 			t.Error("Expected error for non-final status, got none")
 		}
@@ -767,11 +1011,10 @@ func TestApplicationsServiceEdgeCases(t *testing.T) {
 
 	t.Run("GetAllApplications with empty repository", func(t *testing.T) {
 		result, err := service.GetAllApplications(ctx, 0, "")
-		
 		if err != nil {
 			t.Errorf("Expected no error for empty repo, got %v", err)
 		}
-		
+
 		if len(result) != 0 {
 			t.Errorf("Expected 0 applications, got %d", len(result))
 		}
@@ -851,7 +1094,7 @@ func TestConcurrentOperations(t *testing.T) {
 
 	t.Run("Concurrent reads", func(t *testing.T) {
 		done := make(chan bool)
-		
+
 		for i := 0; i < 10; i++ {
 			go func() {
 				_, err := service.GetApplicationByID(ctx, 0, 1)
@@ -861,7 +1104,7 @@ func TestConcurrentOperations(t *testing.T) {
 				done <- true
 			}()
 		}
-		
+
 		for i := 0; i < 10; i++ {
 			<-done
 		}

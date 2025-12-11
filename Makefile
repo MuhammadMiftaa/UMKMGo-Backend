@@ -36,3 +36,13 @@ seed:
 
 seed-reset:
 	@goose -dir ./config/db/seeder -no-versioning reset
+
+test:
+	go test -cover ./internal/service/...
+
+test-coverage:
+	go test -coverprofile=coverage.out ./internal/service/...
+	go tool cover -html=coverage.out
+
+test-verbose:
+	go test -v -cover ./internal/service/...

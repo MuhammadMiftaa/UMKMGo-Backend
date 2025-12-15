@@ -5,9 +5,6 @@ $(eval export $(shell sed -ne 's/ *#.*$$//; /./ s/=.*$$// p' .env))
 api:
 	go run ./cmd/api/main.go
 
-test:
-	go test -v -cover ./internal/service/...
-
 migrate:
 	@if [ -z "$(to)" ]; then \
 		goose up; \

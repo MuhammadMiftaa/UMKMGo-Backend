@@ -436,7 +436,7 @@ func (h *MobileHandler) ReviseApplication(c *fiber.Ctx) error {
 			"message":    "Unauthorized",
 		})
 	}
-	
+
 	id := c.Params("id")
 	intID, err := strconv.Atoi(id)
 	if err != nil {
@@ -472,6 +472,7 @@ func (h *MobileHandler) ReviseApplication(c *fiber.Ctx) error {
 }
 
 // GetNotificationsByUMKMID retrieves notifications for a specific UMKM ID.
+// $ For Backward Compatibility
 func (h *MobileHandler) GetNotificationsByUMKMID(c *fiber.Ctx) error {
 	umkmID, ok := c.Locals("userID").(float64)
 	if !ok {
@@ -484,6 +485,26 @@ func (h *MobileHandler) GetNotificationsByUMKMID(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(notifications)
+}
+
+// $ Get List Notifications Fix
+func (h *MobileHandler) GetListNotificationsByUMKMID(c *fiber.Ctx) error {
+	umkmID, ok := c.Locals("userID").(float64)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid UMKM ID"})
+	}
+
+	notifications, err := h.mobileService.GetNotificationsByUMKMID(c.Context(), int(umkmID))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve notifications"})
+	}
+
+	return c.JSON(fiber.Map{
+		"statusCode": 200,
+		"status":     true,
+		"message":    "Get list notifications",
+		"data":       notifications,
+	})
 }
 
 // GetUnreadCount retrieves the count of unread notifications for a specific UMKM ID.

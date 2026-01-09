@@ -71,6 +71,7 @@ func MobileRoutes(version fiber.Router, db *gorm.DB, minio *storage.MinIOManager
 		notifications := mobile.Group("/notifications")
 		{
 			notifications.Get("/", mobileHandler.GetNotificationsByUMKMID)
+			notifications.Get("/list", mobileHandler.GetListNotificationsByUMKMID)
 			notifications.Get("/unread-count", mobileHandler.GetUnreadCount)
 			notifications.Put("/mark-as-read/:id", mobileHandler.MarkNotificationsAsRead)
 			notifications.Put("/mark-all-as-read", mobileHandler.MarkAllNotificationsAsRead)

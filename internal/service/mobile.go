@@ -362,12 +362,12 @@ func (s *mobileService) UploadDocument(ctx context.Context, userID int, doc dto.
 			prefix: fmt.Sprintf("npwp_%d_", umkm.ID),
 			oldURL: umkm.NPWP,
 		},
-		"revenue-record": {
+		"revenue_record": {
 			field:  "revenue_record",
 			prefix: fmt.Sprintf("revenue_%d_", umkm.ID),
 			oldURL: umkm.RevenueRecord,
 		},
-		"business-permit": {
+		"business_permit": {
 			field:  "business_permit",
 			prefix: fmt.Sprintf("permit_%d_", umkm.ID),
 			oldURL: umkm.BusinessPermit,

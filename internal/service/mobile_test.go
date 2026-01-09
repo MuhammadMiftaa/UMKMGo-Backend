@@ -2130,7 +2130,7 @@ func TestUploadDocumentWithoutMinio(t *testing.T) {
 	service, _ := setupMobileServiceForTests()
 	ctx := context.Background()
 
-	validDocTypes := []string{"nib", "npwp", "revenue-record", "business-permit"}
+	validDocTypes := []string{"nib", "npwp", "revenue_record", "business_permit"}
 
 	for _, docType := range validDocTypes {
 		t.Run("Upload "+docType+" with URL", func(t *testing.T) {

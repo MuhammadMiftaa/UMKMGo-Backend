@@ -7,7 +7,7 @@ import (
 
 func CORS() fiber.Handler {
 	return cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:5173,https://umkmgo.miftech.web.id,https://umkmgo-staging.miftech.web.id",
+		AllowOrigins:     "http://localhost:5173,https://umkmgo.miftech.web.id,https://umkmgo-staging.miftech.web.id,https://pwa-umkmgo.miftech.web.id,https://pwa-umkmgo-staging.miftech.web.id",
 		AllowMethods:     "GET,POST,PUT,DELETE",
 		AllowHeaders:     "Content-Type,Authorization",
 		ExposeHeaders:    "Content-Length",
